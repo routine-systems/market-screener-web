@@ -27,12 +27,15 @@ Built for `cp-ich-trend-bounce-wkly` but works with any screener URL.
 ## Everyday use — one command
 
 ```bash
-./dash.sh          # opens the dashboard; downloads fresh only if a new week has closed
-./dash.sh force    # force a fresh pull now (mid-week check), then open
+./dash.sh          # opens the dashboard; downloads fresh only when needed
+./dash.sh force    # force a fresh pull now (any time), then open
 ```
 
-`dash.sh` re-downloads only when your data predates the most recent **Friday 16:00**
-cutoff; otherwise it just opens `dashboard.html`.
+Plain `./dash.sh` re-downloads when either: a new week has closed (data predates the
+most recent **Friday 16:00**), or it's **Friday closing hours (≥ 2pm)** — the weekly
+candle is still forming, so it refreshes every run so you can plan Monday. Otherwise
+it just opens `dashboard.html`. `force` always re-downloads (use it to re-pull as the
+Friday close firms up).
 
 ## Two modes (`run.py`)
 
