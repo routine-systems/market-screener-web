@@ -1,19 +1,17 @@
 #!/usr/bin/env python3
 """
-Ingest a weekly Chartink screener snapshot into a rolling history, then render a
-self-contained HTML dashboard that ranks tickers by how many of the last N weeks
-they appeared in.
+Build the dashboard from a Chartink screener BACKTEST CSV.
 
-Typical weekly use (via run_weekly.sh):
-    python3 build_dashboard.py --ingest data/<slug>_latest.csv \
+The backtest CSV (Date, Symbol, Marketcapname, Sector) already contains the full
+weekly membership history, so there is no forward accumulation — each build parses
+the CSV, groups rows by weekly Date, and renders a self-contained dashboard that
+ranks tickers by how many weeks (of a selected window) they appeared in.
+
+    python3 build_dashboard.py --backtest data/<slug>_backtest_latest.csv \
         --url https://chartink.com/screener/<slug>
 
-Re-render only (no new week):
-    python3 build_dashboard.py
-
-State lives in data/history.json:  {screener, source_url, weeks:[{week, scraped_at,
-tickers:[{symbol,name,close,change,volume}]}]}. "week" is the Friday (ISO date) of
-the scrape's calendar week; re-running in the same week replaces that week's entry.
+State (data/history.json) is a derived cache: {screener, source_url, scanlink,
+timeframe, weeks:[{week, tickers:[{symbol, sector, marketcap}]}]}.
 """
 
 import argparse
@@ -21,7 +19,8 @@ import base64
 import csv
 import json
 import sys
-from datetime import date, datetime, timedelta
+from collections import defaultdict
+from datetime import datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -32,104 +31,65 @@ OUT = HERE / "dashboard.html"
 DEFAULT_URL = "https://chartink.com/screener/cp-ich-trend-bounce-wkly"
 
 
-def clean_num(s):
-    try:
-        return float(str(s).replace(",", "").replace("%", "").strip())
-    except (ValueError, TypeError):
-        return 0.0
+def _iso(d: str) -> str:
+    """DD-MM-YYYY (Chartink) -> YYYY-MM-DD; pass through if already ISO."""
+    for fmt in ("%d-%m-%Y", "%Y-%m-%d", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(d.strip(), fmt).date().isoformat()
+        except ValueError:
+            continue
+    return d.strip()
 
 
-def clean_int(s):
-    return int(round(clean_num(s)))
-
-
-def read_records(csv_path: Path):
-    """Parse a Chartink screener CSV into normalized ticker records."""
+def parse_backtest(csv_path: Path):
+    """Group backtest rows into weeks: [{week, tickers:[{symbol,sector,marketcap}]}]."""
     text = csv_path.read_text(encoding="utf-8-sig", errors="replace")
-    rows = list(csv.reader(text.splitlines()))
-    if not rows:
-        return []
-    head = [h.lower().strip() for h in rows[0]]
+    reader = csv.DictReader(text.splitlines())
+    fields = {(f or "").lower().strip(): f for f in (reader.fieldnames or [])}
 
     def col(*names):
         for n in names:
-            if n in head:
-                return head.index(n)
-        return -1
+            if n in fields:
+                return fields[n]
+        return None
 
-    i_sr = col("sr.", "sr", "#")
-    i_name = col("stock name", "name")
-    i_sym = col("symbol")
-    i_close = col("close", "price")
-    i_chg = col("%_change", "% change", "%change", "change")
-    i_vol = col("volume", "vol")
+    c_date = col("date")
+    c_sym = col("symbol")
+    c_mc = col("marketcapname", "marketcap", "market cap")
+    c_sec = col("sector")
+    if not c_date or not c_sym:
+        raise RuntimeError(f"Backtest CSV missing Date/Symbol columns: {reader.fieldnames}")
 
-    out = []
-    for r in rows[1:]:
-        if len(r) < 2:
-            continue
-        sym = (r[i_sym] if i_sym >= 0 and i_sym < len(r) else "").strip()
+    byweek = defaultdict(list)
+    for r in reader:
+        sym = (r.get(c_sym) or "").strip()
         if not sym:
             continue
-        get = lambda i: r[i] if 0 <= i < len(r) else ""
-        out.append({
+        byweek[_iso(r.get(c_date) or "")].append({
             "symbol": sym,
-            "name": get(i_name).strip(),
-            "close": clean_num(get(i_close)),
-            "change": clean_num(get(i_chg)),
-            "volume": clean_int(get(i_vol)),
+            "sector": (r.get(c_sec) or "").strip() if c_sec else "",
+            "marketcap": (r.get(c_mc) or "").strip() if c_mc else "",
         })
-    return out
+    weeks = [{"week": wk, "tickers": byweek[wk]} for wk in sorted(byweek) if wk]
+    return weeks
 
 
-def friday_of_week(d: date) -> date:
-    """Friday (weekday 4) of the calendar week containing d (Mon-anchored week)."""
-    return d + timedelta(days=(4 - d.weekday()))
-
-
-def load_history(url: str):
-    if HISTORY.exists():
-        h = json.loads(HISTORY.read_text())
-    else:
-        slug = url.rstrip("/").split("/")[-1]
-        h = {"screener": slug, "source_url": url, "weeks": []}
-    h.setdefault("scanlink", None)
-    h.setdefault("timeframe", "weekly")
-    return h
+def build_history(csv_path: Path, url: str, scanlink=None, timeframe=None):
+    weeks = parse_backtest(csv_path)
+    if not weeks:
+        raise RuntimeError(f"No weekly rows parsed from {csv_path}")
+    slug = url.rstrip("/").split("/")[-1]
+    return {
+        "screener": slug,
+        "source_url": url,
+        "scanlink": scanlink,
+        "timeframe": timeframe or "weekly",
+        "weeks": weeks,
+    }
 
 
 def save_history(h):
-    HISTORY.write_text(json.dumps(h, indent=2))
-
-
-def set_meta(h, scanlink=None, timeframe=None):
-    """Update the rotating in-scan link metadata (latest run wins)."""
-    if scanlink:
-        h["scanlink"] = scanlink
-    if timeframe:
-        h["timeframe"] = timeframe
-    return h
-
-
-def ingest(h, csv_path: Path, url: str):
-    recs = read_records(csv_path)
-    if not recs:
-        raise RuntimeError(f"No ticker rows parsed from {csv_path}")
-    wk = friday_of_week(date.today()).isoformat()
-    try:
-        mtime = datetime.fromtimestamp(csv_path.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
-    except OSError:
-        mtime = ""
-    entry = {"week": wk, "scraped_at": mtime, "tickers": recs}
-    weeks = [w for w in h["weeks"] if w["week"] != wk]  # replace same-week re-run
-    weeks.append(entry)
-    weeks.sort(key=lambda w: w["week"])
-    h["weeks"] = weeks
-    if url:
-        h["source_url"] = url
-        h["screener"] = url.rstrip("/").split("/")[-1]
-    print(f"📥 Ingested week {wk}: {len(recs)} tickers ({len(h['weeks'])} weeks tracked)")
-    return h
+    HISTORY.write_text(json.dumps(h))
 
 
 def render(h, window: int):
@@ -138,50 +98,53 @@ def render(h, window: int):
     payload = dict(h)
     payload["generated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M")
     payload["window"] = window
-    html = TEMPLATE.read_text()
     b64 = base64.b64encode(json.dumps(payload).encode("utf-8")).decode("ascii")
-    html = html.replace("__HISTORY_B64__", b64).replace("__WINDOW__", str(window))
+    html = TEMPLATE.read_text().replace("__HISTORY_B64__", b64).replace("__WINDOW__", str(window))
     OUT.write_text(html)
-    weeks = h["weeks"][-window:]
-    print(f"🖼  Rendered {OUT.name} · window={window} · weeks in view: "
-          f"{', '.join(w['week'] for w in weeks) or 'none'}")
+    weeks = h["weeks"]
+    print(f"🖼  Rendered {OUT.name} · {len(weeks)} weeks "
+          f"({weeks[0]['week']} → {weeks[-1]['week']}) · default window {window}")
     return OUT
 
 
+def resolve_meta(backtest: Path, scanlink, timeframe):
+    """Fill scanlink/timeframe from the scrape sidecar when not passed explicitly."""
+    if scanlink and timeframe:
+        return scanlink, timeframe
+    slug = backtest.name.split("_backtest")[0]
+    sidecar = backtest.parent / f"{slug}_latest.meta.json"
+    if sidecar.exists():
+        m = json.loads(sidecar.read_text())
+        scanlink = scanlink or m.get("scanlink")
+        timeframe = timeframe or m.get("timeframe")
+    return scanlink, timeframe
+
+
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Ingest weekly snapshot + render dashboard")
-    ap.add_argument("--ingest", type=Path, help="CSV snapshot to add as this week")
-    ap.add_argument("--url", default=DEFAULT_URL, help="Source screener URL (for metadata)")
-    ap.add_argument("--window", type=int, default=5, help="Rolling window in weeks (default 5)")
-    ap.add_argument("--scanlink", help="Rotating in-scan link hash (else read from CSV sidecar)")
-    ap.add_argument("--timeframe", help="Screener timeframe for in-scan links (e.g. weekly)")
+    ap = argparse.ArgumentParser(description="Render dashboard from a backtest CSV")
+    ap.add_argument("--backtest", type=Path, help="Backtest CSV (default: newest in data/)")
+    ap.add_argument("--url", default=DEFAULT_URL, help="Source screener URL")
+    ap.add_argument("--window", type=int, default=5, help="Default rolling window (weeks)")
+    ap.add_argument("--scanlink", help="In-scan link hash (else read from sidecar)")
+    ap.add_argument("--timeframe", help="Screener timeframe (e.g. weekly)")
     args = ap.parse_args()
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    h = load_history(args.url)
-
-    # Resolve scanlink/timeframe: explicit flags win; else the scrape sidecar.
-    scanlink, timeframe = args.scanlink, args.timeframe
-    if args.ingest and not scanlink:
-        sidecar = args.ingest.parent / (args.ingest.stem + ".meta.json")
-        if sidecar.exists():
-            m = json.loads(sidecar.read_text())
-            scanlink = scanlink or m.get("scanlink")
-            timeframe = timeframe or m.get("timeframe")
-    if scanlink or timeframe:
-        set_meta(h, scanlink, timeframe)
-        print(f"🔑 scanlink={h.get('scanlink')} timeframe={h.get('timeframe')}")
-
-    if args.ingest:
-        if not args.ingest.exists():
-            print(f"❌ Snapshot not found: {args.ingest}", file=sys.stderr)
+    backtest = args.backtest
+    if not backtest:
+        cands = sorted(DATA_DIR.glob("*_backtest_latest.csv")) or sorted(DATA_DIR.glob("*_backtest_*.csv"))
+        if not cands:
+            print("❌ No backtest CSV found in data/ — run scrape.py first.", file=sys.stderr)
             return 1
-        h = ingest(h, args.ingest, args.url)
-        save_history(h)
-    elif scanlink or timeframe:
-        save_history(h)   # persist refreshed link metadata even without a new week
-    if not h["weeks"]:
-        print("⚠️  No weeks in history yet — run scrape.py then --ingest.", file=sys.stderr)
+        backtest = cands[-1]
+    if not backtest.exists():
+        print(f"❌ Backtest CSV not found: {backtest}", file=sys.stderr)
+        return 1
+
+    scanlink, timeframe = resolve_meta(backtest, args.scanlink, args.timeframe)
+    h = build_history(backtest, args.url, scanlink, timeframe)
+    save_history(h)
+    print(f"🔑 scanlink={h['scanlink']} timeframe={h['timeframe']}")
     render(h, args.window)
     return 0
 

@@ -1,87 +1,86 @@
 # chartink-dashboard
 
-Weekly tracker for a Chartink screener. Every Friday it downloads the screener's
-CSV, appends that week's tickers to a rolling history, and rebuilds a single-file
-HTML dashboard that **ranks tickers by how many of the last 5 weeks they appeared in**.
+Weekly tracker for a Chartink screener. It downloads the screener's **backtest
+history** (≈3 years of weekly scan membership in one CSV) and builds a single-file
+HTML dashboard that **ranks tickers by how many weeks — of a selectable window —
+they appeared in**. Because the backtest CSV already contains every week, the whole
+history is available from a single download; no waiting to accumulate.
 
 Built for `cp-ich-trend-bounce-wkly` but works with any screener URL.
 
 ## What it does (the requirements)
 
 1. **Download every Friday** — `run_weekly.sh` scrapes the screener; a launchd job
-   fires it weekly.
-2. **Add this week's data** — each run ingests the snapshot into `data/history.json`,
-   keyed to the week's Friday (idempotent: re-running in the same week replaces it).
+   fires it weekly (re-download picks up the newest weekly date).
+2. **Full weekly history from one file** — the scraper takes the **BACKTEST HISTORY →
+   Download → CSV** export (`Date, Symbol, Marketcapname, Sector`), grouped into weeks.
 3. **Rank by appearance over a window** — `dashboard.html` ranks every ticker by how
-   many of the selected weeks it appeared in (5/5, 4/5, …) with a per-week presence
-   grid, plus "new this week" / "dropped", weekly counts, and latest price/volume.
-   A **week-range selector** (From/To + Last 5 / Last 8 / All presets, default the
-   latest 5) re-ranks live over any range.
+   many of the selected weeks it appeared in (5/5, 4/5, …), with a per-week presence
+   grid, plus "new this week" / "dropped", per-week counts, and appearance-frequency.
+   A **week-range selector** (From/To + Last 5 / 8 / 13 / 26 / 52 / All presets,
+   default the latest 5) re-ranks live over any range.
 4. **In-scan ticker links** — each ticker links into its Chartink `stocks-new` chart
-   *in the scan's context* (the chart highlights the weeks it matched). This needs the
+   *in the scan's context* (the chart highlights the weeks it matched). This uses the
    per-screener `scanlink` hash, which Chartink **rotates**, so every run re-extracts
-   it from the screener page and bakes it into the dashboard. (`nav_token` is not
-   required — Chartink's own row links omit it.)
+   it. (`nav_token` is not required.)
 
 ## Two modes (`run.py`)
 
-| Mode | What it does |
+Both scrape the backtest CSV and rebuild; they differ only in intent/scheduling
+(the single download already carries all weeks — there is no forward accumulation):
+
+| Mode | Use |
 |---|---|
-| `--mode weekly` | scrape → refresh scanlink → **add/replace this week** → rebuild. The Friday job. |
-| `--mode adhoc`  | scrape → refresh scanlink → rebuild from existing history, **no new week**. Run anytime. |
+| `--mode weekly` | The Friday / launchd job. |
+| `--mode adhoc`  | A manual refresh you run anytime. |
 
 ```bash
-python3 run.py --mode weekly          # Friday capture
-python3 run.py --mode adhoc           # refresh links / rebuild now
-python3 run.py --mode weekly --show   # watch the browser
+python3 run.py --mode weekly           # Friday capture
+python3 run.py --mode adhoc            # refresh now
+python3 run.py --mode weekly --show    # watch the browser
 ```
 
 ## Files
 
 | File | Role |
 |---|---|
-| `scrape.py` | Headless-Chrome scraper → `data/<slug>_latest.csv` (+ timestamped snapshot) |
-| `build_dashboard.py` | Ingest a snapshot into `data/history.json`, render `dashboard.html` |
-| `template.html` | The dashboard UI; data is baked in at build time (double-click to open) |
-| `run_weekly.sh` | scrape → ingest → build, with logging to `logs/` |
+| `scrape.py` | Headless-Chrome: extract `scanlink`, download the **backtest** CSV → `data/<slug>_backtest_latest.csv` + `<slug>_latest.meta.json` |
+| `build_dashboard.py` | Parse the backtest CSV into weeks, render `dashboard.html` |
+| `template.html` | The dashboard UI; history baked in at build time (double-click to open) |
+| `run.py` | Single entry: `--mode weekly` / `--mode adhoc` |
+| `run_weekly.sh` | Drives `run.py`, logs to `logs/` |
 | `com.chirag.chartink-weekly.plist` | launchd schedule (Fridays 18:30) |
-| `data/history.json` | Accumulated weekly history (the source of truth) |
+| `data/history.json` | Derived cache of the parsed backtest history |
 
 ## Requirements
 
-- Python 3.12, Chrome, and: `pip install selenium webdriver-manager`
-- (already present on this machine)
+- Python 3.12, Chrome, and `pip install selenium webdriver-manager` (already present here).
 
-## Manual run
+## Manual run (step by step)
 
 ```bash
-./run_weekly.sh
-# or step by step:
 python3 scrape.py --url https://chartink.com/screener/cp-ich-trend-bounce-wkly
-python3 build_dashboard.py --ingest data/cp-ich-trend-bounce-wkly_latest.csv \
+python3 build_dashboard.py --backtest data/cp-ich-trend-bounce-wkly_backtest_latest.csv \
     --url https://chartink.com/screener/cp-ich-trend-bounce-wkly --window 5
 open dashboard.html
 ```
 
-`scrape.py --show` runs a visible browser. Drop any Chartink CSV onto the open
-dashboard to preview it as "this week" (in-memory only; not saved to history).
+Drop any Chartink **Backtest** CSV onto the open dashboard to load it (in-memory).
 
 ## Schedule it (every Friday)
 
 ```bash
 cp com.chirag.chartink-weekly.plist ~/Library/LaunchAgents/
 launchctl load ~/Library/LaunchAgents/com.chirag.chartink-weekly.plist
-# verify:
 launchctl list | grep chartink-weekly
 ```
 
-To stop: `launchctl unload ~/Library/LaunchAgents/com.chirag.chartink-weekly.plist`.
-The job runs in your logged-in session (headless Chrome needs no visible window). If
-the Mac is asleep at 18:30 Friday, launchd runs it once shortly after the next wake.
+Stop with `launchctl unload …`. The job runs in your logged-in session (headless
+Chrome needs no visible window); if the Mac is asleep at 18:30 Friday, launchd runs
+it once shortly after the next wake.
 
 ## Notes
 
-- History grows one entry per week; the dashboard windows to the last 5 for ranking
-  but keeps all weeks in `history.json`.
-- With fewer than 5 weeks it ranks over what exists (e.g. 2/2) and says so.
+- The backtest CSV has membership + sector + market cap, but **no price** (close/%chg/
+  volume). The ranking table shows Symbol · appearances · Sector · Cap · all-time count.
 - Data is unofficial, scraped from Chartink's public screener page for personal use.

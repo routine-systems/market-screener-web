@@ -11,8 +11,7 @@
     --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
     --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
     --up:#0ca30c; --down:#d03b3b; --vol:#256abf; --bar:#2a78d6;
-    --up-soft:rgba(12,163,12,0.12); --down-soft:rgba(208,59,59,0.12);
-    --chip:#eef0ee; --dot-off:#d7d6cf; --hot:#184f95;
+    --up-soft:rgba(12,163,12,0.12); --chip:#eef0ee; --dot-off:#d7d6cf; --hot:#184f95;
   }
   @media (prefers-color-scheme: dark){
     :root:where(:not([data-theme="light"])){
@@ -21,8 +20,7 @@
       --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
       --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
       --up:#0ca30c; --down:#e66767; --vol:#3987e5; --bar:#3987e5;
-      --up-soft:rgba(12,163,12,0.16); --down-soft:rgba(230,103,103,0.16);
-      --chip:#232322; --dot-off:#39383550; --hot:#86b6ef;
+      --up-soft:rgba(12,163,12,0.16); --chip:#232322; --dot-off:#39383550; --hot:#86b6ef;
     }
   }
   :root[data-theme="dark"]{
@@ -31,8 +29,7 @@
     --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
     --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
     --up:#0ca30c; --down:#e66767; --vol:#3987e5; --bar:#3987e5;
-    --up-soft:rgba(12,163,12,0.16); --down-soft:rgba(230,103,103,0.16);
-    --chip:#232322; --dot-off:#39383550; --hot:#86b6ef;
+    --up-soft:rgba(12,163,12,0.16); --chip:#232322; --dot-off:#39383550; --hot:#86b6ef;
   }
   *{box-sizing:border-box}
   html,body{margin:0}
@@ -66,27 +63,27 @@
   .card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px}
   .card h2{font-size:13px; margin:0 0 2px; font-weight:600}
   .card .hint{color:var(--muted); font-size:11.5px; margin:0 0 12px}
-  .span2{grid-column:1 / -1}
 
-  .cols{display:flex; align-items:flex-end; gap:8px; height:140px; padding-top:8px}
-  .cols .col{flex:1 1 0; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:5px; height:100%}
-  .cols .colbar{width:100%; max-width:54px; background:var(--bar); border-radius:4px 4px 0 0; min-height:2px; margin:0 auto}
-  .cols .cnt{font-size:11px; color:var(--ink-2); font-variant-numeric:tabular-nums}
-  .cols-x{display:flex; gap:8px; margin-top:6px}
-  .cols-x span{flex:1 1 0; text-align:center; font-size:10.5px; color:var(--muted); font-variant-numeric:tabular-nums}
+  .chartscroll{overflow-x:auto}
+  .cols{display:flex; align-items:flex-end; gap:6px; height:140px; padding-top:8px; min-width:100%}
+  .cols .col{flex:1 1 16px; min-width:16px; max-width:60px; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:5px; height:100%}
+  .cols .colbar{width:100%; background:var(--bar); border-radius:4px 4px 0 0; min-height:2px}
+  .cols .cnt{font-size:10.5px; color:var(--ink-2); font-variant-numeric:tabular-nums}
+  .cols-x{display:flex; gap:6px; margin-top:6px; min-width:100%}
+  .cols-x span{flex:1 1 16px; min-width:16px; max-width:60px; text-align:center; font-size:10px; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap}
 
-  .chips{display:flex; flex-wrap:wrap; gap:6px}
+  .chips{display:flex; flex-wrap:wrap; gap:6px; max-height:150px; overflow:auto}
   .chip{display:inline-flex; align-items:center; gap:5px; background:var(--chip); border:1px solid var(--border);
     border-radius:999px; padding:3px 9px; font-size:12px; font-weight:600}
   .chip a{color:var(--vol); text-decoration:none}
-  .chip .d{font-variant-numeric:tabular-nums; font-weight:500}
+  .chip .s{font-weight:500; color:var(--muted)}
   .empty{color:var(--muted); font-size:13px; padding:6px 0}
 
   .tablecard{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px}
   .rangebar{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--grid)}
   .rangebar .lab{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:0.04em}
   .rangebar .arrow{color:var(--muted)}
-  .preset{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 10px; font-size:12px; cursor:pointer}
+  .preset{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 9px; font-size:12px; cursor:pointer}
   .preset:hover{color:var(--ink)}
   .preset.on{background:var(--vol); color:#fff; border-color:var(--vol)}
   .rangenote{color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums}
@@ -94,12 +91,12 @@
   .tbar input{background:var(--plane); border:1px solid var(--border); color:var(--ink);
     border-radius:8px; padding:8px 11px; font-size:13px; width:240px; max-width:60vw}
   .tbar .count{color:var(--muted); font-size:12px}
-  .tablewrap{overflow-x:auto}
+  .tablewrap{overflow-x:auto; max-height:70vh; overflow-y:auto}
   table{width:100%; border-collapse:collapse; font-size:13px}
   th,td{padding:8px 10px; text-align:right; white-space:nowrap}
   th.l,td.l{text-align:left}
   thead th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.03em;
-    border-bottom:1px solid var(--axis); cursor:pointer; user-select:none; position:sticky; top:0; background:var(--surface)}
+    border-bottom:1px solid var(--axis); cursor:pointer; user-select:none; position:sticky; top:0; background:var(--surface); z-index:1}
   thead th:hover{color:var(--ink-2)}
   thead th.sorted::after{content:" ▾"; color:var(--ink-2)}
   thead th.sorted.asc::after{content:" ▴"}
@@ -108,17 +105,16 @@
   td.num{font-variant-numeric:tabular-nums}
   td .stk{color:var(--vol); text-decoration:none; font-weight:600}
   td .stk:hover{text-decoration:underline}
-  .pill{display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:999px; font-variant-numeric:tabular-nums; font-weight:600; font-size:12px}
-  .pill.u{color:var(--up); background:var(--up-soft)}
-  .pill.d{color:var(--down); background:var(--down-soft)}
-  .arr{font-size:10px}
+  .mc{font-size:11px; color:var(--ink-2)}
   .appc{display:inline-flex; align-items:center; gap:9px}
-  .appc .frac{font-variant-numeric:tabular-nums; font-weight:700; min-width:30px; display:inline-block}
+  .appc .frac{font-variant-numeric:tabular-nums; font-weight:700; min-width:36px; display:inline-block}
   .appc .frac small{font-weight:500; color:var(--muted)}
   .dots{display:inline-flex; gap:3px}
   .dot{width:9px; height:9px; border-radius:50%; background:var(--dot-off)}
   .dot.on{background:var(--vol)}
   .dot.hot{background:var(--hot)}
+  .minibar{display:inline-block; width:90px; height:8px; background:var(--dot-off); border-radius:4px; overflow:hidden; vertical-align:middle}
+  .minibar>span{display:block; height:100%; background:var(--vol)}
   .rankn{color:var(--muted); font-variant-numeric:tabular-nums}
   .badge{font-size:10px; padding:1px 6px; border-radius:999px; background:var(--up-soft); color:var(--up); font-weight:700; margin-left:6px}
 
@@ -150,9 +146,12 @@
       <select id="fromWk" title="Range start week"></select>
       <span class="arrow">→</span>
       <select id="toWk" title="Range end week"></select>
-      <span style="width:8px"></span>
+      <span style="width:6px"></span>
       <button class="preset" data-preset="5">Last 5</button>
       <button class="preset" data-preset="8">Last 8</button>
+      <button class="preset" data-preset="13">13</button>
+      <button class="preset" data-preset="26">26</button>
+      <button class="preset" data-preset="52">52</button>
       <button class="preset" data-preset="all">All</button>
       <div class="spacer"></div>
       <span class="rangenote" id="rangenote"></span>
@@ -161,7 +160,7 @@
       <strong style="font-size:14px">Ranked by appearances</strong>
       <span class="count" id="rankhint"></span>
       <div class="spacer"></div>
-      <input id="search" type="search" placeholder="Search name or symbol…" autocomplete="off">
+      <input id="search" type="search" placeholder="Search symbol or sector…" autocomplete="off">
       <button class="toolbtn" id="csvBtn" title="Download ranking as CSV">⭳ CSV</button>
     </div>
     <div class="tablewrap">
@@ -169,11 +168,10 @@
         <thead><tr>
           <th class="l" data-k="rank">#</th>
           <th class="l" data-k="symbol">Symbol</th>
-          <th class="l" data-k="name">Stock</th>
-          <th data-k="count" class="sorted l">Appearances (oldest→newest)</th>
-          <th data-k="close">Latest close</th>
-          <th data-k="change">Latest %chg</th>
-          <th data-k="volume">Latest vol</th>
+          <th data-k="count" class="sorted l">Appearances in range (oldest→newest)</th>
+          <th class="l" data-k="sector">Sector</th>
+          <th class="l" data-k="marketcap">Cap</th>
+          <th data-k="alltime">All-time</th>
         </tr></thead>
         <tbody id="tbody"></tbody>
       </table>
@@ -183,15 +181,13 @@
   <section class="grid">
     <div class="card">
       <h2>Tickers per week</h2>
-      <p class="hint">How many stocks the screener returned each week in range</p>
-      <div class="cols" id="wk-cols"></div>
-      <div class="cols-x" id="wk-x"></div>
+      <p class="hint" id="wk-hint">Matches per week in range</p>
+      <div class="chartscroll"><div class="cols" id="wk-cols"></div><div class="cols-x" id="wk-x"></div></div>
     </div>
     <div class="card">
       <h2>Appearance frequency</h2>
       <p class="hint" id="freq-hint">How many tickers show up in k of the range's weeks</p>
-      <div class="cols" id="freq-cols"></div>
-      <div class="cols-x" id="freq-x"></div>
+      <div class="chartscroll"><div class="cols" id="freq-cols"></div><div class="cols-x" id="freq-x"></div></div>
     </div>
     <div class="card">
       <h2>New this week <span id="new-n" class="rankn"></span></h2>
@@ -209,7 +205,7 @@
 </div>
 
 <div id="tt"></div>
-<div id="drop"><div class="msg">Drop a Chartink CSV to preview it as this week</div></div>
+<div id="drop"><div class="msg">Drop a Chartink <b>Backtest</b> CSV to load it</div></div>
 
 <script>
 const HISTORY_B64="__HISTORY_B64__";
@@ -218,12 +214,9 @@ const WINDOW=__WINDOW__;
 const $=s=>document.querySelector(s);
 function b64utf8(b){try{return decodeURIComponent(escape(atob(b)));}catch(e){return atob(b);}}
 const inr=n=>n.toLocaleString('en-IN');
-function fmtVol(v){ if(v>=1e7)return (v/1e7).toFixed(2)+' Cr'; if(v>=1e5)return (v/1e5).toFixed(2)+' L'; return inr(v); }
-function fmtClose(v){ return v.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function sign(v){ return (v>0?'+':'')+v.toFixed(2)+'%'; }
-function arrow(v){ return v>0?'▲':(v<0?'▼':'•'); }
+const MCRANK={smallcap:1,midcap:2,largecap:3};
+const DOTCAP=14;   // show a dot grid up to this many weeks, else a mini-bar
 
-/* in-scan link built from the rotating scanlink; falls back to the plain stock page */
 function stockUrl(sym){
   if(H && H.scanlink){
     return `https://chartink.com/stocks-new?from_scan=1&hide_filters=true&scan_link=scanlink:${encodeURIComponent(H.scanlink)}&timeframe=${encodeURIComponent(H.timeframe||'weekly')}&symbol=${encodeURIComponent(sym)}`;
@@ -231,30 +224,33 @@ function stockUrl(sym){
   return `https://chartink.com/stocks/${encodeURIComponent(sym)}.html`;
 }
 
-/* CSV parse (drag-drop preview) */
+/* Backtest CSV parser (Date,Symbol,Marketcapname,Sector) → weeks (for drag-drop) */
 function parseCSV(t){t=t.replace(/^﻿/,'');const rows=[];let i=0,f='',row=[],q=false;const push=()=>{row.push(f);f='';},endr=()=>{push();rows.push(row);row=[];};
   while(i<t.length){const c=t[i]; if(q){ if(c==='"'){ if(t[i+1]==='"'){f+='"';i++;} else q=false;} else f+=c;} else { if(c==='"')q=true; else if(c===',')push(); else if(c==='\n')endr(); else if(c==='\r'){} else f+=c;} i++;}
   if(f.length||row.length)endr(); return rows.filter(r=>r.length>1||(r.length===1&&r[0]!==''));}
-function recordsFromCSV(t){const rows=parseCSV(t);if(!rows.length)return[];const h=rows[0].map(x=>x.toLowerCase().trim());
+function isoDate(s){const m=String(s).trim().match(/^(\d{2})-(\d{2})-(\d{4})$/); if(m)return `${m[3]}-${m[2]}-${m[1]}`;
+  const m2=String(s).trim().match(/^(\d{4})-(\d{2})-(\d{2})$/); return m2?m2[0]:s.trim();}
+function weeksFromBacktest(t){const rows=parseCSV(t);if(!rows.length)return[];const h=rows[0].map(x=>x.toLowerCase().trim());
   const idx=(...n)=>{for(const x of n){const j=h.indexOf(x);if(j>=0)return j;}return -1;};
-  const iN=idx('stock name','name'),iS=idx('symbol'),iC=idx('close','price'),iG=idx('%_change','% change','%change','change'),iV=idx('volume','vol');
-  const cn=s=>parseFloat(String(s).replace(/[,%\s]/g,''))||0, ci=s=>Math.round(parseFloat(String(s).replace(/[,\s]/g,''))||0);
-  const out=[];for(let r=1;r<rows.length;r++){const c=rows[r];if(!c||c.length<2)continue;const sym=(iS>=0?c[iS]:'').trim();if(!sym)continue;
-    out.push({symbol:sym,name:(iN>=0?c[iN]:'').trim(),close:iC>=0?cn(c[iC]):0,change:iG>=0?cn(c[iG]):0,volume:iV>=0?ci(c[iV]):0});}
-  return out;}
+  const iD=idx('date'),iS=idx('symbol'),iM=idx('marketcapname','marketcap'),iC=idx('sector');
+  if(iD<0||iS<0)return[];
+  const by={};
+  for(let r=1;r<rows.length;r++){const c=rows[r];if(!c||c.length<2)continue;const sym=(c[iS]||'').trim();if(!sym)continue;
+    const wk=isoDate(c[iD]); (by[wk]=by[wk]||[]).push({symbol:sym,sector:iC>=0?(c[iC]||'').trim():'',marketcap:iM>=0?(c[iM]||'').trim():''});}
+  return Object.keys(by).sort().map(wk=>({week:wk,tickers:by[wk]}));}
 
 /* tooltip */
 const tt=$('#tt');
 function showTip(html,x,y){tt.innerHTML=html;tt.style.opacity='1';const b=tt.getBoundingClientRect();let nx=x+12,ny=y-b.height-8;if(nx+b.width>innerWidth-8)nx=x-b.width-12;if(ny<8)ny=y+16;tt.style.left=nx+'px';tt.style.top=ny+'px';}
 function hideTip(){tt.style.opacity='0';}
 
-let H=null;                 // full history
-let WEEKS=[];               // all weeks ascending
-let SEL={from:0,to:0};      // selected inclusive index range into WEEKS
+let H=null, WEEKS=[], ALLTIME=new Map(), SEL={from:0,to:0};
 let sortKey='count', sortAsc=false, MODEL=null;
 
 function initSelection(){
   WEEKS=(H.weeks||[]).slice().sort((a,b)=>a.week<b.week?-1:1);
+  ALLTIME=new Map();
+  WEEKS.forEach(wk=>{const seen=new Set(); wk.tickers.forEach(t=>{ if(seen.has(t.symbol))return; seen.add(t.symbol); ALLTIME.set(t.symbol,(ALLTIME.get(t.symbol)||0)+1); });});
   const n=WEEKS.length;
   SEL.to=Math.max(0,n-1);
   SEL.from=Math.max(0,n-Math.min(WINDOW,n));
@@ -263,8 +259,7 @@ function initSelection(){
 function buildRangeControls(){
   const opts=WEEKS.map((w,i)=>`<option value="${i}">${w.week}</option>`).join('');
   const f=$('#fromWk'), t=$('#toWk');
-  f.innerHTML=opts; t.innerHTML=opts;
-  f.value=SEL.from; t.value=SEL.to;
+  f.innerHTML=opts; t.innerHTML=opts; f.value=SEL.from; t.value=SEL.to;
   f.onchange=()=>{SEL.from=+f.value; if(SEL.from>SEL.to){SEL.to=SEL.from; t.value=SEL.to;} render();};
   t.onchange=()=>{SEL.to=+t.value; if(SEL.to<SEL.from){SEL.from=SEL.to; f.value=SEL.from;} render();};
   document.querySelectorAll('.preset').forEach(b=>b.onclick=()=>{
@@ -276,17 +271,17 @@ function buildRangeControls(){
 }
 
 function compute(){
-  const weeks=WEEKS.slice(SEL.from, SEL.to+1);   // selected, ascending
+  const weeks=WEEKS.slice(SEL.from, SEL.to+1);
   const keys=weeks.map(w=>w.week);
   const nW=weeks.length;
   const map=new Map();
   weeks.forEach((wk,wi)=>{ (wk.tickers||[]).forEach(t=>{
     let e=map.get(t.symbol);
-    if(!e){ e={symbol:t.symbol,name:t.name,present:new Array(nW).fill(false),latest:t}; map.set(t.symbol,e); }
-    e.present[wi]=true; e.latest=t; if(t.name)e.name=t.name;
+    if(!e){ e={symbol:t.symbol,present:new Array(nW).fill(false),sector:t.sector,marketcap:t.marketcap}; map.set(t.symbol,e); }
+    e.present[wi]=true; if(t.sector)e.sector=t.sector; if(t.marketcap)e.marketcap=t.marketcap;
   }); });
-  const rows=[...map.values()].map(e=>({...e, count:e.present.filter(Boolean).length}));
-  rows.sort((a,b)=> b.count-a.count || b.latest.change-a.latest.change || a.symbol.localeCompare(b.symbol));
+  const rows=[...map.values()].map(e=>({...e, count:e.present.filter(Boolean).length, alltime:ALLTIME.get(e.symbol)||0}));
+  rows.sort((a,b)=> b.count-a.count || b.alltime-a.alltime || a.symbol.localeCompare(b.symbol));
   rows.forEach((r,i)=>r.rank=i+1);
   return {weeks,keys,nW,rows};
 }
@@ -296,19 +291,18 @@ function render(){
   const {weeks,keys,nW,rows}=MODEL;
   H.screener=H.screener||'Screener';
 
-  // presets active state
-  const n=WEEKS.length, len=nW;
+  const n=WEEKS.length;
   document.querySelectorAll('.preset').forEach(b=>{
     let on=false;
     if(b.dataset.preset==='all') on=(SEL.from===0&&SEL.to===n-1);
     else on=(SEL.to===n-1 && SEL.from===Math.max(0,n-Math.min(+b.dataset.preset,n)) && +b.dataset.preset<=n);
     b.classList.toggle('on',on);
   });
-  $('#rangenote').textContent=`${len} week(s) selected · ${keys[0]||'—'} → ${keys[keys.length-1]||'—'}`;
+  $('#rangenote').textContent=`${nW} week(s) · ${keys[0]||'—'} → ${keys[keys.length-1]||'—'}`;
 
   $('#scr-title').textContent=H.screener;
   const sub=[];
-  sub.push(`<b>${WEEKS.length}</b> week(s) tracked`);
+  sub.push(`<b>${n}</b> weeks of history`);
   sub.push(`ranking over <b>${nW}</b> selected`);
   if(H.scanlink) sub.push(`in-scan links <b>on</b>`);
   if(H.source_url) sub.push(`<a href="${H.source_url}" target="_blank" rel="noopener">source ↗</a>`);
@@ -323,70 +317,74 @@ function render(){
   const dropSyms=prev?[...prevSet].filter(s=>!latestSet.has(s)):[];
 
   const tiles=[
-    ['Weeks tracked', String(WEEKS.length)],
+    ['Weeks of history', String(n)],
     ['Selected', `${nW}<small> wk</small>`],
     ['Unique tickers', String(rows.length)],
-    ['Persistent', `${persistent}<small> all ${nW} wk</small>`],
-    ['New this week', `<span class="up">${newSyms.length}</span>`],
+    ['Every week', `${persistent}<small> of ${nW}</small>`],
+    ['New latest wk', `<span class="up">${newSyms.length}</span>`],
     ['Dropped', `<span class="down">${dropSyms.length}</span>`],
   ];
   $('#kpis').innerHTML=tiles.map(([l,v])=>`<div class="tile"><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join('');
 
-  const wkHost=$('#wk-cols'), wkX=$('#wk-x');
-  const wkMax=Math.max(1,...weeks.map(w=>w.tickers.length));
-  wkHost.innerHTML=weeks.map(w=>{const c=w.tickers.length;return `<div class="col" data-tip="wk" data-wk="${w.week}" data-n="${c}" data-when="${w.scraped_at||''}">
+  // tickers per week — cap to last 30 columns when the range is large
+  const CAP=30, wkShown=weeks.length>CAP?weeks.slice(-CAP):weeks;
+  $('#wk-hint').textContent = weeks.length>CAP?`Matches per week — showing last ${CAP} of ${weeks.length}`:`Matches per week in range`;
+  const wkMax=Math.max(1,...wkShown.map(w=>w.tickers.length));
+  $('#wk-cols').innerHTML=wkShown.map(w=>{const c=w.tickers.length;return `<div class="col" data-tip="wk" data-wk="${w.week}" data-n="${c}">
     <span class="cnt">${c}</span><span class="colbar" style="height:${(c/wkMax*100).toFixed(1)}%"></span></div>`;}).join('');
-  wkX.innerHTML=weeks.map(w=>`<span>${w.week.slice(5)}</span>`).join('');
+  $('#wk-x').innerHTML=wkShown.map(w=>`<span>${w.week.slice(5)}</span>`).join('');
 
+  // appearance frequency
   const freq=new Array(nW+1).fill(0); rows.forEach(r=>freq[r.count]++);
-  const fHost=$('#freq-cols'), fX=$('#freq-x');
   const fMax=Math.max(1,...freq.slice(1));
-  fHost.innerHTML=freq.slice(1).map((c,i)=>{const k=i+1;return `<div class="col" data-tip="freq" data-k="${k}" data-n="${c}">
+  $('#freq-cols').innerHTML=freq.slice(1).map((c,i)=>{const k=i+1;return `<div class="col" data-tip="freq" data-k="${k}" data-n="${c}">
     <span class="cnt">${c||''}</span><span class="colbar" style="height:${(c/fMax*100).toFixed(1)}%;${k===nW?'background:var(--hot)':''}"></span></div>`;}).join('');
-  fX.innerHTML=freq.slice(1).map((_,i)=>`<span>${i+1}×</span>`).join('');
+  $('#freq-x').innerHTML=freq.slice(1).map((_,i)=>`<span>${i+1}×</span>`).join('');
   $('#freq-hint').textContent=`Of ${rows.length} tickers over ${nW} week(s) — right-most = every week`;
 
-  const chip=(s,withChg)=>{const e=rows.find(r=>r.symbol===s);const ch=(withChg&&e)?`<span class="d ${e.latest.change<0?'down':'up'}">${sign(e.latest.change)}</span>`:'';
-    return `<span class="chip"><a href="${stockUrl(s)}" target="_blank" rel="noopener">${s}</a>${ch}</span>`;};
+  const chip=s=>{const e=rows.find(r=>r.symbol===s);const sec=e&&e.sector?`<span class="s">${e.sector}</span>`:'';
+    return `<span class="chip"><a href="${stockUrl(s)}" target="_blank" rel="noopener">${s}</a>${sec}</span>`;};
   $('#new-n').textContent=newSyms.length?`(${newSyms.length})`:'';
   $('#drop-n').textContent=dropSyms.length?`(${dropSyms.length})`:'';
-  $('#new-chips').innerHTML=newSyms.length?newSyms.map(s=>chip(s,true)).join(''):'<div class="empty">None — nothing new.</div>';
-  $('#drop-chips').innerHTML=prev?(dropSyms.length?dropSyms.map(s=>chip(s,false)).join(''):'<div class="empty">None — nobody dropped.</div>'):'<div class="empty">Need ≥2 weeks in range.</div>';
+  $('#new-chips').innerHTML=newSyms.length?newSyms.map(chip).join(''):'<div class="empty">None — nothing new.</div>';
+  $('#drop-chips').innerHTML=prev?(dropSyms.length?dropSyms.map(s=>`<span class="chip"><a href="${stockUrl(s)}" target="_blank" rel="noopener">${s}</a></span>`).join(''):'<div class="empty">None — nobody dropped.</div>'):'<div class="empty">Need ≥2 weeks in range.</div>';
 
   renderTable();
-  $('#foot').innerHTML=`Generated ${H.generated_at||''} · self-contained · updates every Friday · drop a CSV to preview a week`;
+  $('#foot').innerHTML=`Generated ${H.generated_at||''} · self-contained · sourced from Chartink backtest history · drop a Backtest CSV to reload`;
 }
 
 function renderTable(){
   const {keys,nW,rows}=MODEL;
   const q=$('#search').value.trim().toLowerCase();
-  let list=rows.filter(r=>!q||r.name.toLowerCase().includes(q)||r.symbol.toLowerCase().includes(q));
+  let list=rows.filter(r=>!q||r.symbol.toLowerCase().includes(q)||(r.sector||'').toLowerCase().includes(q));
   list=[...list].sort((a,b)=>{
     let x,y;
     if(sortKey==='rank'||sortKey==='count'){x=a.count;y=b.count;}
     else if(sortKey==='symbol'){x=a.symbol.toLowerCase();y=b.symbol.toLowerCase();}
-    else if(sortKey==='name'){x=a.name.toLowerCase();y=b.name.toLowerCase();}
-    else if(sortKey==='close'){x=a.latest.close;y=b.latest.close;}
-    else if(sortKey==='change'){x=a.latest.change;y=b.latest.change;}
-    else if(sortKey==='volume'){x=a.latest.volume;y=b.latest.volume;}
+    else if(sortKey==='sector'){x=(a.sector||'').toLowerCase();y=(b.sector||'').toLowerCase();}
+    else if(sortKey==='marketcap'){x=MCRANK[(a.marketcap||'').toLowerCase()]||0;y=MCRANK[(b.marketcap||'').toLowerCase()]||0;}
+    else if(sortKey==='alltime'){x=a.alltime;y=b.alltime;}
     if(typeof x==='string')return sortAsc?(x<y?-1:x>y?1:0):(x>y?-1:x<y?1:0);
-    if(x===y) return b.count-a.count || b.latest.change-a.latest.change;
+    if(x===y) return b.count-a.count || b.alltime-a.alltime;
     return sortAsc?x-y:y-x;
   });
   $('#rankhint').textContent=`${list.length} of ${rows.length} tickers · ${nW} wk`;
+  const dotgrid=(r)=>{
+    if(nW<=DOTCAP){
+      return '<span class="dots">'+r.present.map((p,i)=>`<span class="dot ${p?(r.count===nW?'hot':'on'):''}" title="${keys[i]}: ${p?'present':'absent'}"></span>`).join('')+'</span>';
+    }
+    return `<span class="minibar" title="${r.count}/${nW}"><span style="width:${(r.count/nW*100).toFixed(1)}%"></span></span>`;
+  };
   $('#tbody').innerHTML=list.map(r=>{
-    const d=r.latest, cls=d.change>=0?'u':'d';
-    const dots=r.present.map((p,i)=>`<span class="dot ${p?(r.count===nW?'hot':'on'):''}" title="${keys[i]}: ${p?'present':'absent'}"></span>`).join('');
-    const tipWeeks=keys.map((k,i)=>`${k}: ${r.present[i]?'●':'—'}`).join(' · ');
+    const tipWeeks=nW<=DOTCAP?keys.map((k,i)=>`${k}: ${r.present[i]?'●':'—'}`).join(' · '):`${r.count} of ${nW} weeks`;
     const badge=r.count===nW&&nW>1?'<span class="badge">every wk</span>':'';
     return `<tr>
       <td class="l rankn">${r.rank}</td>
       <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a></td>
-      <td class="l">${r.name}</td>
-      <td class="l"><span class="appc" data-tip="row" data-w="${tipWeeks.replace(/"/g,'')}"><span class="frac">${r.count}<small>/${nW}</small></span><span class="dots">${dots}</span>${badge}</span></td>
-      <td class="num">${fmtClose(d.close)}</td>
-      <td class="num"><span class="pill ${cls}"><span class="arr">${arrow(d.change)}</span> ${sign(d.change)}</span></td>
-      <td class="num">${inr(d.volume)}</td>
+      <td class="l"><span class="appc" data-tip="row" data-w="${tipWeeks.replace(/"/g,'')}"><span class="frac">${r.count}<small>/${nW}</small></span>${dotgrid(r)}${badge}</span></td>
+      <td class="l mc">${r.sector||'—'}</td>
+      <td class="l mc">${r.marketcap||'—'}</td>
+      <td class="num">${r.alltime}<small style="color:var(--muted)">/${WEEKS.length}</small></td>
     </tr>`;
   }).join('');
   document.querySelectorAll('thead th').forEach(th=>{th.classList.toggle('sorted',th.dataset.k===sortKey);th.classList.toggle('asc',th.dataset.k===sortKey&&sortAsc);});
@@ -394,7 +392,7 @@ function renderTable(){
 
 document.querySelectorAll('thead th').forEach(th=>th.addEventListener('click',()=>{
   const k=th.dataset.k;
-  if(k===sortKey)sortAsc=!sortAsc; else {sortKey=k; sortAsc=(k==='symbol'||k==='name');}
+  if(k===sortKey)sortAsc=!sortAsc; else {sortKey=k; sortAsc=(k==='symbol'||k==='sector');}
   renderTable();
 }));
 $('#search').addEventListener('input',renderTable);
@@ -402,7 +400,7 @@ $('#search').addEventListener('input',renderTable);
 document.body.addEventListener('mousemove',e=>{
   const el=e.target.closest('[data-tip]'); if(!el){hideTip();return;}
   const t=el.dataset.tip; let html='';
-  if(t==='wk')html=`Week of <b>${el.dataset.wk}</b><br><b>${el.dataset.n}</b> tickers${el.dataset.when?`<br><span style="opacity:.7">scraped ${el.dataset.when}</span>`:''}`;
+  if(t==='wk')html=`Week of <b>${el.dataset.wk}</b><br><b>${el.dataset.n}</b> tickers`;
   else if(t==='freq')html=`<b>${el.dataset.n}</b> ticker(s) appeared in<br><b>${el.dataset.k}</b> of ${MODEL.nW} weeks`;
   else if(t==='row')html=el.dataset.w.split(' · ').join('<br>');
   else{hideTip();return;}
@@ -417,9 +415,9 @@ $('#themeBtn').addEventListener('click',()=>{
 
 $('#csvBtn').addEventListener('click',()=>{
   const {keys,nW,rows}=MODEL;
-  const head=['Rank','Symbol','Stock Name','Appearances','WeeksInRange',...keys,'Latest Close','Latest %chg','Latest Volume'];
+  const head=['Rank','Symbol','InRange','WeeksInRange','AllTime','TotalWeeks','Sector','Marketcap',...keys];
   const esc=s=>`"${String(s).replace(/"/g,'""')}"`;
-  const body=rows.map(r=>[r.rank,esc(r.symbol),esc(r.name),r.count,nW,...r.present.map(p=>p?1:0),r.latest.close,r.latest.change,r.latest.volume].join(',')).join('\n');
+  const body=rows.map(r=>[r.rank,esc(r.symbol),r.count,nW,r.alltime,WEEKS.length,esc(r.sector),esc(r.marketcap),...r.present.map(p=>p?1:0)].join(',')).join('\n');
   const blob=new Blob([head.join(',')+'\n'+body],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(H.screener||'screener')+'_ranked.csv';a.click();
 });
@@ -429,11 +427,9 @@ const drop=$('#drop');
 document.addEventListener('dragleave',e=>{if(!e.relatedTarget)drop.classList.remove('on');});
 document.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('on');
   const f=e.dataTransfer.files[0]; if(!f)return; const rd=new FileReader();
-  rd.onload=()=>{const recs=recordsFromCSV(rd.result); const wk=fridayISO(new Date());
-    H.weeks=H.weeks.filter(w=>w.week!==wk); H.weeks.push({week:wk,scraped_at:'(dropped preview)',tickers:recs});
-    initSelection(); buildRangeControls(); render();};
+  rd.onload=()=>{const wks=weeksFromBacktest(rd.result); if(!wks.length){alert('Could not parse a Backtest CSV (need Date, Symbol columns).');return;}
+    H.weeks=wks; initSelection(); buildRangeControls(); render();};
   rd.readAsText(f);});
-function fridayISO(dt){const d=new Date(dt);const wd=(d.getDay()+6)%7; d.setDate(d.getDate()+(4-wd)); return d.toISOString().slice(0,10);}
 
 /* boot */
 H=JSON.parse(b64utf8(HISTORY_B64));
