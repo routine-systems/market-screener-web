@@ -45,6 +45,7 @@
   .toolbtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2);
     border-radius:8px; padding:7px 11px; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px}
   .toolbtn:hover{color:var(--ink)}
+  .toolbtn.on{background:var(--vol); color:#fff; border-color:var(--vol)}
   select{background:var(--plane); color:var(--ink); border:1px solid var(--border); border-radius:8px;
     padding:6px 8px; font-size:13px; font-variant-numeric:tabular-nums}
 
@@ -168,6 +169,7 @@
       <strong style="font-size:14px">Ranked by appearances</strong>
       <span class="count" id="rankhint"></span>
       <div class="spacer"></div>
+      <button class="toolbtn" id="newOnly" title="Show only tickers new in the latest week of the selected range">✦ New only</button>
       <input id="search" type="search" placeholder="Search symbol or sector…" autocomplete="off">
       <button class="toolbtn" id="csvBtn" title="Download ranking as CSV">⭳ CSV</button>
     </div>
@@ -188,16 +190,6 @@
 
   <section class="grid">
     <div class="card">
-      <h2>Tickers per week</h2>
-      <p class="hint" id="wk-hint">Matches per week in range</p>
-      <div class="chartscroll"><div class="cols" id="wk-cols"></div><div class="cols-x" id="wk-x"></div></div>
-    </div>
-    <div class="card">
-      <h2>Appearance frequency</h2>
-      <p class="hint" id="freq-hint">How many tickers show up in k of the range's weeks</p>
-      <div class="chartscroll"><div class="cols" id="freq-cols"></div><div class="cols-x" id="freq-x"></div></div>
-    </div>
-    <div class="card">
       <h2>New this week <span id="new-n" class="rankn"></span></h2>
       <p class="hint">In the latest week of range, absent from every earlier week in range</p>
       <div class="chips" id="new-chips"></div>
@@ -206,6 +198,19 @@
       <h2>Dropped this week <span id="drop-n" class="rankn"></span></h2>
       <p class="hint">Present the previous week, gone from the latest</p>
       <div class="chips" id="drop-chips"></div>
+    </div>
+  </section>
+
+  <section class="grid">
+    <div class="card">
+      <h2>Tickers per week</h2>
+      <p class="hint" id="wk-hint">Matches per week in range</p>
+      <div class="chartscroll"><div class="cols" id="wk-cols"></div><div class="cols-x" id="wk-x"></div></div>
+    </div>
+    <div class="card">
+      <h2>Appearance frequency</h2>
+      <p class="hint" id="freq-hint">How many tickers show up in k of the range's weeks</p>
+      <div class="chartscroll"><div class="cols" id="freq-cols"></div><div class="cols-x" id="freq-x"></div></div>
     </div>
   </section>
 
@@ -253,7 +258,7 @@ function showTip(html,x,y){tt.innerHTML=html;tt.style.opacity='1';const b=tt.get
 function hideTip(){tt.style.opacity='0';}
 
 let H=null, WEEKS=[], ALLTIME=new Map(), SEL={from:0,to:0};
-let sortKey='count', sortAsc=false, MODEL=null;
+let sortKey='count', sortAsc=false, MODEL=null, newOnly=false;
 
 function initSelection(){
   WEEKS=(H.weeks||[]).slice().sort((a,b)=>a.week<b.week?-1:1);
@@ -303,12 +308,19 @@ function compute(){
   const rows=[...map.values()].map(e=>({...e, count:e.present.filter(Boolean).length, alltime:ALLTIME.get(e.symbol)||0}));
   rows.sort((a,b)=> b.count-a.count || b.alltime-a.alltime || a.symbol.localeCompare(b.symbol));
   rows.forEach((r,i)=>r.rank=i+1);
-  return {weeks,keys,nW,rows};
+  // new (in the latest week of range, absent from every earlier week) / dropped (prev→gone)
+  const latest=weeks[nW-1], prev=nW>=2?weeks[nW-2]:null;
+  const latestSet=new Set(latest?latest.tickers.map(t=>t.symbol):[]);
+  const earlierSet=new Set(weeks.slice(0,nW-1).flatMap(w=>w.tickers.map(t=>t.symbol)));
+  const prevSet=new Set(prev?prev.tickers.map(t=>t.symbol):[]);
+  const newSyms=[...latestSet].filter(s=>!earlierSet.has(s));
+  const dropSyms=prev?[...prevSet].filter(s=>!latestSet.has(s)):[];
+  return {weeks,keys,nW,rows,newSyms,dropSyms,newSet:new Set(newSyms),hasPrev:!!prev};
 }
 
 function render(){
   MODEL=compute();
-  const {weeks,keys,nW,rows}=MODEL;
+  const {weeks,keys,nW,rows,newSyms,dropSyms,hasPrev}=MODEL;
   H.screener=H.screener||'Screener';
 
   const n=WEEKS.length;
@@ -332,12 +344,6 @@ function render(){
   $('#scr-sub').innerHTML=sub.join(' · ');
 
   const persistent=rows.filter(r=>r.count===nW).length;
-  const latest=weeks[nW-1], prev=nW>=2?weeks[nW-2]:null;
-  const latestSet=new Set(latest?latest.tickers.map(t=>t.symbol):[]);
-  const earlierSet=new Set(weeks.slice(0,nW-1).flatMap(w=>w.tickers.map(t=>t.symbol)));
-  const prevSet=new Set(prev?prev.tickers.map(t=>t.symbol):[]);
-  const newSyms=[...latestSet].filter(s=>!earlierSet.has(s));
-  const dropSyms=prev?[...prevSet].filter(s=>!latestSet.has(s)):[];
 
   const tiles=[
     ['Weeks of history', String(n)],
@@ -369,17 +375,18 @@ function render(){
     return `<span class="chip"><a href="${stockUrl(s)}" target="_blank" rel="noopener">${s}</a>${sec}</span>`;};
   $('#new-n').textContent=newSyms.length?`(${newSyms.length})`:'';
   $('#drop-n').textContent=dropSyms.length?`(${dropSyms.length})`:'';
+  $('#newOnly').textContent=newSyms.length?`✦ New only (${newSyms.length})`:'✦ New only';
   $('#new-chips').innerHTML=newSyms.length?newSyms.map(chip).join(''):'<div class="empty">None — nothing new.</div>';
-  $('#drop-chips').innerHTML=prev?(dropSyms.length?dropSyms.map(s=>`<span class="chip"><a href="${stockUrl(s)}" target="_blank" rel="noopener">${s}</a></span>`).join(''):'<div class="empty">None — nobody dropped.</div>'):'<div class="empty">Need ≥2 weeks in range.</div>';
+  $('#drop-chips').innerHTML=hasPrev?(dropSyms.length?dropSyms.map(s=>`<span class="chip"><a href="${stockUrl(s)}" target="_blank" rel="noopener">${s}</a></span>`).join(''):'<div class="empty">None — nobody dropped.</div>'):'<div class="empty">Need ≥2 weeks in range.</div>';
 
   renderTable();
   $('#foot').innerHTML=`Generated ${H.generated_at||''} · self-contained · sourced from Chartink backtest history · drop a Backtest CSV to reload`;
 }
 
 function renderTable(){
-  const {keys,nW,rows}=MODEL;
+  const {keys,nW,rows,newSet}=MODEL;
   const q=$('#search').value.trim().toLowerCase();
-  let list=rows.filter(r=>!q||r.symbol.toLowerCase().includes(q)||(r.sector||'').toLowerCase().includes(q));
+  let list=rows.filter(r=>(!q||r.symbol.toLowerCase().includes(q)||(r.sector||'').toLowerCase().includes(q)) && (!newOnly||newSet.has(r.symbol)));
   list=[...list].sort((a,b)=>{
     let x,y;
     if(sortKey==='rank'||sortKey==='count'){x=a.count;y=b.count;}
@@ -391,7 +398,7 @@ function renderTable(){
     if(x===y) return b.count-a.count || b.alltime-a.alltime;
     return sortAsc?x-y:y-x;
   });
-  $('#rankhint').textContent=`${list.length} of ${rows.length} tickers · ${nW} wk`;
+  $('#rankhint').textContent=`${list.length} of ${rows.length} tickers · ${nW} wk${newOnly?' · new only':''}`;
   const dotgrid=(r)=>{
     if(nW<=DOTCAP){
       return '<span class="dots">'+r.present.map((p,i)=>`<span class="dot ${p?(r.count===nW?'hot':'on'):''}" title="${keys[i]}: ${p?'present':'absent'}"></span>`).join('')+'</span>';
@@ -419,6 +426,7 @@ document.querySelectorAll('thead th').forEach(th=>th.addEventListener('click',()
   renderTable();
 }));
 $('#search').addEventListener('input',renderTable);
+$('#newOnly').addEventListener('click',()=>{newOnly=!newOnly; $('#newOnly').classList.toggle('on',newOnly); renderTable();});
 
 document.body.addEventListener('mousemove',e=>{
   const el=e.target.closest('[data-tip]'); if(!el){hideTip();return;}
