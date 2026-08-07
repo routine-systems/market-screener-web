@@ -35,7 +35,13 @@
   html,body{margin:0}
   body{background:var(--plane); color:var(--ink);
     font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased}
-  .wrap{max-width:1180px; margin:0 auto; padding:22px 20px 64px}
+  .wrap{max-width:1180px; margin:0 auto; padding:18px 20px 64px}
+  .nav{display:flex; gap:4px; margin-bottom:16px; border-bottom:1px solid var(--grid)}
+  .nav a{padding:8px 14px; font-size:13px; font-weight:600; color:var(--ink-2); text-decoration:none; border-bottom:2px solid transparent; margin-bottom:-1px}
+  .nav a:hover{color:var(--ink)}
+  .nav a.on{color:var(--ink); border-bottom-color:var(--vol)}
+  .nav .sp{flex:1 1 auto}
+  .nav .themebtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:8px; padding:5px 10px; font-size:12px; cursor:pointer; align-self:center}
   header.top{display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:20px}
   .title h1{font-size:20px; margin:0 0 3px; letter-spacing:-0.01em}
   .title .sub{color:var(--ink-2); font-size:13px}
@@ -136,13 +142,19 @@
 </head>
 <body>
 <div class="wrap">
+  <nav class="nav">
+    <a href="dashboard.html" class="on">Weekly</a>
+    <a href="daily.html">Daily</a>
+    <a href="market.html">Market</a>
+    <span class="sp"></span>
+    <button class="themebtn" id="themeBtn">◐ Theme</button>
+  </nav>
   <header class="top">
     <div class="title">
       <h1 id="scr-title">Screener</h1>
       <div class="sub" id="scr-sub"></div>
     </div>
     <div class="spacer"></div>
-    <button class="toolbtn" id="themeBtn" title="Toggle light / dark">◐ Theme</button>
   </header>
 
   <section class="kpis" id="kpis"></section>

@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Daily Potentials</title>
+<style>
+  :root{
+    color-scheme: light;
+    --plane:#f9f9f7; --surface:#fcfcfb;
+    --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
+    --up:#0ca30c; --down:#d03b3b; --vol:#256abf; --filt:#d98a00;
+    --up-soft:rgba(12,163,12,0.12); --vol-soft:rgba(37,120,191,0.12); --chip:#eef0ee; --dot-off:#d7d6cf; --hot:#184f95;
+  }
+  @media (prefers-color-scheme: dark){:root:where(:not([data-theme="light"])){
+    color-scheme: dark;
+    --plane:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+    --up:#0ca30c; --down:#e66767; --vol:#3987e5; --filt:#f0b83e;
+    --up-soft:rgba(12,163,12,0.16); --vol-soft:rgba(57,135,229,0.16); --chip:#232322; --dot-off:#39383550; --hot:#86b6ef;
+  }}
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --plane:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+    --up:#0ca30c; --down:#e66767; --vol:#3987e5; --filt:#f0b83e;
+    --up-soft:rgba(12,163,12,0.16); --vol-soft:rgba(57,135,229,0.16); --chip:#232322; --dot-off:#39383550; --hot:#86b6ef;
+  }
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:var(--plane); color:var(--ink); font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px; margin:0 auto; padding:18px 20px 64px}
+  /* nav */
+  .nav{display:flex; gap:4px; margin-bottom:16px; border-bottom:1px solid var(--grid)}
+  .nav a{padding:8px 14px; font-size:13px; font-weight:600; color:var(--ink-2); text-decoration:none; border-bottom:2px solid transparent; margin-bottom:-1px}
+  .nav a:hover{color:var(--ink)}
+  .nav a.on{color:var(--ink); border-bottom-color:var(--vol)}
+  .nav .sp{flex:1 1 auto}
+  .nav .themebtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:8px; padding:5px 10px; font-size:12px; cursor:pointer; align-self:center}
+
+  header.top{display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:16px}
+  .title h1{font-size:20px; margin:0 0 3px; letter-spacing:-0.01em}
+  .title .sub{color:var(--ink-2); font-size:13px}
+  .title .sub a{color:var(--vol); text-decoration:none}
+  .spacer{flex:1 1 auto}
+  select{background:var(--plane); color:var(--ink); border:1px solid var(--border); border-radius:8px; padding:6px 9px; font-size:13px; font-variant-numeric:tabular-nums}
+
+  .kpis{display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:20px}
+  @media(max-width:900px){.kpis{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:520px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .tile{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 13px; min-height:74px; display:flex; flex-direction:column; justify-content:space-between}
+  .tile .lbl{color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:0.04em}
+  .tile .val{font-size:23px; font-weight:600; letter-spacing:-0.02em; margin-top:5px}
+  .up{color:var(--up)} .g3{color:var(--up)}
+
+  .tablecard{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px}
+  .tbar{display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap}
+  .tbar input{background:var(--plane); border:1px solid var(--border); color:var(--ink); border-radius:8px; padding:8px 11px; font-size:13px; width:200px; max-width:52vw}
+  .tbar .count{color:var(--muted); font-size:12px}
+  .toolbtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:8px; padding:6px 10px; font-size:12.5px; cursor:pointer}
+  .toolbtn:hover{color:var(--ink)}
+  .toolbtn.on{background:var(--vol); color:#fff; border-color:var(--vol)}
+  .toolbtn.g3.on{background:var(--up); border-color:var(--up)}
+  .toolbtn.filt.on{background:var(--filt); color:#111; border-color:var(--filt)}
+  .tablewrap{overflow-x:auto; max-height:72vh; overflow-y:auto}
+  table{width:100%; border-collapse:collapse; font-size:13px}
+  th,td{padding:8px 10px; text-align:right; white-space:nowrap} th.l,td.l{text-align:left}
+  thead th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.03em; border-bottom:1px solid var(--axis); cursor:pointer; user-select:none; position:sticky; top:0; background:var(--surface); z-index:1}
+  thead th.sorted::after{content:" ▾"; color:var(--ink-2)} thead th.sorted.asc::after{content:" ▴"}
+  tbody tr{border-bottom:1px solid var(--grid)} tbody tr:hover{background:var(--chip)}
+  td.num{font-variant-numeric:tabular-nums} td .stk{color:var(--vol); text-decoration:none; font-weight:600}
+  .filt-dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--filt); margin-left:6px; vertical-align:middle}
+  .mc{font-size:11px; color:var(--ink-2)}
+  /* cross-tab */
+  .xtab{display:inline-flex; align-items:center; gap:5px}
+  .xc{font-size:10.5px; font-weight:700; padding:2px 6px; border-radius:6px; background:var(--chip); color:var(--muted); border:1px solid var(--border); letter-spacing:0.03em}
+  .xc.on{background:var(--vol-soft); color:var(--vol); border-color:transparent}
+  .xscore{font-size:11px; font-weight:800; padding:2px 7px; border-radius:999px; margin-left:2px; font-variant-numeric:tabular-nums}
+  .xscore.s3{background:var(--up); color:#fff} .xscore.s2{background:var(--vol-soft); color:var(--vol)} .xscore.s1{background:var(--chip); color:var(--muted)}
+  .appc{display:inline-flex; align-items:center; gap:8px}
+  .appc .frac{font-variant-numeric:tabular-nums; font-weight:700; min-width:34px; display:inline-block}
+  .appc .frac small{font-weight:500; color:var(--muted)}
+  .dots{display:inline-flex; gap:3px}
+  .dot{width:8px; height:8px; border-radius:50%; background:var(--dot-off)} .dot.on{background:var(--vol)} .dot.hot{background:var(--hot)}
+  .rankn{color:var(--muted); font-variant-numeric:tabular-nums}
+  .empty{color:var(--muted); font-size:13px; padding:8px 0}
+  #tt{position:fixed; z-index:50; pointer-events:none; background:var(--ink); color:var(--surface); padding:6px 9px; border-radius:7px; font-size:12px; opacity:0; transition:opacity .08s; max-width:260px}
+  :root[data-theme="dark"] #tt, :root:where(:not([data-theme="light"])) #tt{color:#111}
+  footer{color:var(--muted); font-size:11.5px; margin-top:24px; text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="nav">
+    <a href="dashboard.html">Weekly</a>
+    <a href="daily.html" class="on">Daily</a>
+    <a href="market.html">Market</a>
+    <span class="sp"></span>
+    <button class="themebtn" id="themeBtn">◐ Theme</button>
+  </nav>
+
+  <header class="top">
+    <div class="title">
+      <h1>Daily potentials</h1>
+      <div class="sub" id="sub"></div>
+    </div>
+    <div class="spacer"></div>
+    <label style="font-size:12px;color:var(--muted)">Day&nbsp;<select id="daySel"></select></label>
+  </header>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="tablecard">
+    <div class="tbar">
+      <strong style="font-size:14px">Cross-tab ranking</strong>
+      <span class="count" id="rankhint"></span>
+      <div class="spacer"></div>
+      <button class="toolbtn g3" id="allThree" title="Only tickers in all three (dly + PB + MQ)">◎ All three</button>
+      <button class="toolbtn" id="pbOnly" title="Only tickers also in cp-pb">PB</button>
+      <button class="toolbtn" id="mqOnly" title="Only tickers also in cp-mq">MQ</button>
+      <button class="toolbtn filt" id="filOnly" title="Only tickers in the -fil subset">◆ Filter</button>
+      <button class="toolbtn" id="newOnly" title="New in dly today vs yesterday">✦ New</button>
+      <input id="search" type="search" placeholder="Search symbol / sector…" autocomplete="off">
+      <button class="toolbtn" id="csvBtn">⭳ CSV</button>
+    </div>
+    <div class="tablewrap">
+      <table id="tbl">
+        <thead><tr>
+          <th class="l" data-k="rank">#</th>
+          <th class="l" data-k="symbol">Symbol</th>
+          <th class="l" data-k="score">Cross-tab (dly · PB · MQ)</th>
+          <th class="l" data-k="consist">Consistency (last <span id="cwlbl">10</span> d)</th>
+          <th class="l" data-k="sector">Sector</th>
+          <th class="l" data-k="marketcap">Cap</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+  <footer id="foot"></footer>
+</div>
+<div id="tt"></div>
+
+<script>
+const HISTORY_B64="__HISTORY_B64__";
+const CW=10;   // consistency window (trading days)
+const $=s=>document.querySelector(s);
+function b64utf8(b){try{return decodeURIComponent(escape(atob(b)));}catch(e){return atob(b);}}
+const H=JSON.parse(b64utf8(HISTORY_B64));
+
+// primary (dly) day -> {symbol -> rec}
+const WEEKS=(H.weeks||[]).slice().sort((a,b)=>a.week<b.week?-1:1);
+const DAYS=WEEKS.map(w=>w.week);
+const dlyByDay=new Map(WEEKS.map(w=>[w.week, new Map(w.tickers.map(t=>[t.symbol,t]))]));
+const filByDay=new Map(Object.entries((H.filter&&H.filter.weeks)||{}).map(([d,a])=>[d,new Set(a)]));
+const SIGS=(H.signals||[]).map(s=>({key:s.key,label:s.label,name:s.name,url:s.url,by:new Map(Object.entries(s.weeks||{}).map(([d,a])=>[d,new Set(a)]))}));
+const sigGet=(s,d)=>s.by.get(d)||new Set();
+
+let sel=DAYS.length-1, sortKey='score', sortAsc=false, MODEL=null;
+let allThree=false, pbOnly=false, mqOnly=false, filOnly=false, newOnly=false;
+
+function stockUrl(sym){
+  if(H.scanlink) return `https://chartink.com/stocks-new?from_scan=1&hide_filters=true&scan_link=scanlink:${encodeURIComponent(H.scanlink)}&timeframe=${encodeURIComponent(H.timeframe||'daily')}&symbol=${encodeURIComponent(sym)}`;
+  return `https://chartink.com/stocks/${encodeURIComponent(sym)}.html`;
+}
+
+function compute(){
+  const day=DAYS[sel];
+  const dlyMap=dlyByDay.get(day)||new Map();
+  const filSet=filByDay.get(day)||new Set();
+  const idx=DAYS.indexOf(day);
+  const windowDays=DAYS.slice(Math.max(0,idx-CW+1), idx+1);
+  const rows=[...dlyMap.values()].map(rec=>{
+    const sym=rec.symbol;
+    const sig={}; let extra=0;
+    SIGS.forEach(s=>{const on=sigGet(s,day).has(sym); sig[s.key]=on; if(on)extra++;});
+    const score=1+extra;  // in dly (1) + each signal
+    const present=windowDays.map(d=>(dlyByDay.get(d)||new Map()).has(sym));
+    return {symbol:sym, sector:rec.sector||'', marketcap:rec.marketcap||'',
+            tb:true, sig, score, inFil:filSet.has(sym),
+            consist:present.filter(Boolean).length, present, windowDays};
+  });
+  rows.sort((a,b)=> b.score-a.score || b.consist-a.consist || a.symbol.localeCompare(b.symbol));
+  rows.forEach((r,i)=>r.rank=i+1);
+  // new today vs previous day
+  const prevDay=idx>0?DAYS[idx-1]:null;
+  const prevSet=prevDay?new Set([...(dlyByDay.get(prevDay)||new Map()).keys()]):null;
+  rows.forEach(r=>r.isNew=prevSet?!prevSet.has(r.symbol):false);
+  return {day, rows, prevDay, windowDays};
+}
+
+function render(){
+  MODEL=compute();
+  const {day,rows}=MODEL;
+  $('#daySel').innerHTML=DAYS.map((d,i)=>`<option value="${i}" ${i===sel?'selected':''}>${d}</option>`).join('');
+  $('#cwlbl').textContent=CW;
+
+  const all3=rows.filter(r=>r.score===3).length;
+  const pb=rows.filter(r=>r.sig.pb).length, mq=rows.filter(r=>r.sig.mq).length;
+  const fil=rows.filter(r=>r.inFil).length, nw=rows.filter(r=>r.isNew).length;
+  const sub=[]; sub.push(`<b>${rows.length}</b> potentials on <b>${day}</b>`);
+  sub.push(`cross-tab: dly · ${SIGS.map(s=>s.label).join(' · ')||'—'}`);
+  if(H.scanlink) sub.push('in-scan links on');
+  if(H.source_url) sub.push(`<a href="${H.source_url}" target="_blank" rel="noopener">source ↗</a>`);
+  $('#sub').innerHTML=sub.join(' · ');
+
+  const tiles=[
+    ['Potentials', String(rows.length)],
+    ['All three', `<span class="g3">${all3}</span>`],
+    ['+ PB', String(pb)],
+    ['+ MQ', String(mq)],
+    ['In filter', String(fil)],
+    ['New today', `<span class="up">${nw}</span>`],
+  ];
+  $('#kpis').innerHTML=tiles.map(([l,v])=>`<div class="tile"><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join('');
+  $('#allThree').textContent=`◎ All three (${all3})`;
+  $('#pbOnly').textContent=`PB (${pb})`; $('#mqOnly').textContent=`MQ (${mq})`;
+  $('#filOnly').textContent=`◆ Filter (${fil})`; $('#newOnly').textContent=`✦ New (${nw})`;
+  renderTable();
+  $('#foot').innerHTML=`Generated ${H.generated_at||''} · self-contained · runs 2–3×/day · cross-tab of cp-ich-trend-bounce-dly + cp-pb + cp-mq`;
+}
+
+function renderTable(){
+  const {rows}=MODEL;
+  const q=$('#search').value.trim().toLowerCase();
+  let list=rows.filter(r=>
+    (!q||r.symbol.toLowerCase().includes(q)||(r.sector||'').toLowerCase().includes(q)) &&
+    (!allThree||r.score===3) && (!pbOnly||r.sig.pb) && (!mqOnly||r.sig.mq) &&
+    (!filOnly||r.inFil) && (!newOnly||r.isNew));
+  list=[...list].sort((a,b)=>{
+    let x,y;
+    if(sortKey==='rank'||sortKey==='score'){x=a.score;y=b.score;}
+    else if(sortKey==='consist'){x=a.consist;y=b.consist;}
+    else if(sortKey==='symbol'){x=a.symbol.toLowerCase();y=b.symbol.toLowerCase();}
+    else if(sortKey==='sector'){x=(a.sector||'').toLowerCase();y=(b.sector||'').toLowerCase();}
+    else if(sortKey==='marketcap'){const o={smallcap:1,midcap:2,largecap:3};x=o[(a.marketcap||'').toLowerCase()]||0;y=o[(b.marketcap||'').toLowerCase()]||0;}
+    if(typeof x==='string')return sortAsc?(x<y?-1:x>y?1:0):(x>y?-1:x<y?1:0);
+    if(x===y)return b.score-a.score||b.consist-a.consist;
+    return sortAsc?x-y:y-x;
+  });
+  $('#rankhint').textContent=`${list.length} of ${rows.length}`;
+  const cw=MODEL.windowDays.length;
+  $('#tbody').innerHTML=list.map(r=>{
+    const xc=`<span class="xc on" title="cp-ich-trend-bounce-dly">TB</span>`+
+      SIGS.map(s=>`<span class="xc ${r.sig[s.key]?'on':''}" title="${s.name||s.label}">${s.label}</span>`).join('');
+    const dots=r.present.map((p,i)=>`<span class="dot ${p?(r.consist===cw?'hot':'on'):''}" title="${r.windowDays[i]}"></span>`).join('');
+    return `<tr>
+      <td class="l rankn">${r.rank}</td>
+      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${r.inFil?'<span class="filt-dot" title="in -fil subset"></span>':''}${r.isNew?' <span class="up" title="new today">✦</span>':''}</td>
+      <td class="l"><span class="xtab">${xc}<span class="xscore s${r.score}">${r.score}/3</span></span></td>
+      <td class="l"><span class="appc"><span class="frac">${r.consist}<small>/${cw}</small></span><span class="dots">${dots}</span></span></td>
+      <td class="l mc">${r.sector||'—'}</td>
+      <td class="l mc">${r.marketcap||'—'}</td>
+    </tr>`;
+  }).join('');
+  document.querySelectorAll('thead th').forEach(th=>{th.classList.toggle('sorted',th.dataset.k===sortKey);th.classList.toggle('asc',th.dataset.k===sortKey&&sortAsc);});
+}
+
+/* events */
+$('#daySel').addEventListener('change',e=>{sel=+e.target.value; render();});
+document.querySelectorAll('thead th').forEach(th=>th.addEventListener('click',()=>{const k=th.dataset.k; if(k===sortKey)sortAsc=!sortAsc; else{sortKey=k; sortAsc=(k==='symbol'||k==='sector');} renderTable();}));
+$('#search').addEventListener('input',renderTable);
+function toggle(id,setter){const b=$('#'+id); b.addEventListener('click',()=>{setter(); b.classList.toggle('on'); renderTable();});}
+toggle('allThree',()=>allThree=!allThree); toggle('pbOnly',()=>pbOnly=!pbOnly); toggle('mqOnly',()=>mqOnly=!mqOnly);
+toggle('filOnly',()=>filOnly=!filOnly); toggle('newOnly',()=>newOnly=!newOnly);
+$('#csvBtn').addEventListener('click',()=>{
+  const {rows,day}=MODEL;
+  const head=['Rank','Symbol','Day','Score','InDly','InPB','InMQ','InFil','Consistency','Window','Sector','Cap'];
+  const esc=s=>`"${String(s).replace(/"/g,'""')}"`;
+  const body=rows.map(r=>[r.rank,esc(r.symbol),day,r.score,1,r.sig.pb?1:0,r.sig.mq?1:0,r.inFil?1:0,r.consist,MODEL.windowDays.length,esc(r.sector),esc(r.marketcap)].join(',')).join('\n');
+  const blob=new Blob([head.join(',')+'\n'+body],{type:'text/csv'}); const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='daily_potentials_'+day+'.csv'; a.click();
+});
+$('#themeBtn').addEventListener('click',()=>{const cur=document.documentElement.getAttribute('data-theme');const dark=matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.setAttribute('data-theme',cur?(cur==='dark'?'light':'dark'):(dark?'light':'dark'));});
+
+render();
+</script>
+</body>
+</html>

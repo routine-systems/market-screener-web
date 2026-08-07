@@ -74,6 +74,25 @@ Each screener's backtest is downloaded, reduced to per-day counts (raw CSVs disc
 with a pause between downloads. Window presets 1M/3M/6M/9M; trend is the slope of the last
 ~10 trading days.
 
+## Daily potentials (cross-tab) — third page
+
+`daily.html` ranks the day's `cp-ich-trend-bounce-dly` tickers by a **cross-tab score**
+across three daily screeners — in `dly` (always) + also in `cp-pb` (price breakout) +
+also in `cp-mq` (Minervini Quotient) → **1–3; a ticker in all three ranks highest**.
+`cp-ich-trend-bounce-dly-fil` shows as the gold highlight dot; a **consistency** dot-grid
+shows how many of the last 10 days it has been in `dly`. Toggles: All three / PB / MQ /
+Filter / New; a day picker views any past day. Run **2–3× a day**.
+
+```bash
+./daily.sh          # refresh if the store is > 90 min old, then open daily.html
+./daily.sh force    # refresh now
+```
+
+## Menu
+
+All three pages — `dashboard.html` (Weekly) · `daily.html` (Daily) · `market.html` (Market)
+— share a top nav that links to each other.
+
 ## Files
 
 | File | Role |
@@ -86,6 +105,9 @@ with a pause between downloads. Window presets 1M/3M/6M/9M; trend is the slope o
 | `market.py` | Scrape all market screeners → rolling 9-month count store → render `market.html` |
 | `market_template.html` | The market-breadth page (mini count-charts) |
 | `market.sh` | Daily command: refresh-if-stale (2pm cutoff), then open `market.html` |
+| `daily.py` | Scrape dly + dly-fil + cp-pb + cp-mq → cross-tab store → render `daily.html` |
+| `daily_template.html` | The daily-potentials cross-tab page |
+| `daily.sh` | Run 2-3x/day: refresh-if-stale (90 min), then open `daily.html` |
 | `data/history.json` · `data/market_counts.json` | Derived caches (weekly history · daily counts) |
 
 ## Requirements
