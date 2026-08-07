@@ -12,9 +12,29 @@ Built for `cp-ich-trend-bounce-wkly` but works with any screener URL.
    fires it weekly.
 2. **Add this week's data** — each run ingests the snapshot into `data/history.json`,
    keyed to the week's Friday (idempotent: re-running in the same week replaces it).
-3. **Rank by appearance in a 5-week window** — `dashboard.html` shows every ticker
-   ranked by appearance count (5/5, 4/5, …) with a per-week presence grid, plus
-   "new this week" / "dropped", weekly counts, and latest price/volume.
+3. **Rank by appearance over a window** — `dashboard.html` ranks every ticker by how
+   many of the selected weeks it appeared in (5/5, 4/5, …) with a per-week presence
+   grid, plus "new this week" / "dropped", weekly counts, and latest price/volume.
+   A **week-range selector** (From/To + Last 5 / Last 8 / All presets, default the
+   latest 5) re-ranks live over any range.
+4. **In-scan ticker links** — each ticker links into its Chartink `stocks-new` chart
+   *in the scan's context* (the chart highlights the weeks it matched). This needs the
+   per-screener `scanlink` hash, which Chartink **rotates**, so every run re-extracts
+   it from the screener page and bakes it into the dashboard. (`nav_token` is not
+   required — Chartink's own row links omit it.)
+
+## Two modes (`run.py`)
+
+| Mode | What it does |
+|---|---|
+| `--mode weekly` | scrape → refresh scanlink → **add/replace this week** → rebuild. The Friday job. |
+| `--mode adhoc`  | scrape → refresh scanlink → rebuild from existing history, **no new week**. Run anytime. |
+
+```bash
+python3 run.py --mode weekly          # Friday capture
+python3 run.py --mode adhoc           # refresh links / rebuild now
+python3 run.py --mode weekly --show   # watch the browser
+```
 
 ## Files
 
