@@ -150,7 +150,7 @@ const CLS={1:'up',[-1]:'down',0:'flat'};
 
 function render(){
   document.querySelectorAll('.preset').forEach(b=>b.classList.toggle('on', +b.dataset.days===PERIOD));
-  $('#sub').innerHTML = `Daily count of stocks in each market screener · ${M.updated_at?`updated <b>${M.updated_at}</b>`:'no data yet'} · ~9-month store`;
+  $('#sub').innerHTML = `<b>${(M.screeners||[]).length}</b> market screeners · daily counts · ${M.updated_at?`updated <b>${M.updated_at}</b>`:'no data yet'} · ~9-month store`;
 
   let up=0,down=0,flat=0;
   const cards=(M.screeners||[]).map(sc=>{

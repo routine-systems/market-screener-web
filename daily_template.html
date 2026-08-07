@@ -30,19 +30,18 @@
   *{box-sizing:border-box} html,body{margin:0}
   body{background:var(--plane); color:var(--ink); font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased}
   .wrap{max-width:1180px; margin:0 auto; padding:18px 20px 64px}
-  /* nav */
   .nav{display:flex; gap:4px; margin-bottom:16px; border-bottom:1px solid var(--grid)}
   .nav a{padding:8px 14px; font-size:13px; font-weight:600; color:var(--ink-2); text-decoration:none; border-bottom:2px solid transparent; margin-bottom:-1px}
   .nav a:hover{color:var(--ink)}
   .nav a.on{color:var(--ink); border-bottom-color:var(--vol)}
   .nav .sp{flex:1 1 auto}
   .nav .themebtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:8px; padding:5px 10px; font-size:12px; cursor:pointer; align-self:center}
-
-  header.top{display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:16px}
+  /* shared header */
   .title h1{font-size:20px; margin:0 0 3px; letter-spacing:-0.01em}
   .title .sub{color:var(--ink-2); font-size:13px}
   .title .sub a{color:var(--vol); text-decoration:none}
-  .spacer{flex:1 1 auto}
+  .title .sub a:hover{text-decoration:underline}
+  header.top{margin-bottom:18px}
   select{background:var(--plane); color:var(--ink); border:1px solid var(--border); border-radius:8px; padding:6px 9px; font-size:13px; font-variant-numeric:tabular-nums}
 
   .kpis{display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:20px}
@@ -54,14 +53,22 @@
   .up{color:var(--up)} .g3{color:var(--up)}
 
   .tablecard{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px}
-  .tbar{display:flex; align-items:center; gap:10px; margin-bottom:12px; flex-wrap:wrap}
-  .tbar input{background:var(--plane); border:1px solid var(--border); color:var(--ink); border-radius:8px; padding:8px 11px; font-size:13px; width:200px; max-width:52vw}
+  .rangebar{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--grid)}
+  .rangebar .lab{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:0.04em}
+  .rangebar .arrow{color:var(--muted)}
+  .preset{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 10px; font-size:12px; cursor:pointer}
+  .preset:hover{color:var(--ink)} .preset.on{background:var(--vol); color:#fff; border-color:var(--vol)}
+  .offbtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer}
+  .offbtn:hover:not(:disabled){color:var(--ink); border-color:var(--vol)} .offbtn:disabled{opacity:.3; cursor:default}
+  .offlbl{color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; min-width:44px; text-align:center; white-space:nowrap}
+  .rangenote{color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums}
+  .tbar{display:flex; align-items:center; gap:9px; margin-bottom:12px; flex-wrap:wrap}
+  .tbar input{background:var(--plane); border:1px solid var(--border); color:var(--ink); border-radius:8px; padding:8px 11px; font-size:13px; width:190px; max-width:52vw}
   .tbar .count{color:var(--muted); font-size:12px}
+  .spacer{flex:1 1 auto}
   .toolbtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:8px; padding:6px 10px; font-size:12.5px; cursor:pointer}
-  .toolbtn:hover{color:var(--ink)}
-  .toolbtn.on{background:var(--vol); color:#fff; border-color:var(--vol)}
-  .toolbtn.g3.on{background:var(--up); border-color:var(--up)}
-  .toolbtn.filt.on{background:var(--filt); color:#111; border-color:var(--filt)}
+  .toolbtn:hover{color:var(--ink)} .toolbtn.on{background:var(--vol); color:#fff; border-color:var(--vol)}
+  .toolbtn.g3.on{background:var(--up); border-color:var(--up)} .toolbtn.filt.on{background:var(--filt); color:#111; border-color:var(--filt)}
   .tablewrap{overflow-x:auto; max-height:72vh; overflow-y:auto}
   table{width:100%; border-collapse:collapse; font-size:13px}
   th,td{padding:8px 10px; text-align:right; white-space:nowrap} th.l,td.l{text-align:left}
@@ -71,7 +78,6 @@
   td.num{font-variant-numeric:tabular-nums} td .stk{color:var(--vol); text-decoration:none; font-weight:600}
   .filt-dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--filt); margin-left:6px; vertical-align:middle}
   .mc{font-size:11px; color:var(--ink-2)}
-  /* cross-tab */
   .xtab{display:inline-flex; align-items:center; gap:5px}
   .xc{font-size:10.5px; font-weight:700; padding:2px 6px; border-radius:6px; background:var(--chip); color:var(--muted); border:1px solid var(--border); letter-spacing:0.03em}
   .xc.on{background:var(--vol-soft); color:var(--vol); border-color:transparent}
@@ -82,10 +88,9 @@
   .appc .frac small{font-weight:500; color:var(--muted)}
   .dots{display:inline-flex; gap:3px}
   .dot{width:8px; height:8px; border-radius:50%; background:var(--dot-off)} .dot.on{background:var(--vol)} .dot.hot{background:var(--hot)}
+  .minibar{display:inline-block; width:84px; height:8px; background:var(--dot-off); border-radius:4px; overflow:hidden; vertical-align:middle}
+  .minibar>span{display:block; height:100%; background:var(--vol)}
   .rankn{color:var(--muted); font-variant-numeric:tabular-nums}
-  .empty{color:var(--muted); font-size:13px; padding:8px 0}
-  #tt{position:fixed; z-index:50; pointer-events:none; background:var(--ink); color:var(--surface); padding:6px 9px; border-radius:7px; font-size:12px; opacity:0; transition:opacity .08s; max-width:260px}
-  :root[data-theme="dark"] #tt, :root:where(:not([data-theme="light"])) #tt{color:#111}
   footer{color:var(--muted); font-size:11.5px; margin-top:24px; text-align:center}
 </style>
 </head>
@@ -104,22 +109,37 @@
       <h1>Daily potentials</h1>
       <div class="sub" id="sub"></div>
     </div>
-    <div class="spacer"></div>
-    <label style="font-size:12px;color:var(--muted)">Day&nbsp;<select id="daySel"></select></label>
   </header>
 
   <section class="kpis" id="kpis"></section>
 
   <section class="tablecard">
+    <div class="rangebar">
+      <span class="lab">Days</span>
+      <select id="fromDay" title="Range start day"></select>
+      <span class="arrow">→</span>
+      <select id="toDay" title="Range end day"></select>
+      <span style="width:4px"></span>
+      <button class="offbtn" id="offBack" title="Shift the window one day older">◀</button>
+      <span class="offlbl" id="offlbl"></span>
+      <button class="offbtn" id="offFwd" title="Shift the window one day newer">▶</button>
+      <span style="width:8px"></span>
+      <button class="preset" data-days="1">1D</button>
+      <button class="preset" data-days="5">5D</button>
+      <button class="preset" data-days="10">10D</button>
+      <button class="preset" data-days="21">21D</button>
+      <button class="preset" data-days="999">All</button>
+      <div class="spacer"></div>
+      <span class="rangenote" id="rangenote"></span>
+    </div>
     <div class="tbar">
-      <strong style="font-size:14px">Cross-tab ranking</strong>
       <span class="count" id="rankhint"></span>
       <div class="spacer"></div>
-      <button class="toolbtn g3" id="allThree" title="Only tickers in all three (dly + PB + MQ)">◎ All three</button>
-      <button class="toolbtn" id="pbOnly" title="Only tickers also in cp-pb">PB</button>
-      <button class="toolbtn" id="mqOnly" title="Only tickers also in cp-mq">MQ</button>
+      <button class="toolbtn g3" id="allThree" title="Only tickers in all three within the window">◎ All three</button>
+      <button class="toolbtn" id="pbOnly">PB</button>
+      <button class="toolbtn" id="mqOnly">MQ</button>
       <button class="toolbtn filt" id="filOnly" title="Only tickers in the -fil subset">◆ Filter</button>
-      <button class="toolbtn" id="newOnly" title="New in dly today vs yesterday">✦ New</button>
+      <button class="toolbtn" id="newOnly" title="New in dly on the latest day">✦ New</button>
       <input id="search" type="search" placeholder="Search symbol / sector…" autocomplete="off">
       <button class="toolbtn" id="csvBtn">⭳ CSV</button>
     </div>
@@ -128,8 +148,8 @@
         <thead><tr>
           <th class="l" data-k="rank">#</th>
           <th class="l" data-k="symbol">Symbol</th>
-          <th class="l" data-k="score">Cross-tab (dly · PB · MQ)</th>
-          <th class="l" data-k="consist">Consistency (last <span id="cwlbl">10</span> d)</th>
+          <th class="l" data-k="score">Signals · dly · PB · MQ</th>
+          <th class="l" data-k="consist">In dly (window days)</th>
           <th class="l" data-k="sector">Sector</th>
           <th class="l" data-k="marketcap">Cap</th>
         </tr></thead>
@@ -139,116 +159,115 @@
   </section>
   <footer id="foot"></footer>
 </div>
-<div id="tt"></div>
 
 <script>
 const HISTORY_B64="__HISTORY_B64__";
-const CW=10;   // consistency window (trading days)
+const WINDOW=5;                     // default window (trading days)
+const DOTCAP=14;
 const $=s=>document.querySelector(s);
 function b64utf8(b){try{return decodeURIComponent(escape(atob(b)));}catch(e){return atob(b);}}
 const H=JSON.parse(b64utf8(HISTORY_B64));
 
-// primary (dly) day -> {symbol -> rec}
 const WEEKS=(H.weeks||[]).slice().sort((a,b)=>a.week<b.week?-1:1);
 const DAYS=WEEKS.map(w=>w.week);
 const dlyByDay=new Map(WEEKS.map(w=>[w.week, new Map(w.tickers.map(t=>[t.symbol,t]))]));
 const filByDay=new Map(Object.entries((H.filter&&H.filter.weeks)||{}).map(([d,a])=>[d,new Set(a)]));
 const SIGS=(H.signals||[]).map(s=>({key:s.key,label:s.label,name:s.name,url:s.url,by:new Map(Object.entries(s.weeks||{}).map(([d,a])=>[d,new Set(a)]))}));
-const sigGet=(s,d)=>s.by.get(d)||new Set();
 
-let sel=DAYS.length-1, sortKey='score', sortAsc=false, MODEL=null;
+let SEL={from:Math.max(0,DAYS.length-WINDOW), to:DAYS.length-1};
+let sortKey='score', sortAsc=false, MODEL=null;
 let allThree=false, pbOnly=false, mqOnly=false, filOnly=false, newOnly=false;
 
 function stockUrl(sym){
   if(H.scanlink) return `https://chartink.com/stocks-new?from_scan=1&hide_filters=true&scan_link=scanlink:${encodeURIComponent(H.scanlink)}&timeframe=${encodeURIComponent(H.timeframe||'daily')}&symbol=${encodeURIComponent(sym)}`;
   return `https://chartink.com/stocks/${encodeURIComponent(sym)}.html`;
 }
-
 function compute(){
-  const day=DAYS[sel];
-  const dlyMap=dlyByDay.get(day)||new Map();
-  const filSet=filByDay.get(day)||new Set();
-  const idx=DAYS.indexOf(day);
-  const windowDays=DAYS.slice(Math.max(0,idx-CW+1), idx+1);
-  const rows=[...dlyMap.values()].map(rec=>{
-    const sym=rec.symbol;
-    const sig={}; let extra=0;
-    SIGS.forEach(s=>{const on=sigGet(s,day).has(sym); sig[s.key]=on; if(on)extra++;});
-    const score=1+extra;  // in dly (1) + each signal
-    const present=windowDays.map(d=>(dlyByDay.get(d)||new Map()).has(sym));
-    return {symbol:sym, sector:rec.sector||'', marketcap:rec.marketcap||'',
-            tb:true, sig, score, inFil:filSet.has(sym),
-            consist:present.filter(Boolean).length, present, windowDays};
+  const win=DAYS.slice(SEL.from, SEL.to+1);
+  const nD=win.length;
+  // union membership across the window
+  const pbU=new Set(), mqU=new Set(), filU=new Set();
+  win.forEach(d=>{
+    SIGS.forEach(s=>{ if(s.key==='pb')(s.by.get(d)||new Set()).forEach(x=>pbU.add(x)); if(s.key==='mq')(s.by.get(d)||new Set()).forEach(x=>mqU.add(x)); });
+    (filByDay.get(d)||new Set()).forEach(x=>filU.add(x));
+  });
+  // universe = dly tickers anywhere in the window; latest rec wins for sector/cap
+  const map=new Map();
+  win.forEach((d,di)=>{ const m=dlyByDay.get(d)||new Map(); m.forEach((rec,sym)=>{
+    let e=map.get(sym); if(!e){e={symbol:sym,present:new Array(nD).fill(false),sector:rec.sector||'',marketcap:rec.marketcap||''}; map.set(sym,e);}
+    e.present[di]=true; if(rec.sector)e.sector=rec.sector; if(rec.marketcap)e.marketcap=rec.marketcap;
+  }); });
+  const rows=[...map.values()].map(e=>{
+    const sig={pb:pbU.has(e.symbol), mq:mqU.has(e.symbol)};
+    const score=1+(sig.pb?1:0)+(sig.mq?1:0);
+    return {...e, sig, score, inFil:filU.has(e.symbol), consist:e.present.filter(Boolean).length};
   });
   rows.sort((a,b)=> b.score-a.score || b.consist-a.consist || a.symbol.localeCompare(b.symbol));
   rows.forEach((r,i)=>r.rank=i+1);
-  // new today vs previous day
-  const prevDay=idx>0?DAYS[idx-1]:null;
+  // new on the latest day vs the day before it
+  const lastDay=win[nD-1], li=DAYS.indexOf(lastDay), prevDay=li>0?DAYS[li-1]:null;
+  const lastSet=new Set([...(dlyByDay.get(lastDay)||new Map()).keys()]);
   const prevSet=prevDay?new Set([...(dlyByDay.get(prevDay)||new Map()).keys()]):null;
-  rows.forEach(r=>r.isNew=prevSet?!prevSet.has(r.symbol):false);
-  return {day, rows, prevDay, windowDays};
+  rows.forEach(r=>r.isNew=prevSet? (lastSet.has(r.symbol)&&!prevSet.has(r.symbol)) : false);
+  return {win, nD, rows};
 }
+
+function buildControls(){
+  const opts=DAYS.map((d,i)=>`<option value="${i}">${d}</option>`).join('');
+  const f=$('#fromDay'), t=$('#toDay'); f.innerHTML=opts; t.innerHTML=opts; f.value=SEL.from; t.value=SEL.to;
+  f.onchange=()=>{SEL.from=+f.value; if(SEL.from>SEL.to){SEL.to=SEL.from; t.value=SEL.to;} render();};
+  t.onchange=()=>{SEL.to=+t.value; if(SEL.to<SEL.from){SEL.from=SEL.to; f.value=SEL.from;} render();};
+  document.querySelectorAll('.preset').forEach(b=>b.onclick=()=>{const n=DAYS.length; if(b.dataset.days==='999'){SEL.from=0;SEL.to=n-1;} else{const k=+b.dataset.days; SEL.to=n-1; SEL.from=Math.max(0,n-Math.min(k,n));} f.value=SEL.from; t.value=SEL.to; render();});
+  $('#offBack').onclick=()=>shiftWindow(-1); $('#offFwd').onclick=()=>shiftWindow(1);
+}
+function shiftWindow(d){const n=DAYS.length, size=SEL.to-SEL.from+1; let fr=SEL.from+d, to=SEL.to+d; if(fr<0){fr=0;to=size-1;} if(to>n-1){to=n-1;fr=n-size;} SEL.from=Math.max(0,fr); SEL.to=Math.min(n-1,to); $('#fromDay').value=SEL.from; $('#toDay').value=SEL.to; render();}
 
 function render(){
   MODEL=compute();
-  const {day,rows}=MODEL;
-  $('#daySel').innerHTML=DAYS.map((d,i)=>`<option value="${i}" ${i===sel?'selected':''}>${d}</option>`).join('');
-  $('#cwlbl').textContent=CW;
+  const {win,nD,rows}=MODEL;
+  const n=DAYS.length;
+  document.querySelectorAll('.preset').forEach(b=>{let on=false; if(b.dataset.days==='999')on=(SEL.from===0&&SEL.to===n-1); else on=(SEL.to===n-1 && SEL.from===Math.max(0,n-Math.min(+b.dataset.days,n)) && +b.dataset.days<=n); b.classList.toggle('on',on);});
+  $('#offBack').disabled=SEL.from<=0; $('#offFwd').disabled=SEL.to>=n-1;
+  $('#offlbl').textContent = SEL.to>=n-1 ? 'latest' : `−${n-1-SEL.to} d`;
+  $('#rangenote').textContent = nD===1 ? `single day · ${win[0]}` : `${nD} days · ${win[0]} → ${win[nD-1]}`;
 
-  const all3=rows.filter(r=>r.score===3).length;
-  const pb=rows.filter(r=>r.sig.pb).length, mq=rows.filter(r=>r.sig.mq).length;
+  const all3=rows.filter(r=>r.score===3).length, pb=rows.filter(r=>r.sig.pb).length, mq=rows.filter(r=>r.sig.mq).length;
   const fil=rows.filter(r=>r.inFil).length, nw=rows.filter(r=>r.isNew).length;
-  const sub=[]; sub.push(`<b>${rows.length}</b> potentials on <b>${day}</b>`);
-  sub.push(`cross-tab: dly · ${SIGS.map(s=>s.label).join(' · ')||'—'}`);
-  if(H.scanlink) sub.push('in-scan links on');
+  const sub=[]; sub.push(`<b>cp-ich-trend-bounce-dly</b>`);
+  sub.push(`<b>${rows.length}</b> potentials · ${nD===1?win[0]:`${win[0]} → ${win[nD-1]}`}`);
+  sub.push(`signals: dly · ${SIGS.map(s=>s.label).join(' · ')||'—'}`);
   if(H.source_url) sub.push(`<a href="${H.source_url}" target="_blank" rel="noopener">source ↗</a>`);
   $('#sub').innerHTML=sub.join(' · ');
 
-  const tiles=[
-    ['Potentials', String(rows.length)],
-    ['All three', `<span class="g3">${all3}</span>`],
-    ['+ PB', String(pb)],
-    ['+ MQ', String(mq)],
-    ['In filter', String(fil)],
-    ['New today', `<span class="up">${nw}</span>`],
-  ];
+  const tiles=[['Potentials',String(rows.length)],['All three',`<span class="g3">${all3}</span>`],['+ PB',String(pb)],['+ MQ',String(mq)],['In filter',String(fil)],['New',`<span class="up">${nw}</span>`]];
   $('#kpis').innerHTML=tiles.map(([l,v])=>`<div class="tile"><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join('');
-  $('#allThree').textContent=`◎ All three (${all3})`;
-  $('#pbOnly').textContent=`PB (${pb})`; $('#mqOnly').textContent=`MQ (${mq})`;
+  $('#allThree').textContent=`◎ All three (${all3})`; $('#pbOnly').textContent=`PB (${pb})`; $('#mqOnly').textContent=`MQ (${mq})`;
   $('#filOnly').textContent=`◆ Filter (${fil})`; $('#newOnly').textContent=`✦ New (${nw})`;
   renderTable();
-  $('#foot').innerHTML=`Generated ${H.generated_at||''} · self-contained · runs 2–3×/day · cross-tab of cp-ich-trend-bounce-dly + cp-pb + cp-mq`;
+  $('#foot').innerHTML=`Generated ${H.generated_at||''} · self-contained · runs 2–3×/day · all three in the window = strongest candidate`;
 }
 
 function renderTable(){
-  const {rows}=MODEL;
+  const {nD,rows}=MODEL;
   const q=$('#search').value.trim().toLowerCase();
-  let list=rows.filter(r=>
-    (!q||r.symbol.toLowerCase().includes(q)||(r.sector||'').toLowerCase().includes(q)) &&
-    (!allThree||r.score===3) && (!pbOnly||r.sig.pb) && (!mqOnly||r.sig.mq) &&
-    (!filOnly||r.inFil) && (!newOnly||r.isNew));
-  list=[...list].sort((a,b)=>{
-    let x,y;
-    if(sortKey==='rank'||sortKey==='score'){x=a.score;y=b.score;}
-    else if(sortKey==='consist'){x=a.consist;y=b.consist;}
-    else if(sortKey==='symbol'){x=a.symbol.toLowerCase();y=b.symbol.toLowerCase();}
-    else if(sortKey==='sector'){x=(a.sector||'').toLowerCase();y=(b.sector||'').toLowerCase();}
+  let list=rows.filter(r=>(!q||r.symbol.toLowerCase().includes(q)||(r.sector||'').toLowerCase().includes(q)) && (!allThree||r.score===3) && (!pbOnly||r.sig.pb) && (!mqOnly||r.sig.mq) && (!filOnly||r.inFil) && (!newOnly||r.isNew));
+  list=[...list].sort((a,b)=>{let x,y;
+    if(sortKey==='rank'||sortKey==='score'){x=a.score;y=b.score;} else if(sortKey==='consist'){x=a.consist;y=b.consist;}
+    else if(sortKey==='symbol'){x=a.symbol.toLowerCase();y=b.symbol.toLowerCase();} else if(sortKey==='sector'){x=(a.sector||'').toLowerCase();y=(b.sector||'').toLowerCase();}
     else if(sortKey==='marketcap'){const o={smallcap:1,midcap:2,largecap:3};x=o[(a.marketcap||'').toLowerCase()]||0;y=o[(b.marketcap||'').toLowerCase()]||0;}
     if(typeof x==='string')return sortAsc?(x<y?-1:x>y?1:0):(x>y?-1:x<y?1:0);
-    if(x===y)return b.score-a.score||b.consist-a.consist;
-    return sortAsc?x-y:y-x;
-  });
-  $('#rankhint').textContent=`${list.length} of ${rows.length}`;
-  const cw=MODEL.windowDays.length;
+    if(x===y)return b.score-a.score||b.consist-a.consist; return sortAsc?x-y:y-x;});
+  $('#rankhint').textContent=`${list.length} of ${rows.length} · ${nD===1?'1 day':nD+' days'}`;
   $('#tbody').innerHTML=list.map(r=>{
-    const xc=`<span class="xc on" title="cp-ich-trend-bounce-dly">TB</span>`+
-      SIGS.map(s=>`<span class="xc ${r.sig[s.key]?'on':''}" title="${s.name||s.label}">${s.label}</span>`).join('');
-    const dots=r.present.map((p,i)=>`<span class="dot ${p?(r.consist===cw?'hot':'on'):''}" title="${r.windowDays[i]}"></span>`).join('');
+    const xc=`<span class="xc on" title="cp-ich-trend-bounce-dly">TB</span>`+SIGS.map(s=>`<span class="xc ${r.sig[s.key]?'on':''}" title="${s.name||s.label}">${s.label}</span>`).join('');
+    const grid = nD<=DOTCAP
+      ? '<span class="dots">'+r.present.map((p,i)=>`<span class="dot ${p?(r.consist===nD?'hot':'on'):''}" title="${MODEL.win[i]}"></span>`).join('')+'</span>'
+      : `<span class="minibar" title="${r.consist}/${nD}"><span style="width:${(r.consist/nD*100).toFixed(1)}%"></span></span>`;
     return `<tr>
       <td class="l rankn">${r.rank}</td>
-      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${r.inFil?'<span class="filt-dot" title="in -fil subset"></span>':''}${r.isNew?' <span class="up" title="new today">✦</span>':''}</td>
+      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${r.inFil?'<span class="filt-dot" title="in -fil subset"></span>':''}${r.isNew?' <span class="up" title="new on latest day">✦</span>':''}</td>
       <td class="l"><span class="xtab">${xc}<span class="xscore s${r.score}">${r.score}/3</span></span></td>
-      <td class="l"><span class="appc"><span class="frac">${r.consist}<small>/${cw}</small></span><span class="dots">${dots}</span></span></td>
+      <td class="l"><span class="appc"><span class="frac">${r.consist}<small>/${nD}</small></span>${grid}</span></td>
       <td class="l mc">${r.sector||'—'}</td>
       <td class="l mc">${r.marketcap||'—'}</td>
     </tr>`;
@@ -256,23 +275,17 @@ function renderTable(){
   document.querySelectorAll('thead th').forEach(th=>{th.classList.toggle('sorted',th.dataset.k===sortKey);th.classList.toggle('asc',th.dataset.k===sortKey&&sortAsc);});
 }
 
-/* events */
-$('#daySel').addEventListener('change',e=>{sel=+e.target.value; render();});
 document.querySelectorAll('thead th').forEach(th=>th.addEventListener('click',()=>{const k=th.dataset.k; if(k===sortKey)sortAsc=!sortAsc; else{sortKey=k; sortAsc=(k==='symbol'||k==='sector');} renderTable();}));
 $('#search').addEventListener('input',renderTable);
 function toggle(id,setter){const b=$('#'+id); b.addEventListener('click',()=>{setter(); b.classList.toggle('on'); renderTable();});}
-toggle('allThree',()=>allThree=!allThree); toggle('pbOnly',()=>pbOnly=!pbOnly); toggle('mqOnly',()=>mqOnly=!mqOnly);
-toggle('filOnly',()=>filOnly=!filOnly); toggle('newOnly',()=>newOnly=!newOnly);
-$('#csvBtn').addEventListener('click',()=>{
-  const {rows,day}=MODEL;
-  const head=['Rank','Symbol','Day','Score','InDly','InPB','InMQ','InFil','Consistency','Window','Sector','Cap'];
-  const esc=s=>`"${String(s).replace(/"/g,'""')}"`;
-  const body=rows.map(r=>[r.rank,esc(r.symbol),day,r.score,1,r.sig.pb?1:0,r.sig.mq?1:0,r.inFil?1:0,r.consist,MODEL.windowDays.length,esc(r.sector),esc(r.marketcap)].join(',')).join('\n');
-  const blob=new Blob([head.join(',')+'\n'+body],{type:'text/csv'}); const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob); a.download='daily_potentials_'+day+'.csv'; a.click();
-});
+toggle('allThree',()=>allThree=!allThree); toggle('pbOnly',()=>pbOnly=!pbOnly); toggle('mqOnly',()=>mqOnly=!mqOnly); toggle('filOnly',()=>filOnly=!filOnly); toggle('newOnly',()=>newOnly=!newOnly);
+$('#csvBtn').addEventListener('click',()=>{const {rows,win,nD}=MODEL; const head=['Rank','Symbol','Window','Score','InDly','InPB','InMQ','InFil','DaysInDly','WindowDays','Sector','Cap'];
+  const esc=s=>`"${String(s).replace(/"/g,'""')}"`; const wl=nD===1?win[0]:`${win[0]}..${win[nD-1]}`;
+  const body=rows.map(r=>[r.rank,esc(r.symbol),wl,r.score,1,r.sig.pb?1:0,r.sig.mq?1:0,r.inFil?1:0,r.consist,nD,esc(r.sector),esc(r.marketcap)].join(',')).join('\n');
+  const blob=new Blob([head.join(',')+'\n'+body],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='daily_potentials.csv'; a.click();});
 $('#themeBtn').addEventListener('click',()=>{const cur=document.documentElement.getAttribute('data-theme');const dark=matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.setAttribute('data-theme',cur?(cur==='dark'?'light':'dark'):(dark?'light':'dark'));});
 
+buildControls();
 render();
 </script>
 </body>

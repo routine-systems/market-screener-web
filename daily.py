@@ -86,6 +86,15 @@ def scrape_all(pause, headless, timeout):
                                  "url": BASE + slug, "weeks": mem})
             last = max(mem) if mem else "—"
             print(f"    {len(mem)} days; latest {last} → {len(mem.get(last, [])) if mem else 0} symbols")
+
+        # keep only the latest 90 trading days (no archive needed)
+        keep = set(w["week"] for w in h["weeks"][-90:])
+        h["weeks"] = [w for w in h["weeks"] if w["week"] in keep]
+        if h.get("filter"):
+            h["filter"]["weeks"] = {d: v for d, v in h["filter"]["weeks"].items() if d in keep}
+        for s in h.get("signals", []):
+            s["weeks"] = {d: v for d, v in s["weeks"].items() if d in keep}
+        print(f"    capped to {len(h['weeks'])} days")
         return h
     finally:
         driver.quit()

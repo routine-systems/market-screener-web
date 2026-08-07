@@ -151,7 +151,7 @@
   </nav>
   <header class="top">
     <div class="title">
-      <h1 id="scr-title">Screener</h1>
+      <h1>Weekly potentials</h1>
       <div class="sub" id="scr-sub"></div>
     </div>
     <div class="spacer"></div>
@@ -355,11 +355,10 @@ function render(){
   $('#offFwd').disabled = SEL.to>=n-1;
   $('#offlbl').textContent = SEL.to>=n-1 ? 'latest' : `−${n-1-SEL.to} wk`;
 
-  $('#scr-title').textContent=H.screener;
   const sub=[];
-  sub.push(`<b>${n}</b> weeks of history`);
-  sub.push(`ranking over <b>${nW}</b> selected`);
-  if(H.scanlink) sub.push(`in-scan links <b>on</b>`);
+  sub.push(`<b>${H.screener}</b>`);
+  sub.push(`<b>${n}</b> weeks · ranking over <b>${nW}</b>`);
+  if(H.scanlink) sub.push('in-scan links on');
   if(H.source_url) sub.push(`<a href="${H.source_url}" target="_blank" rel="noopener">source ↗</a>`);
   $('#scr-sub').innerHTML=sub.join(' · ');
 
