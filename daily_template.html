@@ -259,7 +259,7 @@ function renderTable(){
     if(x===y)return b.score-a.score||b.consist-a.consist; return sortAsc?x-y:y-x;});
   $('#rankhint').textContent=`${list.length} of ${rows.length} · ${nD===1?'1 day':nD+' days'}`;
   $('#tbody').innerHTML=list.map(r=>{
-    const xc=`<span class="xc on" title="cp-ich-trend-bounce-dly">TB</span>`+SIGS.map(s=>`<span class="xc ${r.sig[s.key]?'on':''}" title="${s.name||s.label}">${s.label}</span>`).join('');
+    const xc=`<span class="xc on" title="cp-ich-trend-bounce-dly (trend bounce)">DLY</span>`+SIGS.map(s=>`<span class="xc ${r.sig[s.key]?'on':''}" title="${s.name||s.label}">${s.label}</span>`).join('');
     const grid = nD<=DOTCAP
       ? '<span class="dots">'+r.present.map((p,i)=>`<span class="dot ${p?(r.consist===nD?'hot':'on'):''}" title="${MODEL.win[i]}"></span>`).join('')+'</span>'
       : `<span class="minibar" title="${r.consist}/${nD}"><span style="width:${(r.consist/nD*100).toFixed(1)}%"></span></span>`;
