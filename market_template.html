@@ -55,6 +55,10 @@
   .preset{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 10px; font-size:12px; cursor:pointer}
   .preset:hover{color:var(--ink)}
   .preset.on{background:var(--vol); color:#fff; border-color:var(--vol)}
+  .offbtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 9px; font-size:12px; font-weight:700; cursor:pointer}
+  .offbtn:hover:not(:disabled){color:var(--ink); border-color:var(--vol)} .offbtn:disabled{opacity:.3; cursor:default}
+  .offlbl{color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; min-width:44px; text-align:center}
+  .legend{color:var(--muted); font-size:11.5px; margin:-6px 0 16px}
   .summary{color:var(--ink-2); font-size:13px; margin-left:auto}
   .summary b.u{color:var(--up)} .summary b.d{color:var(--down)} .summary b.f{color:var(--flat)}
 
@@ -105,8 +109,13 @@
     <button class="preset" data-days="63">3M</button>
     <button class="preset" data-days="126">6M</button>
     <button class="preset" data-days="999">9M</button>
+    <span style="width:8px"></span>
+    <button class="offbtn" id="offBack" title="Shift the window one day older">◀</button>
+    <span class="offlbl" id="offlbl"></span>
+    <button class="offbtn" id="offFwd" title="Shift the window one day newer">▶</button>
     <span class="summary" id="summary"></span>
   </div>
+  <div class="legend">Each mini-chart: <b>badge / colour</b> = ~10-day trend (rising / falling) · <b>number</b> = today's change vs the prior day.</div>
 
   <section class="grid" id="grid"></section>
   <footer id="foot"></footer>
@@ -118,7 +127,7 @@ const MARKET_B64="__MARKET_B64__";
 const $=s=>document.querySelector(s);
 function b64utf8(b){try{return decodeURIComponent(escape(atob(b)));}catch(e){return atob(b);}}
 const M=JSON.parse(b64utf8(MARKET_B64));
-let PERIOD=63;   // default 3M (trading days)
+let PERIOD=63, OFFSET=0;   // default 3M (trading days); OFFSET = days back from latest
 
 function seriesFor(slug){
   const c=(M.counts&&M.counts[slug])||{};
@@ -150,13 +159,18 @@ const CLS={1:'up',[-1]:'down',0:'flat'};
 
 function render(){
   document.querySelectorAll('.preset').forEach(b=>b.classList.toggle('on', +b.dataset.days===PERIOD));
+  const maxLen=Math.max(1,...(M.screeners||[]).map(sc=>seriesFor(sc.slug).length));
+  $('#offlbl').textContent = OFFSET===0?'latest':`−${OFFSET} d`;
+  $('#offBack').disabled = OFFSET>=maxLen-1;
+  $('#offFwd').disabled = OFFSET<=0;
   $('#sub').innerHTML = `<b>${(M.screeners||[]).length}</b> market screeners · daily counts · ${M.updated_at?`updated <b>${M.updated_at}</b>`:'no data yet'} · ~9-month store`;
 
   let up=0,down=0,flat=0;
   const cards=(M.screeners||[]).map(sc=>{
     const full=seriesFor(sc.slug);
     if(!full.length) return `<div class="card flat${sc.slug==='cp-tsi-mkt-total'?' span2':''}"><div class="chead"><span class="cname">${sc.name}</span></div><div class="empty">No data.</div></div>`;
-    const win=full.slice(-PERIOD);
+    const end=Math.max(0, full.length-1-OFFSET), start=Math.max(0, end-PERIOD+1);
+    const win=full.slice(start, end+1);
     const vals=win.map(p=>p[1]);
     const sign=trendSign(vals);
     if(sign>0)up++; else if(sign<0)down++; else flat++;
@@ -195,6 +209,8 @@ $('#grid').addEventListener('mousemove',e=>{
 $('#grid').addEventListener('mouseleave',()=>tt.style.opacity='0');
 
 document.querySelectorAll('.preset').forEach(b=>b.addEventListener('click',()=>{PERIOD=+b.dataset.days; render();}));
+$('#offBack').addEventListener('click',()=>{const maxLen=Math.max(1,...(M.screeners||[]).map(sc=>seriesFor(sc.slug).length)); OFFSET=Math.min(maxLen-1,OFFSET+1); render();});
+$('#offFwd').addEventListener('click',()=>{OFFSET=Math.max(0,OFFSET-1); render();});
 $('#themeBtn').addEventListener('click',()=>{
   const cur=document.documentElement.getAttribute('data-theme');
   const dark=matchMedia('(prefers-color-scheme: dark)').matches;
