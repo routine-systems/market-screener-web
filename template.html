@@ -86,6 +86,10 @@
   .preset{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 9px; font-size:12px; cursor:pointer}
   .preset:hover{color:var(--ink)}
   .preset.on{background:var(--vol); color:#fff; border-color:var(--vol)}
+  .offbtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer}
+  .offbtn:hover:not(:disabled){color:var(--ink); border-color:var(--vol)}
+  .offbtn:disabled{opacity:.3; cursor:default}
+  .offlbl{color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; min-width:46px; text-align:center; white-space:nowrap}
   .rangenote{color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums}
   .tbar{display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap}
   .tbar input{background:var(--plane); border:1px solid var(--border); color:var(--ink);
@@ -146,7 +150,11 @@
       <select id="fromWk" title="Range start week"></select>
       <span class="arrow">→</span>
       <select id="toWk" title="Range end week"></select>
-      <span style="width:6px"></span>
+      <span style="width:4px"></span>
+      <button class="offbtn" id="offBack" title="Shift the window one week older">◀</button>
+      <span class="offlbl" id="offlbl"></span>
+      <button class="offbtn" id="offFwd" title="Shift the window one week newer">▶</button>
+      <span style="width:8px"></span>
       <button class="preset" data-preset="5">Last 5</button>
       <button class="preset" data-preset="8">Last 8</button>
       <button class="preset" data-preset="13">13</button>
@@ -268,6 +276,18 @@ function buildRangeControls(){
     else{const k=+b.dataset.preset; SEL.to=n-1; SEL.from=Math.max(0,n-Math.min(k,n));}
     f.value=SEL.from; t.value=SEL.to; render();
   });
+  $('#offBack').onclick=()=>shiftWindow(-1);   // older
+  $('#offFwd').onclick=()=>shiftWindow(1);      // newer
+}
+
+function shiftWindow(delta){
+  const n=WEEKS.length, size=SEL.to-SEL.from+1;
+  let from=SEL.from+delta, to=SEL.to+delta;
+  if(from<0){from=0; to=size-1;}
+  if(to>n-1){to=n-1; from=n-size;}
+  SEL.from=Math.max(0,from); SEL.to=Math.min(n-1,to);
+  $('#fromWk').value=SEL.from; $('#toWk').value=SEL.to;
+  render();
 }
 
 function compute(){
@@ -299,6 +319,9 @@ function render(){
     b.classList.toggle('on',on);
   });
   $('#rangenote').textContent=`${nW} week(s) · ${keys[0]||'—'} → ${keys[keys.length-1]||'—'}`;
+  $('#offBack').disabled = SEL.from<=0;
+  $('#offFwd').disabled = SEL.to>=n-1;
+  $('#offlbl').textContent = SEL.to>=n-1 ? 'latest' : `−${n-1-SEL.to} wk`;
 
   $('#scr-title').textContent=H.screener;
   const sub=[];
