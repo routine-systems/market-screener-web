@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Market Breadth</title>
+<style>
+  :root{
+    color-scheme: light;
+    --plane:#f9f9f7; --surface:#fcfcfb;
+    --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
+    --up:#0ca30c; --down:#d03b3b; --flat:#898781; --vol:#256abf;
+    --up-soft:rgba(12,163,12,0.10); --down-soft:rgba(208,59,59,0.10);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:where(:not([data-theme="light"])){
+      color-scheme: dark;
+      --plane:#0d0d0d; --surface:#1a1a19;
+      --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+      --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+      --up:#0ca30c; --down:#e66767; --flat:#898781; --vol:#3987e5;
+      --up-soft:rgba(12,163,12,0.16); --down-soft:rgba(230,103,103,0.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --plane:#0d0d0d; --surface:#1a1a19;
+    --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+    --up:#0ca30c; --down:#e66767; --flat:#898781; --vol:#3987e5;
+    --up-soft:rgba(12,163,12,0.16); --down-soft:rgba(230,103,103,0.16);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--plane); color:var(--ink);
+    font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px; margin:0 auto; padding:22px 20px 64px}
+  header.top{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:6px}
+  h1{font-size:20px; margin:0; letter-spacing:-0.01em}
+  .sub{color:var(--ink-2); font-size:13px; margin:2px 0 18px}
+  .sub a{color:var(--vol); text-decoration:none}
+  .spacer{flex:1 1 auto}
+  .toolbtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2);
+    border-radius:8px; padding:7px 11px; font-size:13px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px}
+  .toolbtn:hover{color:var(--ink)}
+  .presets{display:flex; gap:6px; align-items:center; margin-bottom:16px; flex-wrap:wrap}
+  .presets .lab{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:0.04em; margin-right:2px}
+  .preset{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 10px; font-size:12px; cursor:pointer}
+  .preset:hover{color:var(--ink)}
+  .preset.on{background:var(--vol); color:#fff; border-color:var(--vol)}
+  .summary{color:var(--ink-2); font-size:13px; margin-left:auto}
+  .summary b.u{color:var(--up)} .summary b.d{color:var(--down)} .summary b.f{color:var(--flat)}
+
+  .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+  @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--surface); border:1px solid var(--border); border-left-width:3px; border-radius:12px; padding:13px 14px 8px}
+  .card.span2{grid-column:span 2}
+  @media(max-width:560px){.card.span2{grid-column:auto}}
+  .card.up{border-left-color:var(--up)} .card.down{border-left-color:var(--down)} .card.flat{border-left-color:var(--flat)}
+  .chead{display:flex; align-items:baseline; gap:8px}
+  .cname{font-size:13px; font-weight:600}
+  .cbadge{font-size:11px; font-weight:700; padding:1px 6px; border-radius:999px}
+  .cbadge.up{color:var(--up); background:var(--up-soft)} .cbadge.down{color:var(--down); background:var(--down-soft)} .cbadge.flat{color:var(--flat)}
+  .cnum{margin-left:auto; text-align:right}
+  .cnum .big{font-size:22px; font-weight:600; letter-spacing:-0.02em; font-variant-numeric:tabular-nums}
+  .cnum .dlt{font-size:12px; font-variant-numeric:tabular-nums; font-weight:600}
+  .cnum .dlt.up{color:var(--up)} .cnum .dlt.down{color:var(--down)} .cnum .dlt.flat{color:var(--muted)}
+  .spark{margin-top:8px; position:relative; cursor:crosshair}
+  .spark svg{display:block}
+  .crange{display:flex; justify-content:space-between; color:var(--muted); font-size:10.5px; font-variant-numeric:tabular-nums; margin-top:2px}
+  .empty{color:var(--muted); font-size:12px; padding:14px 0}
+
+  #tt{position:fixed; z-index:50; pointer-events:none; background:var(--ink); color:var(--surface);
+      padding:5px 8px; border-radius:6px; font-size:12px; opacity:0; transition:opacity .08s; white-space:nowrap}
+  :root[data-theme="dark"] #tt, :root:where(:not([data-theme="light"])) #tt{color:#111}
+  footer{color:var(--muted); font-size:11.5px; margin-top:26px; text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>Market breadth</h1>
+    <div class="spacer"></div>
+    <a class="toolbtn" id="weeklyLink" href="dashboard.html" title="Open the weekly tracker">Weekly ↗</a>
+    <button class="toolbtn" id="themeBtn" title="Toggle light / dark">◐ Theme</button>
+  </header>
+  <div class="sub" id="sub"></div>
+
+  <div class="presets">
+    <span class="lab">Window</span>
+    <button class="preset" data-days="21">1M</button>
+    <button class="preset" data-days="63">3M</button>
+    <button class="preset" data-days="126">6M</button>
+    <button class="preset" data-days="999">9M</button>
+    <span class="summary" id="summary"></span>
+  </div>
+
+  <section class="grid" id="grid"></section>
+  <footer id="foot"></footer>
+</div>
+<div id="tt"></div>
+
+<script>
+const MARKET_B64="__MARKET_B64__";
+const $=s=>document.querySelector(s);
+function b64utf8(b){try{return decodeURIComponent(escape(atob(b)));}catch(e){return atob(b);}}
+const M=JSON.parse(b64utf8(MARKET_B64));
+let PERIOD=63;   // default 3M (trading days)
+
+function seriesFor(slug){
+  const c=(M.counts&&M.counts[slug])||{};
+  return Object.keys(c).sort().map(d=>[d, c[d]]);   // [ [iso,count], ... ] asc
+}
+function trendSign(vals){
+  const n=Math.min(10, vals.length); if(n<3) return 0;
+  const s=vals.slice(-n), mx=(n-1)/2, my=s.reduce((a,b)=>a+b,0)/n;
+  let num=0,den=0; for(let i=0;i<n;i++){num+=(i-mx)*(s[i]-my); den+=(i-mx)*(i-mx);}
+  const slope=den?num/den:0, eps=Math.max(0.05, my*0.01);
+  return slope>eps?1:(slope<-eps?-1:0);
+}
+function sparkSVG(vals, color, w, h){
+  if(vals.length<2) return '';
+  const min=Math.min(...vals), max=Math.max(...vals), rng=(max-min)||1, dx=w/(vals.length-1);
+  const pts=vals.map((v,i)=>[i*dx, h-((v-min)/rng)*(h-6)-3]);
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const area=`M0 ${h} `+pts.map(p=>'L'+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')+` L${w} ${h} Z`;
+  const last=pts[pts.length-1];
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none">
+    <path d="${area}" fill="${color}" opacity="0.13"/>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="1.6" vector-effect="non-scaling-stroke"/>
+    <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.4" fill="${color}"/>
+  </svg>`;
+}
+const COL={1:'var(--up)',[-1]:'var(--down)',0:'var(--flat)'};
+const WORD={1:'rising',[-1]:'falling',0:'flat'};
+const CLS={1:'up',[-1]:'down',0:'flat'};
+
+function render(){
+  document.querySelectorAll('.preset').forEach(b=>b.classList.toggle('on', +b.dataset.days===PERIOD));
+  $('#sub').innerHTML = `Daily count of stocks in each market screener · ${M.updated_at?`updated <b>${M.updated_at}</b>`:'no data yet'} · ~9-month store`;
+
+  let up=0,down=0,flat=0;
+  const cards=(M.screeners||[]).map(sc=>{
+    const full=seriesFor(sc.slug);
+    if(!full.length) return `<div class="card flat${sc.slug==='cp-tsi-mkt-total'?' span2':''}"><div class="chead"><span class="cname">${sc.name}</span></div><div class="empty">No data.</div></div>`;
+    const win=full.slice(-PERIOD);
+    const vals=win.map(p=>p[1]);
+    const sign=trendSign(vals);
+    if(sign>0)up++; else if(sign<0)down++; else flat++;
+    const latest=vals[vals.length-1], prev=vals.length>1?vals[vals.length-2]:latest;
+    const day=latest-prev;
+    const dcls=day>0?'up':(day<0?'down':'flat'), darr=day>0?'▲':(day<0?'▼':'→');
+    const span=sc.slug==='cp-tsi-mkt-total'?' span2':'';
+    const h=sc.slug==='cp-tsi-mkt-total'?64:46;
+    return `<div class="card ${CLS[sign]}${span}">
+      <div class="chead">
+        <span class="cname">${sc.name}</span>
+        <span class="cbadge ${CLS[sign]}">${darr==='→'&&sign===0?'→':(sign>0?'▲':sign<0?'▼':'→')} ${WORD[sign]}</span>
+        <span class="cnum"><span class="big">${latest}</span> <span class="dlt ${dcls}">${darr}${day>0?'+':''}${day}</span></span>
+      </div>
+      <div class="spark" data-slug="${sc.slug}" data-dates="${win.map(p=>p[0]).join(',')}" data-vals="${vals.join(',')}">${sparkSVG(vals, COL[sign], 300, h)}</div>
+      <div class="crange"><span>${win[0][0]}</span><span>${win.length} d</span><span>${win[win.length-1][0]}</span></div>
+    </div>`;
+  }).join('');
+  $('#grid').innerHTML=cards;
+  $('#summary').innerHTML=`<b class="u">${up} ▲</b> · <b class="d">${down} ▼</b> · <b class="f">${flat} →</b>`;
+  $('#foot').textContent=`Generated ${M.generated_at||''} · counts scraped from Chartink backtest history · run daily after 2pm`;
+}
+
+/* hover tooltip on sparklines */
+const tt=$('#tt');
+$('#grid').addEventListener('mousemove',e=>{
+  const sp=e.target.closest('.spark'); if(!sp){tt.style.opacity='0';return;}
+  const dates=sp.dataset.dates.split(','), vals=sp.dataset.vals.split(',');
+  const r=sp.getBoundingClientRect(); let i=Math.round((e.clientX-r.left)/r.width*(vals.length-1));
+  i=Math.max(0,Math.min(vals.length-1,i));
+  tt.innerHTML=`<b>${dates[i]}</b> · ${vals[i]} stocks`;
+  tt.style.opacity='1'; const b=tt.getBoundingClientRect();
+  let x=e.clientX+12, y=e.clientY-b.height-8; if(x+b.width>innerWidth-8)x=e.clientX-b.width-12; if(y<8)y=e.clientY+16;
+  tt.style.left=x+'px'; tt.style.top=y+'px';
+});
+$('#grid').addEventListener('mouseleave',()=>tt.style.opacity='0');
+
+document.querySelectorAll('.preset').forEach(b=>b.addEventListener('click',()=>{PERIOD=+b.dataset.days; render();}));
+$('#themeBtn').addEventListener('click',()=>{
+  const cur=document.documentElement.getAttribute('data-theme');
+  const dark=matchMedia('(prefers-color-scheme: dark)').matches;
+  document.documentElement.setAttribute('data-theme', cur?(cur==='dark'?'light':'dark'):(dark?'light':'dark'));
+});
+
+render();
+</script>
+</body>
+</html>

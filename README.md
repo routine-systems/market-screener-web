@@ -57,6 +57,23 @@ python3 run.py --mode adhoc            # refresh now
 python3 run.py --mode weekly --show    # watch the browser
 ```
 
+## Market breadth (daily) — second page
+
+A separate page tracking the **daily count** of stocks in each market-trend screener
+(Total, Nifty, Nifty 500, Futures, Indices, Mid/Small, BankNifty, Stage-2). An uptick
+across them signals the market turning; each mini count-chart is **coloured by its recent
+trend** (green rising / red falling, with a badge and day-delta) so a glance across the
+page shows direction. Counts merge into a rolling **9-month** store; run **daily after 2pm**.
+
+```bash
+./market.sh          # refresh if not pulled since the last 2pm, then open market.html
+./market.sh force    # refresh now
+```
+
+Each screener's backtest is downloaded, reduced to per-day counts (raw CSVs discarded),
+with a pause between downloads. Window presets 1M/3M/6M/9M; trend is the slope of the last
+~10 trading days.
+
 ## Files
 
 | File | Role |
@@ -66,7 +83,10 @@ python3 run.py --mode weekly --show    # watch the browser
 | `template.html` | The dashboard UI; history baked in at build time (double-click to open) |
 | `run.py` | Single entry: `--mode weekly` / `--mode adhoc` |
 | `dash.sh` | Everyday command: refresh-if-needed, then open `dashboard.html` |
-| `data/history.json` | Derived cache of the parsed backtest history |
+| `market.py` | Scrape all market screeners → rolling 9-month count store → render `market.html` |
+| `market_template.html` | The market-breadth page (mini count-charts) |
+| `market.sh` | Daily command: refresh-if-stale (2pm cutoff), then open `market.html` |
+| `data/history.json` · `data/market_counts.json` | Derived caches (weekly history · daily counts) |
 
 ## Requirements
 
