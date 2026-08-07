@@ -10,8 +10,8 @@ Built for `cp-ich-trend-bounce-wkly` but works with any screener URL.
 
 ## What it does (the requirements)
 
-1. **Download every Friday** — `run_weekly.sh` scrapes the screener; a launchd job
-   fires it weekly (re-download picks up the newest weekly date).
+1. **Refresh when you open it** — `./dash.sh` scrapes and rebuilds, pulling fresh
+   when a new week has closed or during Friday closing hours (see below).
 2. **Full weekly history from one file** — the scraper takes the **BACKTEST HISTORY →
    Download → CSV** export (`Date, Symbol, Marketcapname, Sector`), grouped into weeks.
 3. **Rank by appearance over a window** — `dashboard.html` ranks every ticker by how
@@ -44,7 +44,7 @@ Both scrape the backtest CSV and rebuild; they differ only in intent/scheduling
 
 | Mode | Use |
 |---|---|
-| `--mode weekly` | The Friday / launchd job. |
+| `--mode weekly` | A fresh weekly capture (what `dash.sh` calls). |
 | `--mode adhoc`  | A manual refresh you run anytime. |
 
 ```bash
@@ -61,8 +61,7 @@ python3 run.py --mode weekly --show    # watch the browser
 | `build_dashboard.py` | Parse the backtest CSV into weeks, render `dashboard.html` |
 | `template.html` | The dashboard UI; history baked in at build time (double-click to open) |
 | `run.py` | Single entry: `--mode weekly` / `--mode adhoc` |
-| `run_weekly.sh` | Drives `run.py`, logs to `logs/` |
-| `com.chirag.chartink-weekly.plist` | launchd schedule (Fridays 18:30) |
+| `dash.sh` | Everyday command: refresh-if-needed, then open `dashboard.html` |
 | `data/history.json` | Derived cache of the parsed backtest history |
 
 ## Requirements
@@ -79,18 +78,6 @@ open dashboard.html
 ```
 
 Drop any Chartink **Backtest** CSV onto the open dashboard to load it (in-memory).
-
-## Schedule it (every Friday)
-
-```bash
-cp com.chirag.chartink-weekly.plist ~/Library/LaunchAgents/
-launchctl load ~/Library/LaunchAgents/com.chirag.chartink-weekly.plist
-launchctl list | grep chartink-weekly
-```
-
-Stop with `launchctl unload …`. The job runs in your logged-in session (headless
-Chrome needs no visible window); if the Mac is asleep at 18:30 Friday, launchd runs
-it once shortly after the next wake.
 
 ## Notes
 
