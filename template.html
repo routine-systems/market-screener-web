@@ -48,6 +48,8 @@
   .toolbtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2);
     border-radius:8px; padding:7px 11px; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px}
   .toolbtn:hover{color:var(--ink)}
+  select{background:var(--plane); color:var(--ink); border:1px solid var(--border); border-radius:8px;
+    padding:6px 8px; font-size:13px; font-variant-numeric:tabular-nums}
 
   .kpis{display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:22px}
   @media(max-width:900px){.kpis{grid-template-columns:repeat(3,1fr)}}
@@ -66,7 +68,6 @@
   .card .hint{color:var(--muted); font-size:11.5px; margin:0 0 12px}
   .span2{grid-column:1 / -1}
 
-  /* vertical bar mini-charts */
   .cols{display:flex; align-items:flex-end; gap:8px; height:140px; padding-top:8px}
   .cols .col{flex:1 1 0; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:5px; height:100%}
   .cols .colbar{width:100%; max-width:54px; background:var(--bar); border-radius:4px 4px 0 0; min-height:2px; margin:0 auto}
@@ -74,7 +75,6 @@
   .cols-x{display:flex; gap:8px; margin-top:6px}
   .cols-x span{flex:1 1 0; text-align:center; font-size:10.5px; color:var(--muted); font-variant-numeric:tabular-nums}
 
-  /* chips */
   .chips{display:flex; flex-wrap:wrap; gap:6px}
   .chip{display:inline-flex; align-items:center; gap:5px; background:var(--chip); border:1px solid var(--border);
     border-radius:999px; padding:3px 9px; font-size:12px; font-weight:600}
@@ -82,8 +82,14 @@
   .chip .d{font-variant-numeric:tabular-nums; font-weight:500}
   .empty{color:var(--muted); font-size:13px; padding:6px 0}
 
-  /* table */
   .tablecard{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px}
+  .rangebar{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--grid)}
+  .rangebar .lab{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:0.04em}
+  .rangebar .arrow{color:var(--muted)}
+  .preset{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 10px; font-size:12px; cursor:pointer}
+  .preset:hover{color:var(--ink)}
+  .preset.on{background:var(--vol); color:#fff; border-color:var(--vol)}
+  .rangenote{color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums}
   .tbar{display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap}
   .tbar input{background:var(--plane); border:1px solid var(--border); color:var(--ink);
     border-radius:8px; padding:8px 11px; font-size:13px; width:240px; max-width:60vw}
@@ -105,8 +111,7 @@
   .pill{display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:999px; font-variant-numeric:tabular-nums; font-weight:600; font-size:12px}
   .pill.u{color:var(--up); background:var(--up-soft)}
   .pill.d{color:var(--down); background:var(--down-soft)}
-  .arrow{font-size:10px}
-  /* appearance cell */
+  .arr{font-size:10px}
   .appc{display:inline-flex; align-items:center; gap:9px}
   .appc .frac{font-variant-numeric:tabular-nums; font-weight:700; min-width:30px; display:inline-block}
   .appc .frac small{font-weight:500; color:var(--muted)}
@@ -118,8 +123,7 @@
   .badge{font-size:10px; padding:1px 6px; border-radius:999px; background:var(--up-soft); color:var(--up); font-weight:700; margin-left:6px}
 
   #tt{position:fixed; z-index:50; pointer-events:none; background:var(--ink); color:var(--surface);
-      padding:6px 9px; border-radius:7px; font-size:12px; opacity:0; transform:translateY(-4px); transition:opacity .08s; max-width:240px}
-  #tt b{color:#fff}
+      padding:6px 9px; border-radius:7px; font-size:12px; opacity:0; transform:translateY(-4px); transition:opacity .08s; max-width:260px}
   :root[data-theme="dark"] #tt, :root:where(:not([data-theme="light"])) #tt{color:#111}
   #drop{position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); backdrop-filter:blur(2px)}
   #drop.on{display:flex}
@@ -141,6 +145,18 @@
   <section class="kpis" id="kpis"></section>
 
   <section class="tablecard" style="margin-bottom:22px">
+    <div class="rangebar">
+      <span class="lab">Weeks</span>
+      <select id="fromWk" title="Range start week"></select>
+      <span class="arrow">→</span>
+      <select id="toWk" title="Range end week"></select>
+      <span style="width:8px"></span>
+      <button class="preset" data-preset="5">Last 5</button>
+      <button class="preset" data-preset="8">Last 8</button>
+      <button class="preset" data-preset="all">All</button>
+      <div class="spacer"></div>
+      <span class="rangenote" id="rangenote"></span>
+    </div>
     <div class="tbar">
       <strong style="font-size:14px">Ranked by appearances</strong>
       <span class="count" id="rankhint"></span>
@@ -167,19 +183,19 @@
   <section class="grid">
     <div class="card">
       <h2>Tickers per week</h2>
-      <p class="hint">How many stocks the screener returned each week in the window</p>
+      <p class="hint">How many stocks the screener returned each week in range</p>
       <div class="cols" id="wk-cols"></div>
       <div class="cols-x" id="wk-x"></div>
     </div>
     <div class="card">
       <h2>Appearance frequency</h2>
-      <p class="hint" id="freq-hint">How many tickers show up in k of the window's weeks</p>
+      <p class="hint" id="freq-hint">How many tickers show up in k of the range's weeks</p>
       <div class="cols" id="freq-cols"></div>
       <div class="cols-x" id="freq-x"></div>
     </div>
     <div class="card">
       <h2>New this week <span id="new-n" class="rankn"></span></h2>
-      <p class="hint">In the latest week, absent from every earlier week in the window</p>
+      <p class="hint">In the latest week of range, absent from every earlier week in range</p>
       <div class="chips" id="new-chips"></div>
     </div>
     <div class="card">
@@ -207,7 +223,15 @@ function fmtClose(v){ return v.toLocaleString('en-IN',{minimumFractionDigits:2,m
 function sign(v){ return (v>0?'+':'')+v.toFixed(2)+'%'; }
 function arrow(v){ return v>0?'▲':(v<0?'▼':'•'); }
 
-/* CSV parse (for drag-drop preview) */
+/* in-scan link built from the rotating scanlink; falls back to the plain stock page */
+function stockUrl(sym){
+  if(H && H.scanlink){
+    return `https://chartink.com/stocks-new?from_scan=1&hide_filters=true&scan_link=scanlink:${encodeURIComponent(H.scanlink)}&timeframe=${encodeURIComponent(H.timeframe||'weekly')}&symbol=${encodeURIComponent(sym)}`;
+  }
+  return `https://chartink.com/stocks/${encodeURIComponent(sym)}.html`;
+}
+
+/* CSV parse (drag-drop preview) */
 function parseCSV(t){t=t.replace(/^﻿/,'');const rows=[];let i=0,f='',row=[],q=false;const push=()=>{row.push(f);f='';},endr=()=>{push();rows.push(row);row=[];};
   while(i<t.length){const c=t[i]; if(q){ if(c==='"'){ if(t[i+1]==='"'){f+='"';i++;} else q=false;} else f+=c;} else { if(c==='"')q=true; else if(c===',')push(); else if(c==='\n')endr(); else if(c==='\r'){} else f+=c;} i++;}
   if(f.length||row.length)endr(); return rows.filter(r=>r.length>1||(r.length===1&&r[0]!==''));}
@@ -224,38 +248,69 @@ const tt=$('#tt');
 function showTip(html,x,y){tt.innerHTML=html;tt.style.opacity='1';const b=tt.getBoundingClientRect();let nx=x+12,ny=y-b.height-8;if(nx+b.width>innerWidth-8)nx=x-b.width-12;if(ny<8)ny=y+16;tt.style.left=nx+'px';tt.style.top=ny+'px';}
 function hideTip(){tt.style.opacity='0';}
 
-let H=null;
+let H=null;                 // full history
+let WEEKS=[];               // all weeks ascending
+let SEL={from:0,to:0};      // selected inclusive index range into WEEKS
+let sortKey='count', sortAsc=false, MODEL=null;
+
+function initSelection(){
+  WEEKS=(H.weeks||[]).slice().sort((a,b)=>a.week<b.week?-1:1);
+  const n=WEEKS.length;
+  SEL.to=Math.max(0,n-1);
+  SEL.from=Math.max(0,n-Math.min(WINDOW,n));
+}
+
+function buildRangeControls(){
+  const opts=WEEKS.map((w,i)=>`<option value="${i}">${w.week}</option>`).join('');
+  const f=$('#fromWk'), t=$('#toWk');
+  f.innerHTML=opts; t.innerHTML=opts;
+  f.value=SEL.from; t.value=SEL.to;
+  f.onchange=()=>{SEL.from=+f.value; if(SEL.from>SEL.to){SEL.to=SEL.from; t.value=SEL.to;} render();};
+  t.onchange=()=>{SEL.to=+t.value; if(SEL.to<SEL.from){SEL.from=SEL.to; f.value=SEL.from;} render();};
+  document.querySelectorAll('.preset').forEach(b=>b.onclick=()=>{
+    const n=WEEKS.length;
+    if(b.dataset.preset==='all'){SEL.from=0;SEL.to=n-1;}
+    else{const k=+b.dataset.preset; SEL.to=n-1; SEL.from=Math.max(0,n-Math.min(k,n));}
+    f.value=SEL.from; t.value=SEL.to; render();
+  });
+}
 
 function compute(){
-  const weeks=H.weeks.slice(-WINDOW);          // oldest→newest
+  const weeks=WEEKS.slice(SEL.from, SEL.to+1);   // selected, ascending
   const keys=weeks.map(w=>w.week);
   const nW=weeks.length;
-  const map=new Map();                          // symbol -> {name, present:[bool], latest, latestWeek}
-  weeks.forEach((wk,wi)=>{
-    wk.tickers.forEach(t=>{
-      let e=map.get(t.symbol);
-      if(!e){ e={symbol:t.symbol,name:t.name,present:new Array(nW).fill(false),latest:t,latestWeek:wk.week}; map.set(t.symbol,e); }
-      e.present[wi]=true; e.latest=t; e.latestWeek=wk.week; if(t.name)e.name=t.name; // latest wins (weeks ascending)
-    });
-  });
+  const map=new Map();
+  weeks.forEach((wk,wi)=>{ (wk.tickers||[]).forEach(t=>{
+    let e=map.get(t.symbol);
+    if(!e){ e={symbol:t.symbol,name:t.name,present:new Array(nW).fill(false),latest:t}; map.set(t.symbol,e); }
+    e.present[wi]=true; e.latest=t; if(t.name)e.name=t.name;
+  }); });
   const rows=[...map.values()].map(e=>({...e, count:e.present.filter(Boolean).length}));
   rows.sort((a,b)=> b.count-a.count || b.latest.change-a.latest.change || a.symbol.localeCompare(b.symbol));
   rows.forEach((r,i)=>r.rank=i+1);
   return {weeks,keys,nW,rows};
 }
 
-let sortKey='count', sortAsc=false, MODEL=null;
-
 function render(){
   MODEL=compute();
   const {weeks,keys,nW,rows}=MODEL;
   H.screener=H.screener||'Screener';
 
+  // presets active state
+  const n=WEEKS.length, len=nW;
+  document.querySelectorAll('.preset').forEach(b=>{
+    let on=false;
+    if(b.dataset.preset==='all') on=(SEL.from===0&&SEL.to===n-1);
+    else on=(SEL.to===n-1 && SEL.from===Math.max(0,n-Math.min(+b.dataset.preset,n)) && +b.dataset.preset<=n);
+    b.classList.toggle('on',on);
+  });
+  $('#rangenote').textContent=`${len} week(s) selected · ${keys[0]||'—'} → ${keys[keys.length-1]||'—'}`;
+
   $('#scr-title').textContent=H.screener;
   const sub=[];
-  sub.push(`<b>${H.weeks.length}</b> week(s) tracked`);
-  sub.push(`window = last <b>${nW}</b>${nW<WINDOW?` (of ${WINDOW})`:''}`);
-  if(keys.length) sub.push(`${keys[0]} → ${keys[keys.length-1]}`);
+  sub.push(`<b>${WEEKS.length}</b> week(s) tracked`);
+  sub.push(`ranking over <b>${nW}</b> selected`);
+  if(H.scanlink) sub.push(`in-scan links <b>on</b>`);
   if(H.source_url) sub.push(`<a href="${H.source_url}" target="_blank" rel="noopener">source ↗</a>`);
   $('#scr-sub').innerHTML=sub.join(' · ');
 
@@ -268,8 +323,8 @@ function render(){
   const dropSyms=prev?[...prevSet].filter(s=>!latestSet.has(s)):[];
 
   const tiles=[
-    ['Weeks tracked', String(H.weeks.length)],
-    ['Window', `${nW}<small> / ${WINDOW} wk</small>`],
+    ['Weeks tracked', String(WEEKS.length)],
+    ['Selected', `${nW}<small> wk</small>`],
     ['Unique tickers', String(rows.length)],
     ['Persistent', `${persistent}<small> all ${nW} wk</small>`],
     ['New this week', `<span class="up">${newSyms.length}</span>`],
@@ -277,29 +332,26 @@ function render(){
   ];
   $('#kpis').innerHTML=tiles.map(([l,v])=>`<div class="tile"><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join('');
 
-  // weekly count chart
   const wkHost=$('#wk-cols'), wkX=$('#wk-x');
   const wkMax=Math.max(1,...weeks.map(w=>w.tickers.length));
-  wkHost.innerHTML=weeks.map(w=>{const n=w.tickers.length;return `<div class="col" data-tip="wk" data-wk="${w.week}" data-n="${n}" data-when="${w.scraped_at||''}">
-    <span class="cnt">${n}</span><span class="colbar" style="height:${(n/wkMax*100).toFixed(1)}%"></span></div>`;}).join('');
+  wkHost.innerHTML=weeks.map(w=>{const c=w.tickers.length;return `<div class="col" data-tip="wk" data-wk="${w.week}" data-n="${c}" data-when="${w.scraped_at||''}">
+    <span class="cnt">${c}</span><span class="colbar" style="height:${(c/wkMax*100).toFixed(1)}%"></span></div>`;}).join('');
   wkX.innerHTML=weeks.map(w=>`<span>${w.week.slice(5)}</span>`).join('');
 
-  // frequency distribution
   const freq=new Array(nW+1).fill(0); rows.forEach(r=>freq[r.count]++);
   const fHost=$('#freq-cols'), fX=$('#freq-x');
   const fMax=Math.max(1,...freq.slice(1));
-  fHost.innerHTML=freq.slice(1).map((n,i)=>{const k=i+1;return `<div class="col" data-tip="freq" data-k="${k}" data-n="${n}">
-    <span class="cnt">${n||''}</span><span class="colbar" style="height:${(n/fMax*100).toFixed(1)}%;${k===nW?'background:var(--hot)':''}"></span></div>`;}).join('');
+  fHost.innerHTML=freq.slice(1).map((c,i)=>{const k=i+1;return `<div class="col" data-tip="freq" data-k="${k}" data-n="${c}">
+    <span class="cnt">${c||''}</span><span class="colbar" style="height:${(c/fMax*100).toFixed(1)}%;${k===nW?'background:var(--hot)':''}"></span></div>`;}).join('');
   fX.innerHTML=freq.slice(1).map((_,i)=>`<span>${i+1}×</span>`).join('');
   $('#freq-hint').textContent=`Of ${rows.length} tickers over ${nW} week(s) — right-most = every week`;
 
-  // new / dropped chips
-  const chip=(s)=>{const e=[...MODEL.rows].find(r=>r.symbol===s);const ch=e?sign(e.latest.change):'';const cls=e&&e.latest.change<0?'down':'up';
-    return `<span class="chip"><a href="https://chartink.com/stocks/${encodeURIComponent(s)}.html" target="_blank" rel="noopener">${s}</a>${ch?`<span class="d ${cls}">${ch}</span>`:''}</span>`;};
+  const chip=(s,withChg)=>{const e=rows.find(r=>r.symbol===s);const ch=(withChg&&e)?`<span class="d ${e.latest.change<0?'down':'up'}">${sign(e.latest.change)}</span>`:'';
+    return `<span class="chip"><a href="${stockUrl(s)}" target="_blank" rel="noopener">${s}</a>${ch}</span>`;};
   $('#new-n').textContent=newSyms.length?`(${newSyms.length})`:'';
   $('#drop-n').textContent=dropSyms.length?`(${dropSyms.length})`:'';
-  $('#new-chips').innerHTML=newSyms.length?newSyms.map(chip).join(''):'<div class="empty">None — nothing new.</div>';
-  $('#drop-chips').innerHTML=prev?(dropSyms.length?dropSyms.map(s=>`<span class="chip"><a href="https://chartink.com/stocks/${encodeURIComponent(s)}.html" target="_blank" rel="noopener">${s}</a></span>`).join(''):'<div class="empty">None — nobody dropped.</div>'):'<div class="empty">Need ≥2 weeks.</div>';
+  $('#new-chips').innerHTML=newSyms.length?newSyms.map(s=>chip(s,true)).join(''):'<div class="empty">None — nothing new.</div>';
+  $('#drop-chips').innerHTML=prev?(dropSyms.length?dropSyms.map(s=>chip(s,false)).join(''):'<div class="empty">None — nobody dropped.</div>'):'<div class="empty">Need ≥2 weeks in range.</div>';
 
   renderTable();
   $('#foot').innerHTML=`Generated ${H.generated_at||''} · self-contained · updates every Friday · drop a CSV to preview a week`;
@@ -321,8 +373,7 @@ function renderTable(){
     if(x===y) return b.count-a.count || b.latest.change-a.latest.change;
     return sortAsc?x-y:y-x;
   });
-  $('#rankhint').textContent=`${list.length} of ${rows.length} tickers · window ${nW} wk`;
-  $('#tcount')&&($('#tcount').textContent='');
+  $('#rankhint').textContent=`${list.length} of ${rows.length} tickers · ${nW} wk`;
   $('#tbody').innerHTML=list.map(r=>{
     const d=r.latest, cls=d.change>=0?'u':'d';
     const dots=r.present.map((p,i)=>`<span class="dot ${p?(r.count===nW?'hot':'on'):''}" title="${keys[i]}: ${p?'present':'absent'}"></span>`).join('');
@@ -330,18 +381,17 @@ function renderTable(){
     const badge=r.count===nW&&nW>1?'<span class="badge">every wk</span>':'';
     return `<tr>
       <td class="l rankn">${r.rank}</td>
-      <td class="l"><a class="stk" href="https://chartink.com/stocks/${encodeURIComponent(r.symbol)}.html" target="_blank" rel="noopener">${r.symbol}</a></td>
+      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a></td>
       <td class="l">${r.name}</td>
       <td class="l"><span class="appc" data-tip="row" data-w="${tipWeeks.replace(/"/g,'')}"><span class="frac">${r.count}<small>/${nW}</small></span><span class="dots">${dots}</span>${badge}</span></td>
       <td class="num">${fmtClose(d.close)}</td>
-      <td class="num"><span class="pill ${cls}"><span class="arrow">${arrow(d.change)}</span> ${sign(d.change)}</span></td>
+      <td class="num"><span class="pill ${cls}"><span class="arr">${arrow(d.change)}</span> ${sign(d.change)}</span></td>
       <td class="num">${inr(d.volume)}</td>
     </tr>`;
   }).join('');
   document.querySelectorAll('thead th').forEach(th=>{th.classList.toggle('sorted',th.dataset.k===sortKey);th.classList.toggle('asc',th.dataset.k===sortKey&&sortAsc);});
 }
 
-/* events */
 document.querySelectorAll('thead th').forEach(th=>th.addEventListener('click',()=>{
   const k=th.dataset.k;
   if(k===sortKey)sortAsc=!sortAsc; else {sortKey=k; sortAsc=(k==='symbol'||k==='name');}
@@ -367,27 +417,28 @@ $('#themeBtn').addEventListener('click',()=>{
 
 $('#csvBtn').addEventListener('click',()=>{
   const {keys,nW,rows}=MODEL;
-  const head=['Rank','Symbol','Stock Name','Appearances','Window',...keys,'Latest Close','Latest %chg','Latest Volume'];
+  const head=['Rank','Symbol','Stock Name','Appearances','WeeksInRange',...keys,'Latest Close','Latest %chg','Latest Volume'];
   const esc=s=>`"${String(s).replace(/"/g,'""')}"`;
   const body=rows.map(r=>[r.rank,esc(r.symbol),esc(r.name),r.count,nW,...r.present.map(p=>p?1:0),r.latest.close,r.latest.change,r.latest.volume].join(',')).join('\n');
   const blob=new Blob([head.join(',')+'\n'+body],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(H.screener||'screener')+'_ranked.csv';a.click();
 });
 
-/* drag-drop: preview a CSV as this week (in-memory only) */
 const drop=$('#drop');
 ['dragenter','dragover'].forEach(ev=>document.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('on');}));
 document.addEventListener('dragleave',e=>{if(!e.relatedTarget)drop.classList.remove('on');});
 document.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('on');
   const f=e.dataTransfer.files[0]; if(!f)return; const rd=new FileReader();
   rd.onload=()=>{const recs=recordsFromCSV(rd.result); const wk=fridayISO(new Date());
-    H.weeks=H.weeks.filter(w=>w.week!==wk); H.weeks.push({week:wk,scraped_at:'(dropped preview)',tickers:recs}); H.weeks.sort((a,b)=>a.week<b.week?-1:1);
-    render();};
+    H.weeks=H.weeks.filter(w=>w.week!==wk); H.weeks.push({week:wk,scraped_at:'(dropped preview)',tickers:recs});
+    initSelection(); buildRangeControls(); render();};
   rd.readAsText(f);});
-function fridayISO(dt){const d=new Date(dt);const wd=(d.getDay()+6)%7;/*Mon0*/ d.setDate(d.getDate()+(4-wd)); return d.toISOString().slice(0,10);}
+function fridayISO(dt){const d=new Date(dt);const wd=(d.getDay()+6)%7; d.setDate(d.getDate()+(4-wd)); return d.toISOString().slice(0,10);}
 
 /* boot */
 H=JSON.parse(b64utf8(HISTORY_B64));
+initSelection();
+buildRangeControls();
 render();
 </script>
 </body>

@@ -93,11 +93,22 @@ def load_history(url: str):
     else:
         slug = url.rstrip("/").split("/")[-1]
         h = {"screener": slug, "source_url": url, "weeks": []}
+    h.setdefault("scanlink", None)
+    h.setdefault("timeframe", "weekly")
     return h
 
 
 def save_history(h):
     HISTORY.write_text(json.dumps(h, indent=2))
+
+
+def set_meta(h, scanlink=None, timeframe=None):
+    """Update the rotating in-scan link metadata (latest run wins)."""
+    if scanlink:
+        h["scanlink"] = scanlink
+    if timeframe:
+        h["timeframe"] = timeframe
+    return h
 
 
 def ingest(h, csv_path: Path, url: str):
@@ -142,16 +153,33 @@ def main() -> int:
     ap.add_argument("--ingest", type=Path, help="CSV snapshot to add as this week")
     ap.add_argument("--url", default=DEFAULT_URL, help="Source screener URL (for metadata)")
     ap.add_argument("--window", type=int, default=5, help="Rolling window in weeks (default 5)")
+    ap.add_argument("--scanlink", help="Rotating in-scan link hash (else read from CSV sidecar)")
+    ap.add_argument("--timeframe", help="Screener timeframe for in-scan links (e.g. weekly)")
     args = ap.parse_args()
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     h = load_history(args.url)
+
+    # Resolve scanlink/timeframe: explicit flags win; else the scrape sidecar.
+    scanlink, timeframe = args.scanlink, args.timeframe
+    if args.ingest and not scanlink:
+        sidecar = args.ingest.parent / (args.ingest.stem + ".meta.json")
+        if sidecar.exists():
+            m = json.loads(sidecar.read_text())
+            scanlink = scanlink or m.get("scanlink")
+            timeframe = timeframe or m.get("timeframe")
+    if scanlink or timeframe:
+        set_meta(h, scanlink, timeframe)
+        print(f"🔑 scanlink={h.get('scanlink')} timeframe={h.get('timeframe')}")
+
     if args.ingest:
         if not args.ingest.exists():
             print(f"❌ Snapshot not found: {args.ingest}", file=sys.stderr)
             return 1
         h = ingest(h, args.ingest, args.url)
         save_history(h)
+    elif scanlink or timeframe:
+        save_history(h)   # persist refreshed link metadata even without a new week
     if not h["weeks"]:
         print("⚠️  No weeks in history yet — run scrape.py then --ingest.", file=sys.stderr)
     render(h, args.window)
