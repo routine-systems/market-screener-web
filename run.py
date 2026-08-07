@@ -25,6 +25,8 @@ def main() -> int:
     ap.add_argument("--mode", choices=["weekly", "adhoc"], default="weekly")
     ap.add_argument("--url", default=scr.DEFAULT_URL, help="Chartink screener URL")
     ap.add_argument("--window", type=int, default=5, help="Default rolling window (weeks)")
+    ap.add_argument("--filter-url", help="Filtered-subset screener URL (default: <url>-fil)")
+    ap.add_argument("--no-filter", action="store_true", help="Skip the filtered-subset overlay")
     ap.add_argument("--show", action="store_true", help="Show the browser window")
     args = ap.parse_args()
 
@@ -35,6 +37,16 @@ def main() -> int:
         return 1
 
     h = bd.build_history(res["csv"], args.url, res.get("scanlink"), res.get("timeframe"))
+
+    # filtered-subset screener (default <url>-fil): per-week membership → highlight dots
+    if not args.no_filter:
+        furl = args.filter_url or (args.url + "-fil")
+        try:
+            fres = scr.scrape(furl, headless=not args.show)
+            bd.attach_filter(h, fres["csv"], furl)
+        except Exception as e:  # noqa: BLE001
+            print(f"⚠ filter screener skipped ({furl}): {e}")
+
     bd.save_history(h)
     bd.render(h, args.window)
     print(f"✔ {args.mode} run complete → dashboard.html "

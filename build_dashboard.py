@@ -88,6 +88,25 @@ def build_history(csv_path: Path, url: str, scanlink=None, timeframe=None):
     }
 
 
+def parse_membership(csv_path: Path):
+    """Backtest CSV of a subset screener -> { week: [symbols] } per week."""
+    weeks = parse_backtest(csv_path)
+    return {w["week"]: sorted({t["symbol"] for t in w["tickers"]}) for w in weeks}
+
+
+def attach_filter(h, filter_csv: Path, furl: str):
+    """Attach a filtered-subset screener's weekly membership for highlight dots."""
+    mem = parse_membership(filter_csv)
+    fslug = furl.rstrip("/").split("/")[-1]
+    h["filter"] = {"screener": fslug, "url": furl, "weeks": mem}
+    if mem:
+        last = max(mem)
+        print(f"◆ filter '{fslug}': {len(mem)} weeks, latest {last} → {len(mem[last])} symbols")
+    else:
+        print(f"◆ filter '{fslug}': 0 weeks parsed")
+    return h
+
+
 def save_history(h):
     HISTORY.write_text(json.dumps(h))
 
@@ -127,22 +146,32 @@ def main() -> int:
     ap.add_argument("--window", type=int, default=5, help="Default rolling window (weeks)")
     ap.add_argument("--scanlink", help="In-scan link hash (else read from sidecar)")
     ap.add_argument("--timeframe", help="Screener timeframe (e.g. weekly)")
+    ap.add_argument("--filter", dest="filter_csv", type=Path, help="Filtered-subset backtest CSV (highlight dots)")
+    ap.add_argument("--filter-url", help="Filtered-subset screener URL (default: <url>-fil)")
     args = ap.parse_args()
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
+    slug = args.url.rstrip("/").split("/")[-1]
     backtest = args.backtest
     if not backtest:
-        cands = sorted(DATA_DIR.glob("*_backtest_latest.csv")) or sorted(DATA_DIR.glob("*_backtest_*.csv"))
-        if not cands:
-            print("❌ No backtest CSV found in data/ — run scrape.py first.", file=sys.stderr)
-            return 1
-        backtest = cands[-1]
-    if not backtest.exists():
-        print(f"❌ Backtest CSV not found: {backtest}", file=sys.stderr)
+        cand = DATA_DIR / f"{slug}_backtest_latest.csv"
+        pool = [p for p in DATA_DIR.glob("*_backtest_latest.csv") if "-fil" not in p.name]
+        backtest = cand if cand.exists() else (sorted(pool)[-1] if pool else None)
+    if not backtest or not backtest.exists():
+        print("❌ No primary backtest CSV in data/ — run scrape.py first.", file=sys.stderr)
         return 1
 
     scanlink, timeframe = resolve_meta(backtest, args.scanlink, args.timeframe)
     h = build_history(backtest, args.url, scanlink, timeframe)
+
+    # optional filtered-subset screener → per-week membership for highlight dots
+    fcsv = args.filter_csv
+    if not fcsv:
+        cand = DATA_DIR / f"{slug}-fil_backtest_latest.csv"
+        fcsv = cand if cand.exists() else None
+    if fcsv and fcsv.exists():
+        attach_filter(h, fcsv, args.filter_url or (args.url + "-fil"))
+
     save_history(h)
     print(f"🔑 scanlink={h['scanlink']} timeframe={h['timeframe']}")
     render(h, args.window)

@@ -23,6 +23,10 @@ Built for `cp-ich-trend-bounce-wkly` but works with any screener URL.
    *in the scan's context* (the chart highlights the weeks it matched). This uses the
    per-screener `scanlink` hash, which Chartink **rotates**, so every run re-extracts
    it. (`nav_token` is not required.)
+5. **Filtered-subset overlay** — a second screener (`<url>-fil`, a stricter subset) is
+   scraped too; ranked tickers that also appear in it (latest week of the range) get a
+   gold highlight dot, and a **"◆ In filter"** toggle filters to just those. Best-effort
+   (skips cleanly if absent); disable with `--no-filter`.
 
 ## Everyday use — one command
 
