@@ -24,6 +24,16 @@ Built for `cp-ich-trend-bounce-wkly` but works with any screener URL.
    per-screener `scanlink` hash, which Chartink **rotates**, so every run re-extracts
    it. (`nav_token` is not required.)
 
+## Everyday use — one command
+
+```bash
+./dash.sh          # opens the dashboard; downloads fresh only if a new week has closed
+./dash.sh force    # force a fresh pull now (mid-week check), then open
+```
+
+`dash.sh` re-downloads only when your data predates the most recent **Friday 16:00**
+cutoff; otherwise it just opens `dashboard.html`.
+
 ## Two modes (`run.py`)
 
 Both scrape the backtest CSV and rebuild; they differ only in intent/scheduling
