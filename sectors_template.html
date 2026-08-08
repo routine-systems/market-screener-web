@@ -337,17 +337,18 @@ function renderQuad(rows, lvlName){
   if(LEVEL!=='sector' && WITHIN){ const par=(M.parents&&M.parents[LEVEL])||{}; items=items.filter(it=>par[it.g]===WITHIN); }
   if(items.length<2){ box.innerHTML=`<div class="empty" style="padding:34px 14px">Need ≥2 ${esc(lvlName.toLowerCase())} groups to plot${WITHIN?` in ${esc(WITHIN)}`:''}.</div>`; return; }
   const W=920,H=540, ml=54,mr=54,mt=30,mb=48, pw=W-ml-mr, ph=H-mt-mb;
-  const levels=items.map(d=>d.level), moms=items.map(d=>d.mom);
-  // x on a log scale — participation is right-skewed (a few big sectors), so log spreads the
-  // dense small-sector cluster and keeps the median crosshair near the centre.
-  const lx=v=>Math.log(Math.max(1, v));
-  let xmin=Math.min(...levels.map(lx)), xmax=Math.max(...levels.map(lx)); if(xmin===xmax){xmin-=0.5; xmax+=0.5;}
-  const xp=(xmax-xmin)*0.06; xmin-=xp; xmax+=xp;
+  const moms=items.map(d=>d.mom);
+  // x by participation RANK (empirical percentile), not raw/log value: a handful of huge
+  // groups plus a long tail of tiny ones (esp. at industry/basic level) crush a value axis
+  // to one side and slide the median divider off-centre. Ranking spreads points evenly at
+  // every level and lands the divider dead-centre; bubble size still encodes absolute size.
+  const order=items.map((d,i)=>({i,l:d.level})).sort((a,b)=>a.l-b.l);
+  const xfrac=new Array(items.length);
+  order.forEach((o,idx)=>{ xfrac[o.i]=items.length>1 ? 0.04+idx/(items.length-1)*0.92 : 0.5; });
   const ym=Math.max(0.001, ...moms.map(Math.abs))*1.18;
-  const X=v=>ml+(lx(v)-xmin)/(xmax-xmin)*pw;
+  const X=i=>ml+xfrac[i]*pw;
   const Y=v=>Math.max(mt+4, Math.min(mt+ph-4, mt+ph/2-(v/ym)*(ph/2)));
-  const sorted=[...levels].sort((a,b)=>a-b), medL=sorted[Math.floor(sorted.length/2)];
-  const cx=X(medL), cy=Y(0);
+  const cx=ml+0.5*pw, cy=Y(0);
   const rects=`<rect x="${ml}" y="${mt}" width="${(cx-ml).toFixed(1)}" height="${(cy-mt).toFixed(1)}" class="qz-tl" fill-opacity="0.07"/>`
     +`<rect x="${cx.toFixed(1)}" y="${mt}" width="${(ml+pw-cx).toFixed(1)}" height="${(cy-mt).toFixed(1)}" class="qz-tr" fill-opacity="0.07"/>`
     +`<rect x="${ml}" y="${cy.toFixed(1)}" width="${(cx-ml).toFixed(1)}" height="${(mt+ph-cy).toFixed(1)}" class="qz-bl" fill-opacity="0.07"/>`
@@ -359,12 +360,12 @@ function renderQuad(rows, lvlName){
     +`<text x="${ml+8}" y="${mt+16}" class="qlabel">↖ Improving</text>`
     +`<text x="${ml+8}" y="${mt+ph-8}" class="qlabel">↙ Lagging</text>`
     +`<text x="${ml+pw-8}" y="${mt+ph-8}" text-anchor="end" class="qlabel">Weakening ↘</text>`;
-  const titles=`<text x="${ml+pw/2}" y="${H-8}" text-anchor="middle" class="qtick">participation — avg stocks in screener, log scale (${esc(lvlName.toLowerCase())}) →</text>`
+  const titles=`<text x="${ml+pw/2}" y="${H-8}" text-anchor="middle" class="qtick">participation — ${esc(lvlName.toLowerCase())} ranked smallest → largest (median at centre)</text>`
     +`<text transform="translate(16 ${mt+ph/2}) rotate(-90)" text-anchor="middle" class="qtick">← shedding    adding →</text>`;
   const showAll=items.length<=45;
   const top=new Set([...items].sort((a,b)=>Math.abs(b.mom)-Math.abs(a.mom)).slice(0,12).map(d=>d.g));
-  const pts=items.map(d=>{
-    const x=X(d.level), y=Y(d.mom), r=Math.max(3.5, Math.min(13, Math.sqrt(Math.max(1,d.count))*1.6));
+  const pts=items.map((d,i)=>{
+    const x=X(i), y=Y(d.mom), r=Math.max(3.5, Math.min(13, Math.sqrt(Math.max(1,d.count))*1.6));
     const col=d.mom>0.04?'var(--up)':(d.mom<-0.04?'var(--down)':'var(--flat)');
     const flip=x>ml+pw*0.72, nm=esc(d.g.length>24?d.g.slice(0,23)+'…':d.g);
     const label=(showAll||top.has(d.g))?`<text x="${(flip?x-r-4:x+r+4).toFixed(1)}" y="${(y+3.5).toFixed(1)}" text-anchor="${flip?'end':'start'}" class="qname">${nm}</text>`:'';
