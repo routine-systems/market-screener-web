@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Rebuild the four pages from the CURRENT local data (no scrape) and deploy to Cloudflare Pages.
+# Refresh the data first with ./weekly · ./daily · ./market, then ./publish.
+#   → screener.chiragpatnaik.com  (Cloudflare Pages project "screener")
+set -euo pipefail
+export PATH="/usr/local/bin:/opt/homebrew/bin:/Library/Frameworks/Python.framework/Versions/3.12/bin:/usr/bin:/bin"
+cd "$(dirname "$0")"
+export CLOUDFLARE_ACCOUNT_ID=62231b040ed00c96cdcf3a4541eab958   # pinned: the account holding chiragpatnaik.com
+
+echo "↻ Rebuilding pages from current data (no scrape)…"
+python3 build_dashboard.py >/dev/null
+[ -f data/history_daily.json ] && python3 daily.py --no-scrape >/dev/null || true
+[ -f data/market_counts.json ] && python3 market.py --no-scrape >/dev/null || true
+
+echo "📦 Assembling dist/…"
+rm -rf dist && mkdir dist
+cp dashboard.html daily.html market.html sectors.html dist/
+cat > dist/index.html <<'HTML'
+<!doctype html><html lang="en"><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=dashboard.html"><title>Screener</title><body style="font-family:system-ui;background:#0d0d0d;color:#eee;padding:40px"><a style="color:#4d93ea" href="dashboard.html">Open the weekly screener →</a></body></html>
+HTML
+
+echo "🌎 Deploying to Cloudflare Pages (screener)…"
+npx wrangler pages deploy dist --project-name screener --branch main --commit-dirty=true
+echo "✔ Published → https://screener.chiragpatnaik.com"
