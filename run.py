@@ -55,6 +55,7 @@ def main() -> int:
     if not args.no_filter:
         furl = args.filter_url or (args.url + "-fil")
         try:
+            scr.polite_pause()                       # random gap before the next pull
             fres = scr.scrape(furl, headless=not args.show)
             bd.attach_filter(h, fres["csv"], furl)
         except Exception as e:  # noqa: BLE001

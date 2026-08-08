@@ -27,7 +27,7 @@ from pathlib import Path
 
 from selenium.webdriver.support.ui import WebDriverWait
 
-from scrape import build_driver, download_backtest_csv, extract_scanlink, scanlink_only
+from scrape import build_driver, download_backtest_csv, extract_scanlink, scanlink_only, polite_pause
 import build_dashboard as bd
 import sectors_lib
 
@@ -70,7 +70,7 @@ def scrape_all(pause, headless, timeout):
         csv.unlink()
         print(f"    {len(h['weeks'])} days ({h['weeks'][0]['week']}..{h['weeks'][-1]['week']}); scanlink {scanlink}")
 
-        time.sleep(pause)
+        polite_pause(pause)
         print(f"[2] filter {FILTER}")
         csv, _, _ = fetch_csv(driver, FILTER, timeout)
         bd.attach_filter(h, csv, BASE + FILTER)
@@ -78,7 +78,7 @@ def scrape_all(pause, headless, timeout):
 
         h["signals"] = []
         for i, (key, label, name, slug) in enumerate(SIGNALS, 3):
-            time.sleep(pause)
+            polite_pause(pause)
             print(f"[{i}] signal {slug} ({label})")
             csv, _, _ = fetch_csv(driver, slug, timeout)
             mem = bd.parse_membership(csv)
@@ -120,7 +120,7 @@ def render(h):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Daily potentials cross-tab dashboard")
-    ap.add_argument("--pause", type=float, default=4.0, help="Seconds between screener downloads")
+    ap.add_argument("--pause", type=float, default=30.0, help="Max random gap (s) between screener pulls; 0 disables")
     ap.add_argument("--no-scrape", action="store_true", help="Re-render from stored history")
     ap.add_argument("--refresh", action="store_true", help="Only re-extract the scanlink and rebuild (no download)")
     ap.add_argument("--show", action="store_true")

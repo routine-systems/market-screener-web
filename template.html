@@ -163,6 +163,7 @@
     <a href="market.html">Market</a>
     <a href="sectors.html">Sectors</a>
     <span class="sp"></span>
+    <button class="themebtn" id="refreshBtn" title="Re-scrape Chartink and rebuild all pages (~3–4 min) — reload after">↻ Refresh</button>
     <button class="themebtn" id="themeBtn">◐ Theme</button>
   </nav>
 
@@ -529,6 +530,18 @@ $('#themeBtn').addEventListener('click',()=>{
   const dark=matchMedia('(prefers-color-scheme: dark)').matches;
   document.documentElement.setAttribute('data-theme', cur?(cur==='dark'?'light':'dark'):(dark?'light':'dark'));
 });
+
+/* on-demand refresh → GitHub Actions (hosted site only) */
+(function(){ const rb=document.getElementById('refreshBtn'); if(!rb) return;
+  if(location.protocol==='file:'){ rb.style.display='none'; return; }
+  rb.addEventListener('click', async ()=>{
+    const o=rb.textContent; rb.disabled=true; rb.textContent='↻ Queuing…';
+    try{ const r=await fetch('/api/refresh',{method:'POST'}); const j=await r.json().catch(()=>({}));
+      if(r.ok&&j.ok){ rb.textContent='✔ Queued · reload in ~4 min'; }
+      else { rb.textContent='⚠ failed'; rb.disabled=false; setTimeout(()=>{rb.textContent=o;},5000); }
+    }catch(e){ rb.textContent='⚠ error'; rb.disabled=false; setTimeout(()=>{rb.textContent=o;},5000); }
+  });
+})();
 
 $('#csvBtn').addEventListener('click',()=>{
   const {keys,nW,rows}=MODEL;

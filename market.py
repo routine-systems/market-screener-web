@@ -26,7 +26,7 @@ from pathlib import Path
 
 from selenium.webdriver.support.ui import WebDriverWait
 
-from scrape import build_driver, download_backtest_csv
+from scrape import build_driver, download_backtest_csv, polite_pause
 from build_dashboard import _iso
 from sectors_lib import LEVELS, SECTOR_STORE, load_sector_map, group_parents
 
@@ -160,7 +160,7 @@ def scrape_all(pause: float, headless: bool, timeout: int):
                       f"({days[0]}..{days[-1]}); latest count {store['counts'][slug][days[-1]]}")
             except Exception as e:  # noqa: BLE001
                 print(f"    ⚠ skipped: {e}")
-            time.sleep(pause)
+            polite_pause(pause)
 
         # 4th page: the weekly sector-rotation screener, mapped to a finer sector classification
         print(f"[sectors] {SECTOR_SLUG} (weekly) + Downloads/data.csv classification")
@@ -227,7 +227,7 @@ def render_sectors(store):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Daily market-breadth counts dashboard")
-    ap.add_argument("--pause", type=float, default=4.0, help="Seconds between screener downloads")
+    ap.add_argument("--pause", type=float, default=30.0, help="Max random gap (s) between screener pulls; 0 disables")
     ap.add_argument("--no-scrape", action="store_true", help="Re-render from stored counts only")
     ap.add_argument("--show", action="store_true", help="Show the browser window")
     ap.add_argument("--timeout", type=int, default=60)

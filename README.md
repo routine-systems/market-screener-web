@@ -29,6 +29,25 @@ The three pages cross-link via a top menu (**Weekly · Daily · Market**). `dash
 
 ---
 
+## Hosting & automation
+
+Live (login-gated) at **screener.chiragpatnaik.com** — a Cloudflare **Pages** project (`screener`)
+behind **Cloudflare Access** (allow-listed emails only). Deploy manually with **`./publish`**
+(rebuilds all four pages from current data, no scrape, then `wrangler pages deploy`).
+
+**Auto-refresh — no laptop needed.** `.github/workflows/refresh.yml` runs on a GitHub runner
+**Mon–Fri 11:00 UTC (4:30pm IST)** and on-demand: full scrape (weekly + daily + market/sector)
+→ `publish` → deploy. A **↻ Refresh** button in the nav (hosted site only) POSTs `/api/refresh`
+(a Pages Function, `functions/api/refresh.js`) which dispatches that same workflow. Each screener
+pull is spaced by a **random up-to-30s gap** (`scrape.polite_pause`; tune with `--pause`).
+
+Two secrets make it live (create-your-own; not committed):
+- **`CLOUDFLARE_API_TOKEN`** (Account · Cloudflare Pages · Edit) as a GitHub Actions secret —
+  `gh secret set CLOUDFLARE_API_TOKEN -R NakliTechie/chartink-dashboard` — lets the workflow deploy.
+- **`GH_DISPATCH_TOKEN`** (a GitHub fine-grained PAT with Actions: read+write on this repo) as a
+  Pages secret — `wrangler pages secret put GH_DISPATCH_TOKEN --project-name screener` — lets the
+  ↻ Refresh button trigger the workflow.
+
 ## What each page shows
 
 **Weekly potentials** (`dashboard.html`) — ranks tickers by how many of a selectable

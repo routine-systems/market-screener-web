@@ -15,6 +15,7 @@ python3 build_dashboard.py >/dev/null
 echo "📦 Assembling dist/…"
 rm -rf dist && mkdir dist
 cp dashboard.html daily.html market.html sectors.html dist/
+[ -d functions ] && cp -r functions dist/functions || true   # Pages Function: /api/refresh
 cat > dist/index.html <<'HTML'
 <!doctype html><html lang="en"><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=dashboard.html"><title>Screener</title><body style="font-family:system-ui;background:#0d0d0d;color:#eee;padding:40px"><a style="color:#4d93ea" href="dashboard.html">Open the weekly screener →</a></body></html>
 HTML

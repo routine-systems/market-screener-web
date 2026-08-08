@@ -30,8 +30,12 @@ jobs:
         run: pip install selenium webdriver-manager
       - name: Scrape weekly (+ -fil)
         run: python3 run.py --mode weekly --url https://chartink.com/screener/cp-ich-trend-bounce-wkly
+      - name: Random gap
+        run: sleep $(( (RANDOM % 28) + 3 ))
       - name: Scrape daily (dly + -fil + PB + MQ)
         run: python3 daily.py
+      - name: Random gap
+        run: sleep $(( (RANDOM % 28) + 3 ))
       - name: Scrape market breadth + sector rotation
         run: python3 market.py
       - name: Rebuild all pages and deploy to Cloudflare Pages
