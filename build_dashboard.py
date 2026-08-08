@@ -34,13 +34,16 @@ DEFAULT_URL = "https://chartink.com/screener/cp-ich-trend-bounce-wkly"
 
 
 def _iso(d: str) -> str:
-    """DD-MM-YYYY (Chartink) -> YYYY-MM-DD; pass through if already ISO."""
-    for fmt in ("%d-%m-%Y", "%Y-%m-%d", "%d/%m/%Y"):
+    """DD-MM-YYYY (Chartink, possibly with a trailing time) -> YYYY-MM-DD; pass through if ISO.
+    Takes the date token only, so a stray '14-07-2026 6:30 pm' still parses to the date."""
+    parts = (d or "").strip().split()
+    s = parts[0] if parts else ""
+    for fmt in ("%d-%m-%Y", "%Y-%m-%d", "%d/%m/%Y", "%Y/%m/%d"):
         try:
-            return datetime.strptime(d.strip(), fmt).date().isoformat()
+            return datetime.strptime(s, fmt).date().isoformat()
         except ValueError:
             continue
-    return d.strip()
+    return s
 
 
 def parse_backtest(csv_path: Path):
