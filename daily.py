@@ -134,6 +134,15 @@ def main() -> int:
     else:
         h = scrape_all(args.pause, not args.show, args.timeout)
         STORE.write_text(json.dumps(h))
+
+    # cross-reference: which of these daily tickers are also in the WEEKLY sheet?
+    wk = DATA_DIR / "history.json"
+    if wk.exists():
+        w = json.loads(wk.read_text())
+        h["cross"] = {"label": "W", "name": "weekly", "url": w.get("source_url"),
+                      "weeks": {x["week"]: sorted({t["symbol"] for t in x["tickers"]})
+                                for x in w.get("weeks", [])}}
+        print(f"↔ cross: weekly sheet has {len(h['cross']['weeks'])} weeks")
     render(h)
     return 0
 

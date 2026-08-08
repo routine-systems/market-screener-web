@@ -172,6 +172,15 @@ def main() -> int:
     if fcsv and fcsv.exists():
         attach_filter(h, fcsv, args.filter_url or (args.url + "-fil"))
 
+    # cross-reference: which of these weekly tickers are also in the DAILY sheet?
+    dly = DATA_DIR / "history_daily.json"
+    if dly.exists():
+        d = json.loads(dly.read_text())
+        h["cross"] = {"label": "D", "name": "daily", "url": d.get("source_url"),
+                      "weeks": {x["week"]: sorted({t["symbol"] for t in x["tickers"]})
+                                for x in d.get("weeks", [])}}
+        print(f"↔ cross: daily sheet has {len(h['cross']['weeks'])} days")
+
     save_history(h)
     print(f"🔑 scanlink={h['scanlink']} timeframe={h['timeframe']}")
     render(h, args.window)

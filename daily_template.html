@@ -8,23 +8,24 @@
   :root{
     color-scheme: light;
     --plane:#f9f9f7; --surface:#fcfcfb;
-    --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+    --ink:#0b0b0b; --ink-2:#52514e; --muted:#66655f;
     --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
-    --up:#0ca30c; --down:#d03b3b; --vol:#256abf; --filt:#d98a00;
+    --up:#0ca30c; --down:#d03b3b; --vol:#1c5cab; --filt:#d98a00;
+    --sol-blue:#1c5cab; --sol-green:#0a7d0a;   /* solid backgrounds with white text (AA) */
     --up-soft:rgba(12,163,12,0.12); --vol-soft:rgba(37,120,191,0.12); --chip:#eef0ee; --dot-off:#d7d6cf; --hot:#184f95;
   }
   @media (prefers-color-scheme: dark){:root:where(:not([data-theme="light"])){
     color-scheme: dark;
     --plane:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
     --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
-    --up:#0ca30c; --down:#e66767; --vol:#3987e5; --filt:#f0b83e;
+    --up:#0ca30c; --down:#e66767; --vol:#4d93ea; --filt:#f0b83e;
     --up-soft:rgba(12,163,12,0.16); --vol-soft:rgba(57,135,229,0.16); --chip:#232322; --dot-off:#39383550; --hot:#86b6ef;
   }}
   :root[data-theme="dark"]{
     color-scheme: dark;
     --plane:#0d0d0d; --surface:#1a1a19; --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
     --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
-    --up:#0ca30c; --down:#e66767; --vol:#3987e5; --filt:#f0b83e;
+    --up:#0ca30c; --down:#e66767; --vol:#4d93ea; --filt:#f0b83e;
     --up-soft:rgba(12,163,12,0.16); --vol-soft:rgba(57,135,229,0.16); --chip:#232322; --dot-off:#39383550; --hot:#86b6ef;
   }
   *{box-sizing:border-box} html,body{margin:0}
@@ -38,9 +39,9 @@
   .nav .themebtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:8px; padding:5px 10px; font-size:12px; cursor:pointer; align-self:center}
   /* shared header */
   .title h1{font-size:20px; margin:0 0 3px; letter-spacing:-0.01em}
+  .title .purpose{color:var(--ink-2); font-size:12.5px; margin:0 0 4px}
   .title .sub{color:var(--ink-2); font-size:13px}
-  .title .sub a{color:var(--vol); text-decoration:none}
-  .title .sub a:hover{text-decoration:underline}
+  .title .sub a{color:var(--vol); text-decoration:underline}
   header.top{margin-bottom:18px}
   select{background:var(--plane); color:var(--ink); border:1px solid var(--border); border-radius:8px; padding:6px 9px; font-size:13px; font-variant-numeric:tabular-nums}
 
@@ -57,18 +58,20 @@
   .rangebar .lab{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:0.04em}
   .rangebar .arrow{color:var(--muted)}
   .preset{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 10px; font-size:12px; cursor:pointer}
-  .preset:hover{color:var(--ink)} .preset.on{background:var(--vol); color:#fff; border-color:var(--vol)}
+  .preset:hover{color:var(--ink)} .preset.on{background:var(--sol-blue); color:#fff; border-color:var(--sol-blue)}
   .offbtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer}
   .offbtn:hover:not(:disabled){color:var(--ink); border-color:var(--vol)} .offbtn:disabled{opacity:.3; cursor:default}
   .offlbl{color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; min-width:44px; text-align:center; white-space:nowrap}
   .rangenote{color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums}
+  .legend{color:var(--muted); font-size:11.5px; margin-bottom:10px}
+  .legend a{color:var(--vol); text-decoration:underline}
   .tbar{display:flex; align-items:center; gap:9px; margin-bottom:12px; flex-wrap:wrap}
   .tbar input{background:var(--plane); border:1px solid var(--border); color:var(--ink); border-radius:8px; padding:8px 11px; font-size:13px; width:190px; max-width:52vw}
   .tbar .count{color:var(--muted); font-size:12px}
   .spacer{flex:1 1 auto}
   .toolbtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:8px; padding:6px 10px; font-size:12.5px; cursor:pointer}
-  .toolbtn:hover{color:var(--ink)} .toolbtn.on{background:var(--vol); color:#fff; border-color:var(--vol)}
-  .toolbtn.g3.on{background:var(--up); border-color:var(--up)} .toolbtn.filt.on{background:var(--filt); color:#111; border-color:var(--filt)}
+  .toolbtn:hover{color:var(--ink)} .toolbtn.on{background:var(--sol-blue); color:#fff; border-color:var(--sol-blue)}
+  .toolbtn.g3.on{background:var(--sol-green); color:#fff; border-color:var(--sol-green)} .toolbtn.filt.on{background:var(--filt); color:#111; border-color:var(--filt)}
   .tablewrap{overflow-x:auto; max-height:72vh; overflow-y:auto}
   table{width:100%; border-collapse:collapse; font-size:13px}
   th,td{padding:8px 10px; text-align:right; white-space:nowrap} th.l,td.l{text-align:left}
@@ -77,12 +80,13 @@
   tbody tr{border-bottom:1px solid var(--grid)} tbody tr:hover{background:var(--chip)}
   td.num{font-variant-numeric:tabular-nums} td .stk{color:var(--vol); text-decoration:none; font-weight:600}
   .filt-dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--filt); margin-left:6px; vertical-align:middle}
+  .cross-badge{display:inline-block; font-size:9px; font-weight:800; line-height:1; padding:2px 4px; border-radius:4px; border:1px solid var(--vol); color:var(--vol); margin-left:5px; vertical-align:middle; letter-spacing:0.02em}
   .mc{font-size:11px; color:var(--ink-2)}
   .xtab{display:inline-flex; align-items:center; gap:5px}
-  .xc{font-size:10.5px; font-weight:700; padding:2px 6px; border-radius:6px; background:var(--chip); color:var(--muted); border:1px solid var(--border); letter-spacing:0.03em}
-  .xc.on{background:var(--vol-soft); color:var(--vol); border-color:transparent}
+  .xc{font-size:10.5px; font-weight:700; padding:2px 6px; border-radius:6px; background:var(--chip); color:var(--ink-2); border:1px solid var(--border); letter-spacing:0.03em}
+  .xc.on{background:var(--sol-blue); color:#fff; border-color:transparent}
   .xscore{font-size:11px; font-weight:800; padding:2px 7px; border-radius:999px; margin-left:2px; font-variant-numeric:tabular-nums}
-  .xscore.s3{background:var(--up); color:#fff} .xscore.s2{background:var(--vol-soft); color:var(--vol)} .xscore.s1{background:var(--chip); color:var(--muted)}
+  .xscore.s3{background:var(--sol-green); color:#fff} .xscore.s2{background:var(--sol-blue); color:#fff} .xscore.s1{background:var(--chip); color:var(--ink-2)}
   .appc{display:inline-flex; align-items:center; gap:8px}
   .appc .frac{font-variant-numeric:tabular-nums; font-weight:700; min-width:34px; display:inline-block}
   .appc .frac small{font-weight:500; color:var(--muted)}
@@ -96,14 +100,15 @@
 </head>
 <body>
 <div class="wrap">
-  <nav class="nav">
+  <nav class="nav" aria-label="Views">
     <a href="dashboard.html">Weekly</a>
-    <a href="daily.html" class="on">Daily</a>
+    <a href="daily.html" class="on" aria-current="page">Daily</a>
     <a href="market.html">Market</a>
     <span class="sp"></span>
     <button class="themebtn" id="themeBtn">◐ Theme</button>
   </nav>
 
+  <main>
   <header class="top">
     <div class="title">
       <h1>Daily potentials</h1>
@@ -140,13 +145,11 @@
       <button class="toolbtn" id="mqOnly">MQ</button>
       <button class="toolbtn filt" id="filOnly" title="Only tickers in the -fil subset">◆ Filter</button>
       <button class="toolbtn" id="newOnly" title="New in dly on the latest day">✦ New</button>
+      <button class="toolbtn" id="crossOnly" title="Also in the weekly sheet (for the week[s] in view)" hidden>◲ In weekly</button>
       <input id="search" type="search" placeholder="Search symbol / sector…" autocomplete="off">
       <button class="toolbtn" id="csvBtn">⭳ CSV</button>
     </div>
-    <div style="color:var(--muted); font-size:11.5px; margin-bottom:10px">
-      <b>DLY</b> = trend-bounce · <b>PB</b> = price breakout · <b>MQ</b> = Minervini Q · score = how many of the three fired in the window ·
-      <span style="color:var(--filt)">◆</span> also in −fil · <span style="color:var(--up)">✦</span> new today · dots = days in dly within the window
-    </div>
+    <div class="legend" id="legend"></div>
     <div class="tablewrap">
       <table id="tbl">
         <thead><tr>
@@ -162,6 +165,7 @@
     </div>
   </section>
   <footer id="foot"></footer>
+  </main>
 </div>
 
 <script>
@@ -177,10 +181,12 @@ const DAYS=WEEKS.map(w=>w.week);
 const dlyByDay=new Map(WEEKS.map(w=>[w.week, new Map(w.tickers.map(t=>[t.symbol,t]))]));
 const filByDay=new Map(Object.entries((H.filter&&H.filter.weeks)||{}).map(([d,a])=>[d,new Set(a)]));
 const SIGS=(H.signals||[]).map(s=>({key:s.key,label:s.label,name:s.name,url:s.url,by:new Map(Object.entries(s.weeks||{}).map(([d,a])=>[d,new Set(a)]))}));
+const CROSS=new Map(Object.entries((H.cross&&H.cross.weeks)||{}).map(([d,a])=>[d,new Set(a)]));
+function mondayOf(iso){const dt=new Date(iso+'T00:00:00Z');const wd=(dt.getUTCDay()+6)%7;dt.setUTCDate(dt.getUTCDate()-wd);return dt.toISOString().slice(0,10);}
 
 let SEL={from:Math.max(0,DAYS.length-WINDOW), to:DAYS.length-1};
 let sortKey='score', sortAsc=false, MODEL=null;
-let allThree=false, pbOnly=false, mqOnly=false, filOnly=false, newOnly=false;
+let allThree=false, pbOnly=false, mqOnly=false, filOnly=false, newOnly=false, crossOnly=false;
 
 function stockUrl(sym){
   if(H.scanlink) return `https://chartink.com/stocks-new?from_scan=1&hide_filters=true&scan_link=scanlink:${encodeURIComponent(H.scanlink)}&timeframe=${encodeURIComponent(H.timeframe||'daily')}&symbol=${encodeURIComponent(sym)}`;
@@ -195,6 +201,8 @@ function compute(){
     SIGS.forEach(s=>{ if(s.key==='pb')(s.by.get(d)||new Set()).forEach(x=>pbU.add(x)); if(s.key==='mq')(s.by.get(d)||new Set()).forEach(x=>mqU.add(x)); });
     (filByDay.get(d)||new Set()).forEach(x=>filU.add(x));
   });
+  const crossSet=new Set();
+  if(CROSS.size){ new Set(win.map(mondayOf)).forEach(m=>(CROSS.get(m)||new Set()).forEach(s=>crossSet.add(s))); }
   // universe = dly tickers anywhere in the window; latest rec wins for sector/cap
   const map=new Map();
   win.forEach((d,di)=>{ const m=dlyByDay.get(d)||new Map(); m.forEach((rec,sym)=>{
@@ -204,7 +212,7 @@ function compute(){
   const rows=[...map.values()].map(e=>{
     const sig={pb:pbU.has(e.symbol), mq:mqU.has(e.symbol)};
     const score=1+(sig.pb?1:0)+(sig.mq?1:0);
-    return {...e, sig, score, inFil:filU.has(e.symbol), consist:e.present.filter(Boolean).length};
+    return {...e, sig, score, inFil:filU.has(e.symbol), inCross:crossSet.has(e.symbol), consist:e.present.filter(Boolean).length};
   });
   rows.sort((a,b)=> b.score-a.score || b.consist-a.consist || a.symbol.localeCompare(b.symbol));
   rows.forEach((r,i)=>r.rank=i+1);
@@ -237,16 +245,13 @@ function render(){
 
   const all3=rows.filter(r=>r.score===3).length, pb=rows.filter(r=>r.sig.pb).length, mq=rows.filter(r=>r.sig.mq).length;
   const fil=rows.filter(r=>r.inFil).length, nw=rows.filter(r=>r.isNew).length;
-  const sub=[]; sub.push(`<b>cp-ich-trend-bounce-dly</b>`);
-  sub.push(`<b>${rows.length}</b> potentials · ${nD===1?win[0]:`${win[0]} → ${win[nD-1]}`}`);
-  sub.push(`signals: dly · ${SIGS.map(s=>s.label).join(' · ')||'—'}`);
-  if(H.source_url) sub.push(`<a href="${H.source_url}" target="_blank" rel="noopener">source ↗</a>`);
-  $('#sub').innerHTML=sub.join(' · ');
+  $('#sub').innerHTML=`<b>${rows.length}</b> potentials · ${nD===1?win[0]:`${win[0]} → ${win[nD-1]}`}`;
 
   const tiles=[['Potentials',String(rows.length)],['All three',`<span class="g3">${all3}</span>`],['+ PB',String(pb)],['+ MQ',String(mq)],['In filter',String(fil)],['New',`<span class="up">${nw}</span>`]];
   $('#kpis').innerHTML=tiles.map(([l,v])=>`<div class="tile"><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join('');
   $('#allThree').textContent=`◎ All three (${all3})`; $('#pbOnly').textContent=`PB (${pb})`; $('#mqOnly').textContent=`MQ (${mq})`;
   $('#filOnly').textContent=`◆ Filter (${fil})`; $('#newOnly').textContent=`✦ New (${nw})`;
+  if(H.cross){const cn=rows.filter(r=>r.inCross).length; const cb=$('#crossOnly'); cb.hidden=false; cb.textContent=`◲ In ${H.cross.name} (${cn})`;}
   renderTable();
   $('#foot').innerHTML=`Generated ${H.generated_at||''} · self-contained · runs 2–3×/day · all three in the window = strongest candidate`;
 }
@@ -254,7 +259,7 @@ function render(){
 function renderTable(){
   const {nD,rows}=MODEL;
   const q=$('#search').value.trim().toLowerCase();
-  let list=rows.filter(r=>(!q||r.symbol.toLowerCase().includes(q)||(r.sector||'').toLowerCase().includes(q)) && (!allThree||r.score===3) && (!pbOnly||r.sig.pb) && (!mqOnly||r.sig.mq) && (!filOnly||r.inFil) && (!newOnly||r.isNew));
+  let list=rows.filter(r=>(!q||r.symbol.toLowerCase().includes(q)||(r.sector||'').toLowerCase().includes(q)) && (!allThree||r.score===3) && (!pbOnly||r.sig.pb) && (!mqOnly||r.sig.mq) && (!filOnly||r.inFil) && (!newOnly||r.isNew) && (!crossOnly||r.inCross));
   list=[...list].sort((a,b)=>{let x,y;
     if(sortKey==='rank'||sortKey==='score'){x=a.score;y=b.score;} else if(sortKey==='consist'){x=a.consist;y=b.consist;}
     else if(sortKey==='symbol'){x=a.symbol.toLowerCase();y=b.symbol.toLowerCase();} else if(sortKey==='sector'){x=(a.sector||'').toLowerCase();y=(b.sector||'').toLowerCase();}
@@ -269,7 +274,7 @@ function renderTable(){
       : `<span class="minibar" title="${r.consist}/${nD}"><span style="width:${(r.consist/nD*100).toFixed(1)}%"></span></span>`;
     return `<tr>
       <td class="l rankn">${r.rank}</td>
-      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${r.inFil?'<span class="filt-dot" title="in -fil subset"></span>':''}${r.isNew?' <span class="up" title="new on latest day">✦</span>':''}</td>
+      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${r.inFil?'<span class="filt-dot" title="in -fil subset"></span>':''}${r.isNew?' <span class="up" title="new on latest day">✦</span>':''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}</td>
       <td class="l"><span class="xtab">${xc}<span class="xscore s${r.score}">${r.score}/3</span></span></td>
       <td class="l"><span class="appc"><span class="frac">${r.consist}<small>/${nD}</small></span>${grid}</span></td>
       <td class="l mc">${r.sector||'—'}</td>
@@ -282,14 +287,20 @@ function renderTable(){
 document.querySelectorAll('thead th').forEach(th=>th.addEventListener('click',()=>{const k=th.dataset.k; if(k===sortKey)sortAsc=!sortAsc; else{sortKey=k; sortAsc=(k==='symbol'||k==='sector');} renderTable();}));
 $('#search').addEventListener('input',renderTable);
 function toggle(id,setter){const b=$('#'+id); b.addEventListener('click',()=>{setter(); b.classList.toggle('on'); renderTable();});}
-toggle('allThree',()=>allThree=!allThree); toggle('pbOnly',()=>pbOnly=!pbOnly); toggle('mqOnly',()=>mqOnly=!mqOnly); toggle('filOnly',()=>filOnly=!filOnly); toggle('newOnly',()=>newOnly=!newOnly);
+toggle('allThree',()=>allThree=!allThree); toggle('pbOnly',()=>pbOnly=!pbOnly); toggle('mqOnly',()=>mqOnly=!mqOnly); toggle('filOnly',()=>filOnly=!filOnly); toggle('newOnly',()=>newOnly=!newOnly); toggle('crossOnly',()=>crossOnly=!crossOnly);
 $('#csvBtn').addEventListener('click',()=>{const {rows,win,nD}=MODEL; const head=['Rank','Symbol','Window','Score','InDly','InPB','InMQ','InFil','DaysInDly','WindowDays','Sector','Cap'];
   const esc=s=>`"${String(s).replace(/"/g,'""')}"`; const wl=nD===1?win[0]:`${win[0]}..${win[nD-1]}`;
   const body=rows.map(r=>[r.rank,esc(r.symbol),wl,r.score,1,r.sig.pb?1:0,r.sig.mq?1:0,r.inFil?1:0,r.consist,nD,esc(r.sector),esc(r.marketcap)].join(',')).join('\n');
   const blob=new Blob([head.join(',')+'\n'+body],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='daily_potentials.csv'; a.click();});
 $('#themeBtn').addEventListener('click',()=>{const cur=document.documentElement.getAttribute('data-theme');const dark=matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.setAttribute('data-theme',cur?(cur==='dark'?'light':'dark'):(dark?'light':'dark'));});
 
+function buildLegend(){
+  const link=(u,t)=>u?`<a href="${u}" target="_blank" rel="noopener">${t}</a>`:t;
+  const pb=SIGS.find(s=>s.key==='pb'), mq=SIGS.find(s=>s.key==='mq');
+  $('#legend').innerHTML=`${link(H.source_url,'DLY')} = trend-bounce · ${link(pb&&pb.url,'PB')} = price breakout · ${link(mq&&mq.url,'MQ')} = Minervini Q · score = how many of the three fired in the window · <span style="color:var(--filt)">◆</span> also in −fil · <span style="color:var(--up)">✦</span> new · dots = days in dly within the window${H.cross?` · <b>${H.cross.label}</b> also in ${H.cross.name}`:''}`;
+}
 buildControls();
+buildLegend();
 render();
 </script>
 </body>

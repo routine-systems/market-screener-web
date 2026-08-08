@@ -8,9 +8,10 @@
   :root{
     color-scheme: light;
     --plane:#f9f9f7; --surface:#fcfcfb;
-    --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+    --ink:#0b0b0b; --ink-2:#52514e; --muted:#66655f;
     --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
-    --up:#0ca30c; --down:#d03b3b; --vol:#256abf; --bar:#2a78d6; --filt:#d98a00;
+    --up:#0ca30c; --down:#d03b3b; --vol:#1c5cab; --bar:#2a78d6; --filt:#d98a00;
+    --sol-blue:#1c5cab; --sol-green:#0a7d0a;
     --up-soft:rgba(12,163,12,0.12); --chip:#eef0ee; --dot-off:#d7d6cf; --hot:#184f95;
   }
   @media (prefers-color-scheme: dark){
@@ -19,7 +20,7 @@
       --plane:#0d0d0d; --surface:#1a1a19;
       --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
       --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
-      --up:#0ca30c; --down:#e66767; --vol:#3987e5; --bar:#3987e5; --filt:#f0b83e;
+      --up:#0ca30c; --down:#e66767; --vol:#4d93ea; --bar:#3987e5; --filt:#f0b83e;
       --up-soft:rgba(12,163,12,0.16); --chip:#232322; --dot-off:#39383550; --hot:#86b6ef;
     }
   }
@@ -28,7 +29,7 @@
     --plane:#0d0d0d; --surface:#1a1a19;
     --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
     --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
-    --up:#0ca30c; --down:#e66767; --vol:#3987e5; --bar:#3987e5; --filt:#f0b83e;
+    --up:#0ca30c; --down:#e66767; --vol:#4d93ea; --bar:#3987e5; --filt:#f0b83e;
     --up-soft:rgba(12,163,12,0.16); --chip:#232322; --dot-off:#39383550; --hot:#86b6ef;
   }
   *{box-sizing:border-box}
@@ -45,15 +46,17 @@
   header.top{display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:20px}
   .title h1{font-size:20px; margin:0 0 3px; letter-spacing:-0.01em}
   .title .sub{color:var(--ink-2); font-size:13px}
-  .title .sub a{color:var(--vol); text-decoration:none}
+  .title .sub a{color:var(--vol); text-decoration:underline}
+  .title .purpose{color:var(--ink-2); font-size:12.5px; margin:0 0 4px}
   .title .sub a:hover{text-decoration:underline}
   .spacer{flex:1 1 auto}
   .toolbtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2);
     border-radius:8px; padding:7px 11px; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px}
   .toolbtn:hover{color:var(--ink)}
-  .toolbtn.on{background:var(--vol); color:#fff; border-color:var(--vol)}
+  .toolbtn.on{background:var(--sol-blue); color:#fff; border-color:var(--sol-blue)}
   .toolbtn.filt.on{background:var(--filt); color:#111; border-color:var(--filt)}
   .filt-dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--filt); margin-left:6px; vertical-align:middle}
+  .cross-badge{display:inline-block; font-size:9px; font-weight:800; line-height:1; padding:2px 4px; border-radius:4px; border:1px solid var(--vol); color:var(--vol); margin-left:5px; vertical-align:middle; letter-spacing:0.02em}
   select{background:var(--plane); color:var(--ink); border:1px solid var(--border); border-radius:8px;
     padding:6px 8px; font-size:13px; font-variant-numeric:tabular-nums}
 
@@ -84,8 +87,8 @@
   .chips{display:flex; flex-wrap:wrap; gap:6px; max-height:150px; overflow:auto}
   .chip{display:inline-flex; align-items:center; gap:5px; background:var(--chip); border:1px solid var(--border);
     border-radius:999px; padding:3px 9px; font-size:12px; font-weight:600}
-  .chip a{color:var(--vol); text-decoration:none}
-  .chip .s{font-weight:500; color:var(--muted)}
+  .chip a{color:var(--vol); text-decoration:underline}
+  .chip .s{font-weight:500; color:var(--ink-2)}
   .empty{color:var(--muted); font-size:13px; padding:6px 0}
 
   .tablecard{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px}
@@ -94,7 +97,7 @@
   .rangebar .arrow{color:var(--muted)}
   .preset{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 9px; font-size:12px; cursor:pointer}
   .preset:hover{color:var(--ink)}
-  .preset.on{background:var(--vol); color:#fff; border-color:var(--vol)}
+  .preset.on{background:var(--sol-blue); color:#fff; border-color:var(--sol-blue)}
   .offbtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer}
   .offbtn:hover:not(:disabled){color:var(--ink); border-color:var(--vol)}
   .offbtn:disabled{opacity:.3; cursor:default}
@@ -129,7 +132,7 @@
   .minibar{display:inline-block; width:90px; height:8px; background:var(--dot-off); border-radius:4px; overflow:hidden; vertical-align:middle}
   .minibar>span{display:block; height:100%; background:var(--vol)}
   .rankn{color:var(--muted); font-variant-numeric:tabular-nums}
-  .badge{font-size:10px; padding:1px 6px; border-radius:999px; background:var(--up-soft); color:var(--up); font-weight:700; margin-left:6px}
+  .badge{font-size:10px; padding:1px 6px; border-radius:999px; background:var(--sol-green); color:#fff; font-weight:700; margin-left:6px}
 
   #tt{position:fixed; z-index:50; pointer-events:none; background:var(--ink); color:var(--surface);
       padding:6px 9px; border-radius:7px; font-size:12px; opacity:0; transform:translateY(-4px); transition:opacity .08s; max-width:260px}
@@ -142,13 +145,15 @@
 </head>
 <body>
 <div class="wrap">
-  <nav class="nav">
-    <a href="dashboard.html" class="on">Weekly</a>
+  <nav class="nav" aria-label="Views">
+    <a href="dashboard.html" class="on" aria-current="page">Weekly</a>
     <a href="daily.html">Daily</a>
     <a href="market.html">Market</a>
     <span class="sp"></span>
     <button class="themebtn" id="themeBtn">◐ Theme</button>
   </nav>
+
+  <main>
   <header class="top">
     <div class="title">
       <h1>Weekly potentials</h1>
@@ -185,12 +190,13 @@
       <div class="spacer"></div>
       <button class="toolbtn" id="newOnly" title="Show only tickers new in the latest week of the selected range">✦ New only</button>
       <button class="toolbtn filt" id="filtOnly" title="Show only tickers that also appear in the filtered screener (latest week of range)">◆ In filter</button>
+      <button class="toolbtn" id="crossOnly" title="Also in the daily sheet (for the week[s] in view)" hidden>◲ In daily</button>
       <input id="search" type="search" placeholder="Search symbol or sector…" autocomplete="off">
       <button class="toolbtn" id="csvBtn" title="Download ranking as CSV">⭳ CSV</button>
     </div>
     <div style="color:var(--muted); font-size:11.5px; margin-bottom:10px">
       Dots = weeks present (blue), <span style="color:var(--hot)">gold-blue</span> = every week ·
-      <span style="color:var(--filt)">●</span> next to a symbol = also in the −fil subset
+      <span style="color:var(--filt)">●</span> also in −fil · <span class="cross-badge" style="margin:0">D</span> also in the daily sheet
     </div>
     <div class="tablewrap">
       <table id="tbl">
@@ -234,6 +240,7 @@
   </section>
 
   <footer id="foot"></footer>
+  </main>
 </div>
 
 <div id="tt"></div>
@@ -276,8 +283,9 @@ const tt=$('#tt');
 function showTip(html,x,y){tt.innerHTML=html;tt.style.opacity='1';const b=tt.getBoundingClientRect();let nx=x+12,ny=y-b.height-8;if(nx+b.width>innerWidth-8)nx=x-b.width-12;if(ny<8)ny=y+16;tt.style.left=nx+'px';tt.style.top=ny+'px';}
 function hideTip(){tt.style.opacity='0';}
 
-let H=null, WEEKS=[], ALLTIME=new Map(), FILT=new Map(), SEL={from:0,to:0};
-let sortKey='count', sortAsc=false, MODEL=null, newOnly=false, filtOnly=false;
+let H=null, WEEKS=[], ALLTIME=new Map(), FILT=new Map(), CROSS=new Map(), SEL={from:0,to:0};
+function addDays(iso,n){const dt=new Date(iso+'T00:00:00Z');dt.setUTCDate(dt.getUTCDate()+n);return dt.toISOString().slice(0,10);}
+let sortKey='count', sortAsc=false, MODEL=null, newOnly=false, filtOnly=false, crossOnly=false;
 
 function initSelection(){
   WEEKS=(H.weeks||[]).slice().sort((a,b)=>a.week<b.week?-1:1);
@@ -285,6 +293,7 @@ function initSelection(){
   WEEKS.forEach(wk=>{const seen=new Set(); wk.tickers.forEach(t=>{ if(seen.has(t.symbol))return; seen.add(t.symbol); ALLTIME.set(t.symbol,(ALLTIME.get(t.symbol)||0)+1); });});
   FILT=new Map();
   if(H.filter && H.filter.weeks){ for(const wk in H.filter.weeks) FILT.set(wk, new Set(H.filter.weeks[wk])); }
+  CROSS=new Map(Object.entries((H.cross&&H.cross.weeks)||{}).map(([d,a])=>[d,new Set(a)]));
   const n=WEEKS.length;
   SEL.to=Math.max(0,n-1);
   SEL.from=Math.max(0,n-Math.min(WINDOW,n));
@@ -332,6 +341,9 @@ function compute(){
   // filtered-subset membership for the latest week of the range → highlight dot
   const filterSet = FILT.get(keys[nW-1]) || new Set();
   rows.forEach(r=>{ r.inFilter = filterSet.has(r.symbol); });
+  const crossSet=new Set();
+  if(CROSS.size){ keys.forEach(mon=>{ for(let o=0;o<7;o++){ (CROSS.get(addDays(mon,o))||new Set()).forEach(s=>crossSet.add(s)); } }); }
+  rows.forEach(r=>{ r.inCross=crossSet.has(r.symbol); });
   // new (in the latest week of range, absent from every earlier week) / dropped (prev→gone)
   const latest=weeks[nW-1], prev=nW>=2?weeks[nW-2]:null;
   const latestSet=new Set(latest?latest.tickers.map(t=>t.symbol):[]);
@@ -360,7 +372,6 @@ function render(){
   $('#offlbl').textContent = SEL.to>=n-1 ? 'latest' : `−${n-1-SEL.to} wk`;
 
   const sub=[];
-  sub.push(`<b>${H.screener}</b>`);
   sub.push(`<b>${n}</b> weeks · ranking over <b>${nW}</b>`);
   if(H.scanlink) sub.push('in-scan links on');
   if(H.source_url) sub.push(`<a href="${H.source_url}" target="_blank" rel="noopener">source ↗</a>`);
@@ -402,6 +413,8 @@ function render(){
   const _filtBtn=$('#filtOnly');
   if(H.filter){ _filtBtn.style.display=''; _filtBtn.textContent=`◆ In filter (${rows.filter(r=>r.inFilter).length})`; }
   else { _filtBtn.style.display='none'; filtOnly=false; }
+  const _crossBtn=$('#crossOnly');
+  if(H.cross){ _crossBtn.hidden=false; _crossBtn.textContent=`◲ In ${H.cross.name} (${rows.filter(r=>r.inCross).length})`; } else { _crossBtn.hidden=true; crossOnly=false; }
   $('#new-chips').innerHTML=newSyms.length?newSyms.map(chip).join(''):'<div class="empty">None — nothing new.</div>';
   $('#drop-chips').innerHTML=hasPrev?(dropSyms.length?dropSyms.map(s=>`<span class="chip"><a href="${stockUrl(s)}" target="_blank" rel="noopener">${s}</a></span>`).join(''):'<div class="empty">None — nobody dropped.</div>'):'<div class="empty">Need ≥2 weeks in range.</div>';
 
@@ -412,7 +425,7 @@ function render(){
 function renderTable(){
   const {keys,nW,rows,newSet}=MODEL;
   const q=$('#search').value.trim().toLowerCase();
-  let list=rows.filter(r=>(!q||r.symbol.toLowerCase().includes(q)||(r.sector||'').toLowerCase().includes(q)) && (!newOnly||newSet.has(r.symbol)) && (!filtOnly||r.inFilter));
+  let list=rows.filter(r=>(!q||r.symbol.toLowerCase().includes(q)||(r.sector||'').toLowerCase().includes(q)) && (!newOnly||newSet.has(r.symbol)) && (!filtOnly||r.inFilter) && (!crossOnly||r.inCross));
   list=[...list].sort((a,b)=>{
     let x,y;
     if(sortKey==='rank'||sortKey==='count'){x=a.count;y=b.count;}
@@ -424,7 +437,7 @@ function renderTable(){
     if(x===y) return b.count-a.count || b.alltime-a.alltime;
     return sortAsc?x-y:y-x;
   });
-  $('#rankhint').textContent=`${list.length} of ${rows.length} tickers · ${nW} wk${newOnly?' · new only':''}${filtOnly?' · in filter':''}`;
+  $('#rankhint').textContent=`${list.length} of ${rows.length} tickers · ${nW} wk${newOnly?' · new only':''}${filtOnly?' · in filter':''}${crossOnly&&H.cross?' · in '+H.cross.name:''}`;
   const dotgrid=(r)=>{
     if(nW<=DOTCAP){
       return '<span class="dots">'+r.present.map((p,i)=>`<span class="dot ${p?(r.count===nW?'hot':'on'):''}" title="${keys[i]}: ${p?'present':'absent'}"></span>`).join('')+'</span>';
@@ -436,7 +449,7 @@ function renderTable(){
     const badge=r.count===nW&&nW>1?'<span class="badge">every wk</span>':'';
     return `<tr>
       <td class="l rankn">${r.rank}</td>
-      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${r.inFilter?`<span class="filt-dot" title="Also in ${H.filter?H.filter.screener:'filtered'} · ${keys[nW-1]}"></span>`:''}</td>
+      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${r.inFilter?`<span class="filt-dot" title="Also in ${H.filter?H.filter.screener:'filtered'} · ${keys[nW-1]}"></span>`:''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}</td>
       <td class="l"><span class="appc" data-tip="row" data-w="${tipWeeks.replace(/"/g,'')}"><span class="frac">${r.count}<small>/${nW}</small></span>${dotgrid(r)}${badge}</span></td>
       <td class="l mc">${r.sector||'—'}</td>
       <td class="l mc">${r.marketcap||'—'}</td>
@@ -454,6 +467,7 @@ document.querySelectorAll('thead th').forEach(th=>th.addEventListener('click',()
 $('#search').addEventListener('input',renderTable);
 $('#newOnly').addEventListener('click',()=>{newOnly=!newOnly; $('#newOnly').classList.toggle('on',newOnly); renderTable();});
 $('#filtOnly').addEventListener('click',()=>{filtOnly=!filtOnly; $('#filtOnly').classList.toggle('on',filtOnly); renderTable();});
+$('#crossOnly').addEventListener('click',()=>{crossOnly=!crossOnly; $('#crossOnly').classList.toggle('on',crossOnly); renderTable();});
 
 document.body.addEventListener('mousemove',e=>{
   const el=e.target.closest('[data-tip]'); if(!el){hideTip();return;}

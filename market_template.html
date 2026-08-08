@@ -8,9 +8,9 @@
   :root{
     color-scheme: light;
     --plane:#f9f9f7; --surface:#fcfcfb;
-    --ink:#0b0b0b; --ink-2:#52514e; --muted:#898781;
+    --ink:#0b0b0b; --ink-2:#52514e; --muted:#66655f;
     --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
-    --up:#0ca30c; --down:#d03b3b; --flat:#898781; --vol:#256abf;
+    --up:#0ca30c; --down:#d03b3b; --flat:#66655f; --vol:#1c5cab; --sol-blue:#1c5cab; --up-ink:#0a7d0a; --down-ink:#b3271f;
     --up-soft:rgba(12,163,12,0.10); --down-soft:rgba(208,59,59,0.10);
   }
   @media (prefers-color-scheme: dark){
@@ -19,7 +19,7 @@
       --plane:#0d0d0d; --surface:#1a1a19;
       --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
       --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
-      --up:#0ca30c; --down:#e66767; --flat:#898781; --vol:#3987e5;
+      --up:#0ca30c; --down:#e66767; --flat:#898781; --vol:#4d93ea; --sol-blue:#1c5cab; --up-ink:#16b816; --down-ink:#e66767;
       --up-soft:rgba(12,163,12,0.16); --down-soft:rgba(230,103,103,0.16);
     }
   }
@@ -28,7 +28,7 @@
     --plane:#0d0d0d; --surface:#1a1a19;
     --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
     --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
-    --up:#0ca30c; --down:#e66767; --flat:#898781; --vol:#3987e5;
+    --up:#0ca30c; --down:#e66767; --flat:#898781; --vol:#4d93ea; --sol-blue:#1c5cab; --up-ink:#16b816; --down-ink:#e66767;
     --up-soft:rgba(12,163,12,0.16); --down-soft:rgba(230,103,103,0.16);
   }
   *{box-sizing:border-box}
@@ -45,7 +45,8 @@
   header.top{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:6px}
   h1{font-size:20px; margin:0; letter-spacing:-0.01em}
   .sub{color:var(--ink-2); font-size:13px; margin:2px 0 18px}
-  .sub a{color:var(--vol); text-decoration:none}
+  .sub a{color:var(--vol); text-decoration:underline}
+  .purpose{color:var(--ink-2); font-size:12.5px; margin:2px 0 6px}
   .spacer{flex:1 1 auto}
   .toolbtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2);
     border-radius:8px; padding:7px 11px; font-size:13px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px}
@@ -54,13 +55,13 @@
   .presets .lab{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:0.04em; margin-right:2px}
   .preset{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 10px; font-size:12px; cursor:pointer}
   .preset:hover{color:var(--ink)}
-  .preset.on{background:var(--vol); color:#fff; border-color:var(--vol)}
+  .preset.on{background:var(--sol-blue); color:#fff; border-color:var(--sol-blue)}
   .offbtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 9px; font-size:12px; font-weight:700; cursor:pointer}
   .offbtn:hover:not(:disabled){color:var(--ink); border-color:var(--vol)} .offbtn:disabled{opacity:.3; cursor:default}
   .offlbl{color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; min-width:44px; text-align:center}
   .legend{color:var(--muted); font-size:11.5px; margin:-6px 0 16px}
   .summary{color:var(--ink-2); font-size:13px; margin-left:auto}
-  .summary b.u{color:var(--up)} .summary b.d{color:var(--down)} .summary b.f{color:var(--flat)}
+  .summary b.u{color:var(--up-ink)} .summary b.d{color:var(--down-ink)} .summary b.f{color:var(--flat)}
 
   .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
   @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
@@ -72,11 +73,11 @@
   .chead{display:flex; align-items:baseline; gap:8px}
   .cname{font-size:13px; font-weight:600}
   .cbadge{font-size:11px; font-weight:700; padding:1px 6px; border-radius:999px}
-  .cbadge.up{color:var(--up); background:var(--up-soft)} .cbadge.down{color:var(--down); background:var(--down-soft)} .cbadge.flat{color:var(--flat)}
+  .cbadge.up{color:var(--up-ink); background:var(--up-soft)} .cbadge.down{color:var(--down-ink); background:var(--down-soft)} .cbadge.flat{color:var(--flat)}
   .cnum{margin-left:auto; text-align:right}
   .cnum .big{font-size:22px; font-weight:600; letter-spacing:-0.02em; font-variant-numeric:tabular-nums}
   .cnum .dlt{font-size:12px; font-variant-numeric:tabular-nums; font-weight:600}
-  .cnum .dlt.up{color:var(--up)} .cnum .dlt.down{color:var(--down)} .cnum .dlt.flat{color:var(--muted)}
+  .cnum .dlt.up{color:var(--up-ink)} .cnum .dlt.down{color:var(--down-ink)} .cnum .dlt.flat{color:var(--muted)}
   .spark{margin-top:8px; position:relative; cursor:crosshair}
   .spark svg{display:block}
   .crange{display:flex; justify-content:space-between; color:var(--muted); font-size:10.5px; font-variant-numeric:tabular-nums; margin-top:2px}
@@ -90,13 +91,15 @@
 </head>
 <body>
 <div class="wrap">
-  <nav class="nav">
+  <nav class="nav" aria-label="Views">
     <a href="dashboard.html">Weekly</a>
     <a href="daily.html">Daily</a>
-    <a href="market.html" class="on">Market</a>
+    <a href="market.html" class="on" aria-current="page">Market</a>
     <span class="sp"></span>
     <button class="themebtn" id="themeBtn">◐ Theme</button>
   </nav>
+
+  <main>
   <header class="top">
     <h1>Market breadth</h1>
     <div class="spacer"></div>
@@ -119,6 +122,7 @@
 
   <section class="grid" id="grid"></section>
   <footer id="foot"></footer>
+  </main>
 </div>
 <div id="tt"></div>
 
