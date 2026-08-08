@@ -78,6 +78,9 @@
   .spark{margin-top:8px; position:relative; cursor:crosshair}
   .spark svg{display:block}
   .crange{display:flex; justify-content:space-between; color:var(--muted); font-size:10.5px; font-variant-numeric:tabular-nums; margin-top:2px}
+  .jumps{display:flex; gap:6px; justify-content:flex-end; margin-top:7px}
+  .jump{font-size:10.5px; font-weight:600; color:var(--ink-2); text-decoration:none; border:1px solid var(--border); border-radius:6px; padding:2px 8px; background:var(--surface)}
+  .jump:hover{color:#fff; background:var(--sol-blue); border-color:var(--sol-blue)}
   .empty{color:var(--muted); font-size:13px; padding:24px 0}
 
   #tt{position:fixed; z-index:50; pointer-events:none; background:var(--ink); color:var(--surface);
@@ -250,6 +253,10 @@ function render(){
       </div>
       <div class="spark" data-dates="${winWeeks.join(',')}" data-vals="${vals.join(',')}">${svg}</div>
       <div class="crange"><span>${winWeeks[0]||''}</span><span>${vals.length} wk</span><span>${winWeeks[winWeeks.length-1]||''}</span></div>
+      <div class="jumps">
+        <a class="jump" href="dashboard.html?rot_level=${encodeURIComponent(LEVEL)}&rot_group=${encodeURIComponent(r.g)}" title="Show only ${esc(r.g)} in the Weekly sheet">Weekly ↗</a>
+        <a class="jump" href="daily.html?rot_level=${encodeURIComponent(LEVEL)}&rot_group=${encodeURIComponent(r.g)}" title="Show only ${esc(r.g)} in the Daily sheet">Daily ↗</a>
+      </div>
     </div>`;
   }).join('');
   $('#grid').innerHTML = cards || `<div class="empty">No ${esc(lvlName.toLowerCase())} groups with ≥${MIN_STOCKS} stocks in this window.</div>`;

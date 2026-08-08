@@ -37,6 +37,9 @@ the breakdown), "new / dropped", and per-week + frequency charts. Controls: From
 ◀▶ offset + presets (Last 5 / 8 / 13 / 26 / 52 / All, default 5). A gold dot marks names
 also in the stricter `-fil` subset (**◆ In filter** toggle); a **D** badge marks names
 also in the daily sheet (**◲ In daily**). Ticker links open the in-scan Chartink chart.
+A **rotation dot** after each ticker shows whether its sector is rotating **in** (green),
+**out** (red) or flat (hollow ring) — from the weekly sector screener; toggle **◉ Rotation**
+and choose the granularity (Sector / Industry / Basic).
 
 **Daily potentials** (`daily.html`) — ranks the day's `cp-ich-trend-bounce-dly` tickers
 by a **cross-tab score**: in `dly` + also in `cp-pb` + also in `cp-mq`, counted **anywhere
@@ -44,7 +47,7 @@ in the selected window** (default 5 days) → 1–3; **all three ranks highest**
 the legend are the three source links. Gold dot = `-fil`; **W** badge = also in the weekly
 sheet (**◲ In weekly**). Consistency dot-grid (hover for per-day breakdown). Controls:
 From/To + ◀▶ offset + presets (1D / 5D / 10D / 21D / All); toggles All-three / PB / MQ /
-Filter / New.
+Filter / New. The same **rotation dot** (**◉ Rotation**) tags each ticker's sector status.
 
 **Market breadth** (`market.html`) — the **daily count** of stocks in 9 market-trend
 screeners (Total, Nifty, Nifty 500, Futures, Indices, Mid/Small, BankNifty, Stage-2, CMO),
@@ -62,7 +65,8 @@ interest**, and weekly data smooths out intermittent blips. Cards are **sorted b
 momentum** (rising first), each a Line/Bars+MA mini-chart. Controls: **Level** (Sector / Industry
 / Basic), **Weeks** window (5 / 8 / 13 / 26 / 52 / All, default 13) + ◀▶ offset, **View** (Line /
 Bars, default Bars). Groups with a single stock in the window are hidden as noise. Built by the
-**market** command (no separate script); open it from the top nav.
+**market** command (no separate script); open it from the top nav. Each card has **Weekly ↗ /
+Daily ↗** buttons that jump to that sheet **filtered to the sector** (at the current Level).
 
 ## Freshness (when a plain run re-downloads)
 
@@ -91,6 +95,7 @@ market pages keep only what they need (counts / membership) and discard the raw 
 | `daily.py` / `daily_template.html` | Build + UI for the daily cross-tab page |
 | `market.py` / `market_template.html` | Build + UI for the market-breadth page (also builds sectors) |
 | `sectors_template.html` | UI for the sector-rotation page (built by `market.py`) |
+| `sectors_lib.py` | Shared sector map + rotation-status helpers (used by all builds) |
 | `sector_map.csv` | Trimmed Symbol → Sector/Industry/Basic-Industry map (from `~/Downloads/data.csv`) |
 | `data/*.json` | Derived caches (weekly/daily history, market + sector counts) — git-ignored |
 

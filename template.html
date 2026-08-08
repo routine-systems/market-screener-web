@@ -57,6 +57,10 @@
   .toolbtn.filt.on{background:var(--filt); color:#111; border-color:var(--filt)}
   .filt-dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--filt); margin-left:6px; vertical-align:middle}
   .cross-badge{display:inline-block; font-size:9px; font-weight:800; line-height:1; padding:2px 4px; border-radius:4px; border:1px solid var(--vol); color:var(--vol); margin-left:5px; vertical-align:middle; letter-spacing:0.02em}
+  .rot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-left:7px; vertical-align:middle; box-sizing:border-box}
+  .rot.up{background:var(--up)} .rot.down{background:var(--down)} .rot.flat{background:transparent; border:1.5px solid var(--muted)}
+  .secfilter{display:inline-flex; align-items:center; gap:7px; background:var(--sol-blue); color:#fff; border-radius:999px; padding:4px 11px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--sol-blue)}
+  .secfilter .x{opacity:.85; font-weight:700}
   select{background:var(--plane); color:var(--ink); border:1px solid var(--border); border-radius:8px;
     padding:6px 8px; font-size:13px; font-variant-numeric:tabular-nums}
 
@@ -192,12 +196,15 @@
       <button class="toolbtn" id="newOnly" title="Show only tickers new in the latest week of the selected range">✦ New only</button>
       <button class="toolbtn filt" id="filtOnly" title="Show only tickers that also appear in the filtered screener (latest week of range)">◆ In filter</button>
       <button class="toolbtn" id="crossOnly" title="Also in the daily sheet (for the week[s] in view)" hidden>◲ In daily</button>
+      <button class="toolbtn" id="rotOnly" title="Tag each ticker with its sector's rotation status (from the weekly sector screener)" hidden>◉ Rotation</button>
+      <select id="rotLevel" title="Rotation granularity" hidden><option value="sector">Sector</option><option value="industry">Industry</option><option value="basic">Basic</option></select>
+      <span id="secFilterWrap"></span>
       <input id="search" type="search" placeholder="Search symbol or sector…" autocomplete="off">
       <button class="toolbtn" id="csvBtn" title="Download ranking as CSV">⭳ CSV</button>
     </div>
     <div style="color:var(--muted); font-size:11.5px; margin-bottom:10px">
       Dots = weeks present (blue), <span style="color:var(--hot)">gold-blue</span> = every week ·
-      <span style="color:var(--filt)">●</span> also in −fil · <span class="cross-badge" style="margin:0">D</span> also in the daily sheet
+      <span style="color:var(--filt)">●</span> also in −fil · <span class="cross-badge" style="margin:0">D</span> also in the daily sheet<span id="rotLegend"></span>
     </div>
     <div class="tablewrap">
       <table id="tbl">
@@ -254,6 +261,7 @@ const WINDOW=__WINDOW__;
 const $=s=>document.querySelector(s);
 function b64utf8(b){try{return decodeURIComponent(escape(atob(b)));}catch(e){return atob(b);}}
 const inr=n=>n.toLocaleString('en-IN');
+const escH=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const MCRANK={smallcap:1,midcap:2,largecap:3};
 const DOTCAP=14;   // show a dot grid up to this many weeks, else a mini-bar
 
@@ -263,6 +271,15 @@ function stockUrl(sym){
   }
   return `https://chartink.com/stocks/${encodeURIComponent(sym)}.html`;
 }
+
+/* sector rotation (from the weekly cp-cmo-wkly screener via sectors_lib) */
+const ROTIDX={sector:0, industry:1, basic:2};
+function groupOf(sym, level){ if(!ROT) return null; const g=ROT.of[sym]; return g?g[ROTIDX[level]]:null; }
+function rotOf(sym){ if(!ROT) return null; const grp=groupOf(sym, ROT_LEVEL); if(grp==null) return null;
+  const st=(ROT.status[ROT_LEVEL]||{})[grp]; return st==null?null:{grp, st}; }
+function rotDot(sym){ if(!ROT_ON||!ROT) return ''; const r=rotOf(sym); if(!r) return '';
+  const cls=r.st>0?'up':(r.st<0?'down':'flat'), word=r.st>0?'rotating in (rising)':(r.st<0?'rotating out (cooling)':'flat');
+  return `<span class="rot ${cls}" title="${escH(r.grp)} — ${word}"></span>`; }
 
 /* Backtest CSV parser (Date,Symbol,Marketcapname,Sector) → weeks (for drag-drop) */
 function parseCSV(t){t=t.replace(/^﻿/,'');const rows=[];let i=0,f='',row=[],q=false;const push=()=>{row.push(f);f='';},endr=()=>{push();rows.push(row);row=[];};
@@ -287,6 +304,7 @@ function hideTip(){tt.style.opacity='0';}
 let H=null, WEEKS=[], ALLTIME=new Map(), FILT=new Map(), CROSS=new Map(), SEL={from:0,to:0};
 function addDays(iso,n){const dt=new Date(iso+'T00:00:00Z');dt.setUTCDate(dt.getUTCDate()+n);return dt.toISOString().slice(0,10);}
 let sortKey='count', sortAsc=false, MODEL=null, newOnly=false, filtOnly=false, crossOnly=false;
+let ROT=null, ROT_ON=false, ROT_LEVEL='sector', SECFILTER=null;
 
 function initSelection(){
   WEEKS=(H.weeks||[]).slice().sort((a,b)=>a.week<b.week?-1:1);
@@ -416,6 +434,17 @@ function render(){
   else { _filtBtn.style.display='none'; filtOnly=false; }
   const _crossBtn=$('#crossOnly');
   if(H.cross){ _crossBtn.hidden=false; _crossBtn.textContent=`◲ In ${H.cross.name} (${rows.filter(r=>r.inCross).length})`; } else { _crossBtn.hidden=true; crossOnly=false; }
+  const _rotBtn=$('#rotOnly'), _rotLvl=$('#rotLevel');
+  if(ROT){
+    _rotBtn.hidden=false; _rotBtn.classList.toggle('on',ROT_ON);
+    _rotLvl.hidden=!ROT_ON; _rotLvl.value=ROT_LEVEL;
+    $('#rotLegend').innerHTML = ROT_ON
+      ? ` · rotation <span class="rot up"></span> in · <span class="rot down"></span> out · <span class="rot flat"></span> flat`
+      : '';
+  } else { _rotBtn.hidden=true; _rotLvl.hidden=true; $('#rotLegend').innerHTML=''; }
+  $('#secFilterWrap').innerHTML = SECFILTER
+    ? `<span class="secfilter" id="secFilterChip" title="Clear sector filter — showing only ${escH(SECFILTER.group)}">${escH(SECFILTER.group)} <span class="x">✕</span></span>`
+    : '';
   $('#new-chips').innerHTML=newSyms.length?newSyms.map(chip).join(''):'<div class="empty">None — nothing new.</div>';
   $('#drop-chips').innerHTML=hasPrev?(dropSyms.length?dropSyms.map(s=>`<span class="chip"><a href="${stockUrl(s)}" target="_blank" rel="noopener">${s}</a></span>`).join(''):'<div class="empty">None — nobody dropped.</div>'):'<div class="empty">Need ≥2 weeks in range.</div>';
 
@@ -426,7 +455,7 @@ function render(){
 function renderTable(){
   const {keys,nW,rows,newSet}=MODEL;
   const q=$('#search').value.trim().toLowerCase();
-  let list=rows.filter(r=>(!q||r.symbol.toLowerCase().includes(q)||(r.sector||'').toLowerCase().includes(q)) && (!newOnly||newSet.has(r.symbol)) && (!filtOnly||r.inFilter) && (!crossOnly||r.inCross));
+  let list=rows.filter(r=>(!q||r.symbol.toLowerCase().includes(q)||(r.sector||'').toLowerCase().includes(q)) && (!newOnly||newSet.has(r.symbol)) && (!filtOnly||r.inFilter) && (!crossOnly||r.inCross) && (!SECFILTER||groupOf(r.symbol,SECFILTER.level)===SECFILTER.group));
   list=[...list].sort((a,b)=>{
     let x,y;
     if(sortKey==='rank'||sortKey==='count'){x=a.count;y=b.count;}
@@ -438,7 +467,7 @@ function renderTable(){
     if(x===y) return b.count-a.count || b.alltime-a.alltime;
     return sortAsc?x-y:y-x;
   });
-  $('#rankhint').textContent=`${list.length} of ${rows.length} tickers · ${nW} wk${newOnly?' · new only':''}${filtOnly?' · in filter':''}${crossOnly&&H.cross?' · in '+H.cross.name:''}`;
+  $('#rankhint').textContent=`${list.length} of ${rows.length} tickers · ${nW} wk${newOnly?' · new only':''}${filtOnly?' · in filter':''}${crossOnly&&H.cross?' · in '+H.cross.name:''}${SECFILTER?' · '+SECFILTER.group:''}`;
   const dotgrid=(r)=>{
     if(nW<=DOTCAP){
       return '<span class="dots">'+r.present.map((p,i)=>`<span class="dot ${p?(r.count===nW?'hot':'on'):''}" title="${keys[i]}: ${p?'present':'absent'}"></span>`).join('')+'</span>';
@@ -450,7 +479,7 @@ function renderTable(){
     const badge=r.count===nW&&nW>1?'<span class="badge">every wk</span>':'';
     return `<tr>
       <td class="l rankn">${r.rank}</td>
-      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${r.inFilter?`<span class="filt-dot" title="Also in ${H.filter?H.filter.screener:'filtered'} · ${keys[nW-1]}"></span>`:''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}</td>
+      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${rotDot(r.symbol)}${r.inFilter?`<span class="filt-dot" title="Also in ${H.filter?H.filter.screener:'filtered'} · ${keys[nW-1]}"></span>`:''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}</td>
       <td class="l"><span class="appc" data-tip="row" data-w="${tipWeeks.replace(/"/g,'')}"><span class="frac">${r.count}<small>/${nW}</small></span>${dotgrid(r)}${badge}</span></td>
       <td class="l mc">${r.sector||'—'}</td>
       <td class="l mc">${r.marketcap||'—'}</td>
@@ -469,6 +498,11 @@ $('#search').addEventListener('input',renderTable);
 $('#newOnly').addEventListener('click',()=>{newOnly=!newOnly; $('#newOnly').classList.toggle('on',newOnly); renderTable();});
 $('#filtOnly').addEventListener('click',()=>{filtOnly=!filtOnly; $('#filtOnly').classList.toggle('on',filtOnly); renderTable();});
 $('#crossOnly').addEventListener('click',()=>{crossOnly=!crossOnly; $('#crossOnly').classList.toggle('on',crossOnly); renderTable();});
+$('#rotOnly').addEventListener('click',()=>{ROT_ON=!ROT_ON; render();});
+$('#rotLevel').addEventListener('change',()=>{ROT_LEVEL=$('#rotLevel').value; render();});
+document.addEventListener('click',e=>{ if(e.target.closest('#secFilterChip')){
+  SECFILTER=null; const u=new URL(location.href); u.searchParams.delete('rot_group'); u.searchParams.delete('rot_level');
+  history.replaceState(null,'',u); render(); }});
 
 document.body.addEventListener('mousemove',e=>{
   const el=e.target.closest('[data-tip]'); if(!el){hideTip();return;}
@@ -506,6 +540,12 @@ document.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('o
 
 /* boot */
 H=JSON.parse(b64utf8(HISTORY_B64));
+ROT = H.rotation || null;
+ROT_ON = !!ROT;                                  // rotation dots on by default when data present
+(function initSecFilter(){                       // deep-link from the Sectors page (W/D buttons)
+  const p=new URLSearchParams(location.search), grp=p.get('rot_group'), lvl=p.get('rot_level');
+  if(grp && ROT){ SECFILTER={level:(ROTIDX[lvl]!=null?lvl:'sector'), group:grp}; ROT_ON=true; ROT_LEVEL=SECFILTER.level; }
+})();
 initSelection();
 buildRangeControls();
 render();

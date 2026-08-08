@@ -32,6 +32,9 @@ PY
 if [ "$FORCE" = "1" ] || [ "$STALE" = "1" ] || [ ! -f market.html ] || [ ! -f sectors.html ]; then
   echo "↻ Fetching market breadth + sector rotation (10 screeners, pausing between)…"
   python3 market.py
+  # refresh the weekly/daily rotation dots with the just-updated sector data (re-render, no scrape)
+  [ -f data/history.json ] && python3 build_dashboard.py >/dev/null 2>&1 && echo "↔ refreshed weekly rotation" || true
+  [ -f data/history_daily.json ] && python3 daily.py --no-scrape >/dev/null 2>&1 && echo "↔ refreshed daily rotation" || true
 else
   echo "✓ Market data current (since the last 2pm). Opening…"
 fi

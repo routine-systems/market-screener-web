@@ -23,6 +23,8 @@ from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
+import sectors_lib
+
 HERE = Path(__file__).resolve().parent
 DATA_DIR = HERE / "data"
 HISTORY = DATA_DIR / "history.json"
@@ -169,6 +171,13 @@ def rebuild(url, window, backtest=None, scanlink=None, timeframe=None,
         h["cross"] = {"label": "D", "name": "daily", "url": d.get("source_url"),
                       "weeks": {x["week"]: sorted({t["symbol"] for t in x["tickers"]})
                                 for x in d.get("weeks", [])}}
+
+    syms = {t["symbol"] for wk in h["weeks"] for t in wk["tickers"]}
+    rot = sectors_lib.rotation_for(syms)
+    if rot:
+        h["rotation"] = rot
+        print(f"◉ rotation: {len(rot['of'])}/{len(syms)} tickers mapped to sectors "
+              f"(window {rot['window']} wk)")
 
     save_history(h)
     print(f"🔑 scanlink={h['scanlink']} timeframe={h['timeframe']}")

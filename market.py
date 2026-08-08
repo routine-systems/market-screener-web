@@ -28,6 +28,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 from scrape import build_driver, download_backtest_csv
 from build_dashboard import _iso
+from sectors_lib import LEVELS, SECTOR_STORE, load_sector_map
 
 HERE = Path(__file__).resolve().parent
 DATA_DIR = HERE / "data"
@@ -50,14 +51,11 @@ SCREENERS = [
 ]
 
 # --- Sector-rotation page (4th page): a WEEKLY screener + a finer sector map -----------------
+# LEVELS / SECTOR_STORE / load_sector_map are shared in sectors_lib (imported above).
 SECTOR_SLUG = "cp-cmo-wkly"
-SECTOR_STORE = DATA_DIR / "sector_weekly.json"
 SECTOR_TEMPLATE = HERE / "sectors_template.html"
 SECTOR_OUT = HERE / "sectors.html"
-SECTOR_MAP = HERE / "sector_map.csv"                 # committed, trimmed classification
-DOWNLOADS_MAP = Path.home() / "Downloads" / "data.csv"  # owner's richer source (auto-picked)
 CAP_WEEKS = 156                                       # ~3 years of weekly rows
-LEVELS = [("sector", "Sector"), ("industry", "Industry"), ("basic", "Basic Industry")]
 
 
 def counts_from_csv(path: Path):
@@ -82,45 +80,6 @@ def load_store():
     if STORE.exists():
         return json.loads(STORE.read_text())
     return {"screeners": [], "counts": {}, "updated_at": None}
-
-
-def load_sector_map():
-    """symbol -> {'sector','industry','basic'}. Prefer ~/Downloads/data.csv (and refresh the
-    committed trimmed sector_map.csv from it); else fall back to the committed copy."""
-    src = DOWNLOADS_MAP if DOWNLOADS_MAP.exists() else SECTOR_MAP
-    if not src.exists():
-        return {}
-    reader = csv.DictReader(src.read_text(encoding="utf-8-sig", errors="replace").splitlines())
-    fields = {(k or "").lower().strip(): k for k in (reader.fieldnames or [])}
-
-    def col(*names):
-        for n in names:
-            if n in fields:
-                return fields[n]
-        return None
-
-    csym = col("symbol")
-    csec = col("sector")
-    cind = col("industry")
-    cbas = col("basic industry", "basicindustry", "basic")
-    smap = {}
-    for row in reader:
-        sym = (row.get(csym) or "").strip().upper()
-        if not sym:
-            continue
-        smap[sym] = {
-            "sector": (row.get(csec) or "").strip() or "Unclassified",
-            "industry": (row.get(cind) or "").strip() or "Unclassified",
-            "basic": (row.get(cbas) or "").strip() or "Unclassified",
-        }
-    if src == DOWNLOADS_MAP and smap:                 # keep a clean, reproducible repo copy
-        lines = ["Symbol,Sector,Industry,Basic Industry"]
-        for sym in sorted(smap):
-            g = smap[sym]
-            vals = (sym, g["sector"], g["industry"], g["basic"])
-            lines.append(",".join('"%s"' % v.replace('"', '""') for v in vals))
-        SECTOR_MAP.write_text("\n".join(lines) + "\n")
-    return smap
 
 
 def membership_from_csv(path: Path):

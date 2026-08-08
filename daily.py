@@ -29,6 +29,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 from scrape import build_driver, download_backtest_csv, extract_scanlink, scanlink_only
 import build_dashboard as bd
+import sectors_lib
 
 HERE = Path(__file__).resolve().parent
 DATA_DIR = HERE / "data"
@@ -149,6 +150,12 @@ def main() -> int:
                       "weeks": {x["week"]: sorted({t["symbol"] for t in x["tickers"]})
                                 for x in w.get("weeks", [])}}
         print(f"↔ cross: weekly sheet has {len(h['cross']['weeks'])} weeks")
+
+    syms = {t["symbol"] for wk in h.get("weeks", []) for t in wk["tickers"]}
+    rot = sectors_lib.rotation_for(syms)
+    if rot:
+        h["rotation"] = rot
+        print(f"◉ rotation: {len(rot['of'])}/{len(syms)} tickers mapped to sectors")
     render(h)
     return 0
 

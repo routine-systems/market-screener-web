@@ -81,6 +81,10 @@
   td.num{font-variant-numeric:tabular-nums} td .stk{color:var(--vol); text-decoration:none; font-weight:600}
   .filt-dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--filt); margin-left:6px; vertical-align:middle}
   .cross-badge{display:inline-block; font-size:9px; font-weight:800; line-height:1; padding:2px 4px; border-radius:4px; border:1px solid var(--vol); color:var(--vol); margin-left:5px; vertical-align:middle; letter-spacing:0.02em}
+  .rot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-left:7px; vertical-align:middle; box-sizing:border-box}
+  .rot.up{background:var(--up)} .rot.down{background:var(--down)} .rot.flat{background:transparent; border:1.5px solid var(--muted)}
+  .secfilter{display:inline-flex; align-items:center; gap:7px; background:var(--sol-blue); color:#fff; border-radius:999px; padding:4px 11px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--sol-blue)}
+  .secfilter .x{opacity:.85; font-weight:700}
   .mc{font-size:11px; color:var(--ink-2)}
   .xtab{display:inline-flex; align-items:center; gap:5px}
   .xc{font-size:10.5px; font-weight:700; padding:2px 6px; border-radius:6px; background:var(--chip); color:var(--ink-2); border:1px solid var(--border); letter-spacing:0.03em}
@@ -149,6 +153,9 @@
       <button class="toolbtn filt" id="filOnly" title="Only tickers in the -fil subset">◆ Filter</button>
       <button class="toolbtn" id="newOnly" title="New in dly on the latest day">✦ New</button>
       <button class="toolbtn" id="crossOnly" title="Also in the weekly sheet (for the week[s] in view)" hidden>◲ In weekly</button>
+      <button class="toolbtn" id="rotOnly" title="Tag each ticker with its sector's rotation status (from the weekly sector screener)" hidden>◉ Rotation</button>
+      <select id="rotLevel" title="Rotation granularity" hidden><option value="sector">Sector</option><option value="industry">Industry</option><option value="basic">Basic</option></select>
+      <span id="secFilterWrap"></span>
       <input id="search" type="search" placeholder="Search symbol / sector…" autocomplete="off">
       <button class="toolbtn" id="csvBtn">⭳ CSV</button>
     </div>
@@ -191,6 +198,20 @@ function mondayOf(iso){const dt=new Date(iso+'T00:00:00Z');const wd=(dt.getUTCDa
 let SEL={from:Math.max(0,DAYS.length-WINDOW), to:DAYS.length-1};
 let sortKey='score', sortAsc=false, MODEL=null;
 let allThree=false, pbOnly=false, mqOnly=false, filOnly=false, newOnly=false, crossOnly=false;
+
+const escH=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let ROT=H.rotation||null, ROT_ON=!!ROT, ROT_LEVEL='sector', SECFILTER=null;   // sector rotation
+const ROTIDX={sector:0,industry:1,basic:2};
+(function initSecFilter(){                       // deep-link from the Sectors page (W/D buttons)
+  const p=new URLSearchParams(location.search), grp=p.get('rot_group'), lvl=p.get('rot_level');
+  if(grp && ROT){ SECFILTER={level:(ROTIDX[lvl]!=null?lvl:'sector'), group:grp}; ROT_ON=true; ROT_LEVEL=SECFILTER.level; }
+})();
+function groupOf(sym, level){ if(!ROT) return null; const g=ROT.of[sym]; return g?g[ROTIDX[level]]:null; }
+function rotOf(sym){ if(!ROT) return null; const grp=groupOf(sym, ROT_LEVEL); if(grp==null) return null;
+  const st=(ROT.status[ROT_LEVEL]||{})[grp]; return st==null?null:{grp, st}; }
+function rotDot(sym){ if(!ROT_ON||!ROT) return ''; const r=rotOf(sym); if(!r) return '';
+  const cls=r.st>0?'up':(r.st<0?'down':'flat'), word=r.st>0?'rotating in (rising)':(r.st<0?'rotating out (cooling)':'flat');
+  return `<span class="rot ${cls}" title="${escH(r.grp)} — ${word}"></span>`; }
 
 function stockUrl(sym){
   if(H.scanlink) return `https://chartink.com/stocks-new?from_scan=1&hide_filters=true&scan_link=scanlink:${encodeURIComponent(H.scanlink)}&timeframe=${encodeURIComponent(H.timeframe||'daily')}&symbol=${encodeURIComponent(sym)}`;
@@ -256,6 +277,16 @@ function render(){
   $('#allThree').textContent=`◎ All three (${all3})`; $('#pbOnly').textContent=`PB (${pb})`; $('#mqOnly').textContent=`MQ (${mq})`;
   $('#filOnly').textContent=`◆ Filter (${fil})`; $('#newOnly').textContent=`✦ New (${nw})`;
   if(H.cross){const cn=rows.filter(r=>r.inCross).length; const cb=$('#crossOnly'); cb.hidden=false; cb.textContent=`◲ In ${H.cross.name} (${cn})`;}
+  const _rotBtn=$('#rotOnly'), _rotLvl=$('#rotLevel');
+  if(ROT){
+    _rotBtn.hidden=false; _rotBtn.classList.toggle('on',ROT_ON);
+    _rotLvl.hidden=!ROT_ON; _rotLvl.value=ROT_LEVEL;
+    const rl=$('#rotLegend'); if(rl) rl.innerHTML = ROT_ON
+      ? ` · rotation <span class="rot up"></span> in · <span class="rot down"></span> out · <span class="rot flat"></span> flat` : '';
+  } else { _rotBtn.hidden=true; _rotLvl.hidden=true; const rl=$('#rotLegend'); if(rl) rl.innerHTML=''; }
+  $('#secFilterWrap').innerHTML = SECFILTER
+    ? `<span class="secfilter" id="secFilterChip" title="Clear sector filter — showing only ${escH(SECFILTER.group)}">${escH(SECFILTER.group)} <span class="x">✕</span></span>`
+    : '';
   renderTable();
   $('#foot').innerHTML=`Generated ${H.generated_at||''} · self-contained · runs 2–3×/day · all three in the window = strongest candidate`;
 }
@@ -263,14 +294,14 @@ function render(){
 function renderTable(){
   const {nD,rows}=MODEL;
   const q=$('#search').value.trim().toLowerCase();
-  let list=rows.filter(r=>(!q||r.symbol.toLowerCase().includes(q)||(r.sector||'').toLowerCase().includes(q)) && (!allThree||r.score===3) && (!pbOnly||r.sig.pb) && (!mqOnly||r.sig.mq) && (!filOnly||r.inFil) && (!newOnly||r.isNew) && (!crossOnly||r.inCross));
+  let list=rows.filter(r=>(!q||r.symbol.toLowerCase().includes(q)||(r.sector||'').toLowerCase().includes(q)) && (!allThree||r.score===3) && (!pbOnly||r.sig.pb) && (!mqOnly||r.sig.mq) && (!filOnly||r.inFil) && (!newOnly||r.isNew) && (!crossOnly||r.inCross) && (!SECFILTER||groupOf(r.symbol,SECFILTER.level)===SECFILTER.group));
   list=[...list].sort((a,b)=>{let x,y;
     if(sortKey==='rank'||sortKey==='score'){x=a.score;y=b.score;} else if(sortKey==='consist'){x=a.consist;y=b.consist;}
     else if(sortKey==='symbol'){x=a.symbol.toLowerCase();y=b.symbol.toLowerCase();} else if(sortKey==='sector'){x=(a.sector||'').toLowerCase();y=(b.sector||'').toLowerCase();}
     else if(sortKey==='marketcap'){const o={smallcap:1,midcap:2,largecap:3};x=o[(a.marketcap||'').toLowerCase()]||0;y=o[(b.marketcap||'').toLowerCase()]||0;}
     if(typeof x==='string')return sortAsc?(x<y?-1:x>y?1:0):(x>y?-1:x<y?1:0);
     if(x===y)return b.score-a.score||b.consist-a.consist; return sortAsc?x-y:y-x;});
-  $('#rankhint').textContent=`${list.length} of ${rows.length} · ${nD===1?'1 day':nD+' days'}`;
+  $('#rankhint').textContent=`${list.length} of ${rows.length} · ${nD===1?'1 day':nD+' days'}${SECFILTER?' · '+SECFILTER.group:''}`;
   $('#tbody').innerHTML=list.map(r=>{
     const xc=`<span class="xc on" title="cp-ich-trend-bounce-dly (trend bounce)">DLY</span>`+SIGS.map(s=>`<span class="xc ${r.sig[s.key]?'on':''}" title="${s.name||s.label}">${s.label}</span>`).join('');
     const grid = nD<=DOTCAP
@@ -279,7 +310,7 @@ function renderTable(){
     const tipDays=MODEL.win.map((d,i)=>`${d}: ${r.present[i]?'●':'—'}`).join(' · ');
     return `<tr>
       <td class="l rankn">${r.rank}</td>
-      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${r.inFil?'<span class="filt-dot" title="in -fil subset"></span>':''}${r.isNew?' <span class="up" title="new on latest day">✦</span>':''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}</td>
+      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${rotDot(r.symbol)}${r.inFil?'<span class="filt-dot" title="in -fil subset"></span>':''}${r.isNew?' <span class="up" title="new on latest day">✦</span>':''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}</td>
       <td class="l"><span class="xtab">${xc}<span class="xscore s${r.score}">${r.score}/3</span></span></td>
       <td class="l"><span class="appc" data-tip="row" data-w="${tipDays.replace(/"/g,'')}"><span class="frac">${r.consist}<small>/${nD}</small></span>${grid}</span></td>
       <td class="l mc">${r.sector||'—'}</td>
@@ -297,6 +328,11 @@ $('#tbody').addEventListener('mousemove',e=>{const el=e.target.closest('[data-ti
 $('#tbody').addEventListener('mouseleave',()=>{tt.style.opacity='0';});
 function toggle(id,setter){const b=$('#'+id); b.addEventListener('click',()=>{setter(); b.classList.toggle('on'); renderTable();});}
 toggle('allThree',()=>allThree=!allThree); toggle('pbOnly',()=>pbOnly=!pbOnly); toggle('mqOnly',()=>mqOnly=!mqOnly); toggle('filOnly',()=>filOnly=!filOnly); toggle('newOnly',()=>newOnly=!newOnly); toggle('crossOnly',()=>crossOnly=!crossOnly);
+$('#rotOnly').addEventListener('click',()=>{ROT_ON=!ROT_ON; render();});
+$('#rotLevel').addEventListener('change',()=>{ROT_LEVEL=$('#rotLevel').value; render();});
+document.addEventListener('click',e=>{ if(e.target.closest('#secFilterChip')){
+  SECFILTER=null; const u=new URL(location.href); u.searchParams.delete('rot_group'); u.searchParams.delete('rot_level');
+  history.replaceState(null,'',u); render(); }});
 $('#csvBtn').addEventListener('click',()=>{const {rows,win,nD}=MODEL; const head=['Rank','Symbol','Window','Score','InDly','InPB','InMQ','InFil','DaysInDly','WindowDays','Sector','Cap'];
   const esc=s=>`"${String(s).replace(/"/g,'""')}"`; const wl=nD===1?win[0]:`${win[0]}..${win[nD-1]}`;
   const body=rows.map(r=>[r.rank,esc(r.symbol),wl,r.score,1,r.sig.pb?1:0,r.sig.mq?1:0,r.inFil?1:0,r.consist,nD,esc(r.sector),esc(r.marketcap)].join(',')).join('\n');
@@ -306,7 +342,7 @@ $('#themeBtn').addEventListener('click',()=>{const cur=document.documentElement.
 function buildLegend(){
   const link=(u,t)=>u?`<a href="${u}" target="_blank" rel="noopener">${t}</a>`:t;
   const pb=SIGS.find(s=>s.key==='pb'), mq=SIGS.find(s=>s.key==='mq');
-  $('#legend').innerHTML=`${link(H.source_url,'DLY')} = trend-bounce · ${link(pb&&pb.url,'PB')} = price breakout · ${link(mq&&mq.url,'MQ')} = Minervini Q · score = how many of the three fired in the window · <span style="color:var(--filt)">◆</span> also in −fil · <span style="color:var(--up)">✦</span> new · dots = days in dly within the window${H.cross?` · <b>${H.cross.label}</b> also in ${H.cross.name}`:''}`;
+  $('#legend').innerHTML=`${link(H.source_url,'DLY')} = trend-bounce · ${link(pb&&pb.url,'PB')} = price breakout · ${link(mq&&mq.url,'MQ')} = Minervini Q · score = how many of the three fired in the window · <span style="color:var(--filt)">◆</span> also in −fil · <span style="color:var(--up)">✦</span> new · dots = days in dly within the window${H.cross?` · <b>${H.cross.label}</b> also in ${H.cross.name}`:''}<span id="rotLegend"></span>`;
 }
 buildControls();
 buildLegend();
