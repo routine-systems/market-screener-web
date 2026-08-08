@@ -21,5 +21,6 @@ cat > dist/index.html <<'HTML'
 HTML
 
 echo "🌎 Deploying to Cloudflare Pages (screener)…"
-npx wrangler pages deploy dist --project-name screener --branch main --commit-dirty=true
+# dir + KV binding (SCANLINKS) come from wrangler.toml (pages_build_output_dir = dist)
+npx wrangler pages deploy --project-name screener --branch main --commit-dirty=true
 echo "✔ Published → https://screener.chiragpatnaik.com"

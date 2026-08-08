@@ -166,7 +166,8 @@
     <a href="market.html">Market</a>
     <a href="sectors.html">Sectors</a>
     <span class="sp"></span>
-    <button class="themebtn" id="refreshBtn" title="Re-scrape Chartink and rebuild all pages (~3–4 min) — reload after">↻ Refresh</button>
+    <button class="themebtn" id="linksBtn" title="Refresh only the in-scan ticker links (~1 min) — revives links that expired since the last scrape">⚡ Links</button>
+    <button class="themebtn" id="refreshBtn" title="Re-scrape Chartink and rebuild all pages (~10 min) — reload after">↻ Refresh</button>
     <button class="themebtn" id="themeBtn">◐ Theme</button>
   </nav>
 
@@ -543,6 +544,35 @@ $('#themeBtn').addEventListener('click',()=>{
       if(r.ok&&j.ok){ rb.innerHTML='<span class="spin">↻</span> Refreshing… (~10 min)'; return; }
       rb.textContent='⚠ failed'; rb.disabled=false; setTimeout(()=>{rb.textContent=o;},5000);
     }catch(e){ rb.textContent='⚠ error'; rb.disabled=false; setTimeout(()=>{rb.textContent=o;},5000); }
+  });
+})();
+
+/* Fast scanlink refresh: pull the freshest hash from KV and patch the in-scan ticker
+   links (reviving any that expired since the last scrape); ⚡ Links triggers a re-extract
+   — no full re-scrape or redeploy. */
+(function(){ const TF='weekly';
+  const patch=(fresh)=>{ if(!fresh||fresh===H.scanlink) return false;
+    const old=H.scanlink; H.scanlink=fresh;   // future renders use the fresh hash too
+    if(old) document.querySelectorAll('a[href*="scan_link=scanlink:"]').forEach(a=>{
+      a.href=a.href.split('scanlink:'+old).join('scanlink:'+fresh); });
+    return true; };
+  const pull=async()=>{ try{ const r=await fetch('/api/scanlink',{cache:'no-store'});
+    if(!r.ok) return null; const j=await r.json(); return j&&j.ok?(j[TF]||null):null; }
+    catch(e){ return null; } };
+  if(location.protocol==='file:'){ const lb=document.getElementById('linksBtn'); if(lb) lb.style.display='none'; return; }
+  pull().then(patch);                                   // hydrate on load
+  const lb=document.getElementById('linksBtn'); if(!lb) return;
+  lb.addEventListener('click', async ()=>{
+    const o=lb.textContent, before=H.scanlink; lb.disabled=true;
+    lb.innerHTML='<span class="spin">⚡</span> Refreshing links…';
+    try{ const r=await fetch('/api/scanlink',{method:'POST'}); const j=await r.json().catch(()=>({}));
+      if(!(r.ok&&j.ok)){ lb.textContent='⚠ failed'; lb.disabled=false; setTimeout(()=>{lb.textContent=o;},5000); return; }
+      let tries=0; const iv=setInterval(async()=>{ tries++;
+        const fresh=await pull();
+        if(fresh&&fresh!==before){ clearInterval(iv); patch(fresh);
+          lb.disabled=false; lb.textContent='✔ Links refreshed'; setTimeout(()=>{lb.textContent=o;},4000); }
+        else if(tries>=15){ clearInterval(iv); lb.disabled=false; lb.textContent=o; } }, 8000);
+    }catch(e){ lb.textContent='⚠ error'; lb.disabled=false; setTimeout(()=>{lb.textContent=o;},5000); }
   });
 })();
 

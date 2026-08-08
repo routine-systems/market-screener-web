@@ -1,0 +1,11 @@
+# Cloudflare Pages project config — binds the SCANLINKS KV namespace to the Pages
+# Functions so /api/scanlink can read the freshest (rotating) Chartink scanlink hashes.
+# The scanlink workflow re-extracts them and writes them here; pages read them at load
+# and patch their in-scan ticker links, reviving links that expired since the last scrape.
+name = "screener"
+compatibility_date = "2024-11-01"
+pages_build_output_dir = "dist"
+
+[[kv_namespaces]]
+binding = "SCANLINKS"
+id = "c85ac5582e0b49fd927bddbeaa487805"
