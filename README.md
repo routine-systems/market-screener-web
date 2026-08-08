@@ -58,15 +58,23 @@ green if the count rose vs the prior day, darker red if it fell — with a 10-da
 line drawn on top). Rolling **9-month** store; window presets 1M / 3M / 6M / 9M + ◀▶ offset.
 
 **Sector rotation** (`sectors.html`) — reads the **weekly** `cp-cmo-wkly` screener and maps each
-stock to a **finer sector classification** from `~/Downloads/data.csv` (NSE **Sector → Industry
-→ Basic Industry**; auto-refreshed into the committed `sector_map.csv`). For each week it counts
-how many of a group's stocks are in the screener — a **rising count = the sector is gaining
-interest**, and weekly data smooths out intermittent blips. Cards are **sorted by recent
-momentum** (rising first), each a Line/Bars+MA mini-chart. Controls: **Level** (Sector / Industry
-/ Basic), **Weeks** window (5 / 8 / 13 / 26 / 52 / All, default 13) + ◀▶ offset, **View** (Line /
-Bars, default Bars). Groups with a single stock in the window are hidden as noise. Built by the
-**market** command (no separate script); open it from the top nav. Each card has **Weekly ↗ /
-Daily ↗** buttons that jump to that sheet **filtered to the sector** (at the current Level).
+stock to a **finer sector classification** from the in-repo **`data.csv`** (NSE **Sector → Industry
+→ Basic Industry**; a fresh `~/Downloads/data.csv` is auto-pulled into the folder and trimmed into
+`sector_map.csv`). For each week it counts how many of a group's stocks are in the screener — a
+**rising count = the sector is gaining interest**, and weekly data smooths out intermittent blips.
+Two **Layouts**:
+
+- **Grid** — cards **sorted by recent momentum** (rising first), each a Line/Bars+MA mini-chart,
+  with **Weekly ↗ / Daily ↗** buttons that jump to that sheet **filtered to the sector**.
+- **Quadrant** — a rotation graph of sector **movement**: **x** = current participation (avg stocks
+  in the screener), **y** = momentum (stocks added per week), centred on the median participation
+  and zero momentum → **Leading** (large + adding), **Improving** (small + adding), **Weakening**
+  (large + shedding), **Lagging** (small + shedding); bubble size = latest count. A **Within**
+  dropdown focuses the plot on one sector's **sub-groups** (at Industry / Basic level).
+
+Shared controls: **Level** (Sector / Industry / Basic), **Weeks** window (5 / 8 / 13 / 26 / 52 /
+All, default 13) + ◀▶ offset. Groups with a single stock in the window are hidden as noise. Built
+by the **market** command (no separate script); open it from the top nav.
 
 ## Freshness (when a plain run re-downloads)
 
@@ -95,8 +103,9 @@ market pages keep only what they need (counts / membership) and discard the raw 
 | `daily.py` / `daily_template.html` | Build + UI for the daily cross-tab page |
 | `market.py` / `market_template.html` | Build + UI for the market-breadth page (also builds sectors) |
 | `sectors_template.html` | UI for the sector-rotation page (built by `market.py`) |
-| `sectors_lib.py` | Shared sector map + rotation-status helpers (used by all builds) |
-| `sector_map.csv` | Trimmed Symbol → Sector/Industry/Basic-Industry map (from `~/Downloads/data.csv`) |
+| `sectors_lib.py` | Shared sector map + rotation-status + quadrant helpers (used by all builds) |
+| `data.csv` | Durable in-repo classification export (NSE Sector/Industry/Basic-Industry + snapshot cols) |
+| `sector_map.csv` | Trimmed Symbol → Sector/Industry/Basic-Industry map (derived from `data.csv`) |
 | `data/*.json` | Derived caches (weekly/daily history, market + sector counts) — git-ignored |
 
 ## Requirements

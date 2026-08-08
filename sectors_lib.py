@@ -14,21 +14,26 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 DATA_DIR = HERE / "data"
+DATA_CSV = HERE / "data.csv"                            # durable in-repo classification export
 SECTOR_MAP = HERE / "sector_map.csv"                    # committed, trimmed classification
 SECTOR_STORE = DATA_DIR / "sector_weekly.json"          # weekly counts (built by market.py)
-DOWNLOADS_MAP = Path.home() / "Downloads" / "data.csv"  # owner's richer source (auto-picked)
+DOWNLOADS_MAP = Path.home() / "Downloads" / "data.csv"  # owner's fresh export (auto-pulled in)
 
 LEVELS = [("sector", "Sector"), ("industry", "Industry"), ("basic", "Basic Industry")]
 ROTATION_WINDOW = 13                                    # weeks used to judge rotation
 
 
 def load_sector_map():
-    """symbol -> {'sector','industry','basic'}. Prefer ~/Downloads/data.csv (and refresh the
-    committed trimmed sector_map.csv from it); else fall back to the committed copy."""
-    src = DOWNLOADS_MAP if DOWNLOADS_MAP.exists() else SECTOR_MAP
-    if not src.exists():
+    """symbol -> {'sector','industry','basic'}. Source priority: a fresh ~/Downloads/data.csv
+    (pulled into the repo as data.csv for durability) > the in-repo data.csv > the trimmed
+    sector_map.csv. Always refreshes the trimmed convenience map from a full export."""
+    src = next((c for c in (DOWNLOADS_MAP, DATA_CSV, SECTOR_MAP) if c.exists()), None)
+    if src is None:
         return {}
-    reader = csv.DictReader(src.read_text(encoding="utf-8-sig", errors="replace").splitlines())
+    raw = src.read_text(encoding="utf-8-sig", errors="replace")
+    if src == DOWNLOADS_MAP:                            # keep a durable in-folder copy
+        DATA_CSV.write_text(raw, encoding="utf-8")
+    reader = csv.DictReader(raw.splitlines())
     fields = {(k or "").lower().strip(): k for k in (reader.fieldnames or [])}
 
     def col(*names):
@@ -51,7 +56,7 @@ def load_sector_map():
             "industry": (row.get(cind) or "").strip() or "Unclassified",
             "basic": (row.get(cbas) or "").strip() or "Unclassified",
         }
-    if src == DOWNLOADS_MAP and smap:                   # keep a clean, reproducible repo copy
+    if src in (DOWNLOADS_MAP, DATA_CSV) and smap:       # refresh the trimmed convenience map
         lines = ["Symbol,Sector,Industry,Basic Industry"]
         for sym in sorted(smap):
             g = smap[sym]
@@ -59,6 +64,17 @@ def load_sector_map():
             lines.append(",".join('"%s"' % v.replace('"', '""') for v in vals))
         SECTOR_MAP.write_text("\n".join(lines) + "\n")
     return smap
+
+
+def group_parents(smap=None):
+    """Sub-group -> parent sector, for the quadrant's within-sector filter.
+    { 'industry': {industry: sector}, 'basic': {basic: sector} }."""
+    smap = smap if smap is not None else load_sector_map()
+    parents = {"industry": {}, "basic": {}}
+    for g in smap.values():
+        parents["industry"].setdefault(g["industry"], g["sector"])
+        parents["basic"].setdefault(g["basic"], g["sector"])
+    return parents
 
 
 def _slope(vals):

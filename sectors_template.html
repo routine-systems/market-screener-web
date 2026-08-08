@@ -63,6 +63,7 @@
   .summary b.u{color:var(--up-ink)} .summary b.d{color:var(--down-ink)} .summary b.f{color:var(--flat)}
 
   .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+  .grid[hidden],.quadwrap[hidden]{display:none}
   @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:560px){.grid{grid-template-columns:1fr}}
   .card{background:var(--surface); border:1px solid var(--border); border-left-width:3px; border-radius:12px; padding:13px 14px 8px}
@@ -82,6 +83,15 @@
   .jump{font-size:10.5px; font-weight:600; color:var(--ink-2); text-decoration:none; border:1px solid var(--border); border-radius:6px; padding:2px 8px; background:var(--surface)}
   .jump:hover{color:#fff; background:var(--sol-blue); border-color:var(--sol-blue)}
   .empty{color:var(--muted); font-size:13px; padding:24px 0}
+  .within{background:var(--plane); color:var(--ink); border:1px solid var(--border); border-radius:7px; padding:5px 8px; font-size:12px; max-width:230px}
+  .quadwrap{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 10px 6px; overflow-x:auto}
+  .quadwrap svg{display:block; width:100%; height:auto; min-width:560px}
+  .qz-tl{fill:var(--vol)} .qz-tr{fill:var(--up)} .qz-bl{fill:var(--down)} .qz-br{fill:var(--ma)}
+  .qlabel{fill:var(--muted); font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; opacity:.75}
+  .qaxis{stroke:var(--axis)} .qframe{stroke:var(--grid); fill:none}
+  .qtick{fill:var(--muted); font-size:11px}
+  .qname{fill:var(--ink-2); font-size:10.5px}
+  .qpt{cursor:crosshair} .qbub{stroke:var(--surface); stroke-width:1}
 
   #tt{position:fixed; z-index:50; pointer-events:none; background:var(--ink); color:var(--surface);
       padding:5px 8px; border-radius:6px; font-size:12px; opacity:0; transition:opacity .08s; white-space:nowrap}
@@ -108,6 +118,10 @@
   <div class="sub" id="sub"></div>
 
   <div class="presets">
+    <span class="lab">Layout</span>
+    <button class="preset" data-layout="grid">Grid</button>
+    <button class="preset" data-layout="quad">Quadrant</button>
+    <span style="width:12px"></span>
     <span class="lab">Level</span>
     <button class="preset" data-level="sector">Sector</button>
     <button class="preset" data-level="industry">Industry</button>
@@ -125,14 +139,16 @@
     <span class="offlbl" id="offlbl"></span>
     <button class="offbtn" id="offFwd" title="Shift the window one week newer">▶</button>
     <span style="width:12px"></span>
-    <span class="lab">View</span>
-    <button class="preset" data-chart="line">Line</button>
-    <button class="preset" data-chart="hist">Bars</button>
+    <span id="viewGrp"><span class="lab">View</span>
+      <button class="preset" data-chart="line">Line</button>
+      <button class="preset" data-chart="hist">Bars</button></span>
+    <select id="within" class="within" hidden title="Focus the quadrant on one sector's sub-groups"></select>
     <span class="summary" id="summary"></span>
   </div>
   <div class="legend" id="legend"></div>
 
   <section class="grid" id="grid"></section>
+  <section class="quadwrap" id="quad" hidden></section>
   <footer id="foot"></footer>
   </main>
 </div>
@@ -149,6 +165,8 @@ let PERIOD=13, OFFSET=0;                                   // window in weeks
 let CHART=(localStorage.getItem('sec.chart')==='line')?'line':'hist';   // default Bars
 const MA_P=4;                                              // 4-week moving average
 const MIN_STOCKS=2;                                        // hide 1-stock noise
+let LAYOUT=(localStorage.getItem('sec.layout')==='quad')?'quad':'grid';   // grid cards | quadrant
+let WITHIN='';                                             // quadrant focus: '' = all sectors
 
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function movavg(vals, p){
@@ -205,6 +223,7 @@ function render(){
   document.querySelectorAll('.preset[data-days]').forEach(b=>b.classList.toggle('on', +b.dataset.days===PERIOD));
   document.querySelectorAll('.preset[data-level]').forEach(b=>b.classList.toggle('on', b.dataset.level===LEVEL));
   document.querySelectorAll('.preset[data-chart]').forEach(b=>b.classList.toggle('on', b.dataset.chart===CHART));
+  document.querySelectorAll('.preset[data-layout]').forEach(b=>b.classList.toggle('on', b.dataset.layout===LAYOUT));
 
   const weeks=M.weeks||[], maxLen=weeks.length;
   OFFSET=Math.max(0, Math.min(OFFSET, Math.max(0,maxLen-1)));
@@ -215,27 +234,46 @@ function render(){
   const lvlName=(M.levels.find(l=>l[0]===LEVEL)||[LEVEL,LEVEL])[1];
   const groups=M.counts[LEVEL]||{};
   const cov=M.coverage||{};
+  const isQuad=LAYOUT==='quad';
+  $('#viewGrp').style.display = isQuad?'none':'';
+  const showWithin = isQuad && LEVEL!=='sector';
+  $('#within').hidden = !showWithin; $('#within').value = WITHIN;
   $('#sub').innerHTML = `<b>${Object.keys(groups).length}</b> ${esc(lvlName.toLowerCase())} groups · from `
     + `<a href="${esc(M.url)}" target="_blank" rel="noopener">${esc(M.screener)}</a> (weekly) · `
     + (M.updated_at?`updated <b>${esc(M.updated_at)}</b>`:'no data');
-  $('#legend').innerHTML = CHART==='hist'
-    ? `Each chart: <b>bars</b> = how many of the sector's stocks are in the screener that week — `
-      + `<b style="color:var(--bar-up)">green = up on the prior week</b> / <b style="color:var(--bar-down)">red = down</b> · `
-      + `<b style="color:var(--ma)">line</b> = ${MA_P}-week average. Cards sorted by recent momentum — a rising count means the sector is gaining interest.`
-    : `Each chart: weekly count of the sector's stocks in the screener. Cards sorted by recent momentum (rising first) — a rising count means the sector is gaining interest.`;
+  $('#legend').innerHTML = isQuad
+    ? `Quadrant of sector <b>movement</b> over the window — <b>x</b> = current participation (avg stocks in the screener), `
+      + `<b>y</b> = momentum (stocks added per week). Above the mid-line = <b style="color:var(--up)">adding</b>, below = `
+      + `<b style="color:var(--down)">shedding</b>; right of centre = larger than the median ${esc(lvlName.toLowerCase())}. `
+      + `<b>Leading ↗</b> · <b>↖ Improving</b> · <b>Weakening ↘</b> · <b>↙ Lagging</b> · bubble size = latest count.`
+    : (CHART==='hist'
+      ? `Each chart: <b>bars</b> = how many of the sector's stocks are in the screener that week — `
+        + `<b style="color:var(--bar-up)">green = up on the prior week</b> / <b style="color:var(--bar-down)">red = down</b> · `
+        + `<b style="color:var(--ma)">line</b> = ${MA_P}-week average. Cards sorted by recent momentum — a rising count means the sector is gaining interest.`
+      : `Each chart: weekly count of the sector's stocks in the screener. Cards sorted by recent momentum (rising first) — a rising count means the sector is gaining interest.`);
 
   const end=Math.max(0, maxLen-1-OFFSET), start=Math.max(0, end-PERIOD+1);
   let rows=Object.keys(groups).map(g=>{
     const full=groups[g], win=full.slice(start, end+1);
-    return {g, full, win, mx:Math.max(0,...win), sl:lsSlope(win), latest:win.length?win[win.length-1]:0};
+    const sl=lsSlope(win), mean=win.reduce((a,b)=>a+b,0)/(win.length||1);
+    return {g, full, win, mx:Math.max(0,...win), sl, latest:win.length?win[win.length-1]:0, sg:signOf(sl, mean)};
   }).filter(r=>r.mx>=MIN_STOCKS);
   rows.sort((a,b)=> b.sl-a.sl || b.latest-a.latest || a.g.localeCompare(b.g));
 
-  let up=0,down=0,flat=0;
+  let up=0,down=0,flat=0; rows.forEach(r=>{ if(r.sg>0)up++; else if(r.sg<0)down++; else flat++; });
+  $('#summary').innerHTML=`<b class="u">${up} ▲</b> · <b class="d">${down} ▼</b> · <b class="f">${flat} →</b>`;
+
   const winWeeks=weeks.slice(start, end+1);
+  if(isQuad){ $('#grid').hidden=true; $('#quad').hidden=false; renderQuad(rows, lvlName); }
+  else { $('#quad').hidden=true; $('#grid').hidden=false; renderGrid(rows, winWeeks, start, end, lvlName); }
+
+  $('#foot').textContent=`Generated ${M.generated_at||''} · ${rows.length} groups shown (≥${MIN_STOCKS} stocks)`
+    + (cov.total?` · ${cov.mapped}/${cov.total} symbols classified from data.csv`:'')+` · weekly, run daily after 2pm`;
+}
+
+function renderGrid(rows, winWeeks, start, end, lvlName){
   const cards=rows.map(r=>{
-    const vals=r.win, mean=vals.reduce((a,b)=>a+b,0)/(vals.length||1), sg=signOf(r.sl, mean);
-    if(sg>0)up++; else if(sg<0)down++; else flat++;
+    const vals=r.win, sg=r.sg;
     const latest=vals[vals.length-1], prev=vals.length>1?vals[vals.length-2]:latest, wd=latest-prev;
     const dcls=wd>0?'up':(wd<0?'down':'flat'), darr=wd>0?'▲':(wd<0?'▼':'→');
     const W=300, h=48;
@@ -260,9 +298,47 @@ function render(){
     </div>`;
   }).join('');
   $('#grid').innerHTML = cards || `<div class="empty">No ${esc(lvlName.toLowerCase())} groups with ≥${MIN_STOCKS} stocks in this window.</div>`;
-  $('#summary').innerHTML=`<b class="u">${up} ▲</b> · <b class="d">${down} ▼</b> · <b class="f">${flat} →</b>`;
-  $('#foot').textContent=`Generated ${M.generated_at||''} · ${rows.length} groups shown (≥${MIN_STOCKS} stocks)`
-    + (cov.total?` · ${cov.mapped}/${cov.total} symbols classified from Downloads/data.csv`:'')+` · weekly, run daily after 2pm`;
+}
+
+// Rotation quadrant: x = current participation (avg stocks), y = momentum (Δ stocks/week),
+// centre lines at the median participation and zero momentum → Leading / Improving / Weakening / Lagging.
+function renderQuad(rows, lvlName){
+  const box=$('#quad');
+  let items=rows.map(r=>{ const k=Math.min(4, r.win.length)||1;
+    return {g:r.g, level:r.win.slice(-k).reduce((a,b)=>a+b,0)/k, mom:r.sl, count:r.latest}; });
+  if(LEVEL!=='sector' && WITHIN){ const par=(M.parents&&M.parents[LEVEL])||{}; items=items.filter(it=>par[it.g]===WITHIN); }
+  if(items.length<2){ box.innerHTML=`<div class="empty" style="padding:34px 14px">Need ≥2 ${esc(lvlName.toLowerCase())} groups to plot${WITHIN?` in ${esc(WITHIN)}`:''}.</div>`; return; }
+  const W=920,H=540, ml=54,mr=54,mt=30,mb=48, pw=W-ml-mr, ph=H-mt-mb;
+  const levels=items.map(d=>d.level), moms=items.map(d=>d.mom);
+  let xmin=Math.min(...levels), xmax=Math.max(...levels); if(xmin===xmax){xmin-=1; xmax+=1;}
+  const xp=(xmax-xmin)*0.08; xmin-=xp; xmax+=xp;
+  const ym=Math.max(0.001, ...moms.map(Math.abs))*1.18;
+  const X=v=>ml+(v-xmin)/(xmax-xmin)*pw, Y=v=>mt+ph/2-(v/ym)*(ph/2);
+  const sorted=[...levels].sort((a,b)=>a-b), medL=sorted[Math.floor(sorted.length/2)];
+  const cx=X(medL), cy=Y(0);
+  const rects=`<rect x="${ml}" y="${mt}" width="${(cx-ml).toFixed(1)}" height="${(cy-mt).toFixed(1)}" class="qz-tl" fill-opacity="0.07"/>`
+    +`<rect x="${cx.toFixed(1)}" y="${mt}" width="${(ml+pw-cx).toFixed(1)}" height="${(cy-mt).toFixed(1)}" class="qz-tr" fill-opacity="0.07"/>`
+    +`<rect x="${ml}" y="${cy.toFixed(1)}" width="${(cx-ml).toFixed(1)}" height="${(mt+ph-cy).toFixed(1)}" class="qz-bl" fill-opacity="0.07"/>`
+    +`<rect x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" width="${(ml+pw-cx).toFixed(1)}" height="${(mt+ph-cy).toFixed(1)}" class="qz-br" fill-opacity="0.07"/>`;
+  const axes=`<rect x="${ml}" y="${mt}" width="${pw}" height="${ph}" class="qframe" stroke-width="1"/>`
+    +`<line x1="${ml}" y1="${cy.toFixed(1)}" x2="${ml+pw}" y2="${cy.toFixed(1)}" class="qaxis" stroke-width="1.2"/>`
+    +`<line x1="${cx.toFixed(1)}" y1="${mt}" x2="${cx.toFixed(1)}" y2="${mt+ph}" class="qaxis" stroke-width="1" stroke-dasharray="3 3"/>`;
+  const corners=`<text x="${ml+pw-8}" y="${mt+16}" text-anchor="end" class="qlabel">Leading ↗</text>`
+    +`<text x="${ml+8}" y="${mt+16}" class="qlabel">↖ Improving</text>`
+    +`<text x="${ml+8}" y="${mt+ph-8}" class="qlabel">↙ Lagging</text>`
+    +`<text x="${ml+pw-8}" y="${mt+ph-8}" text-anchor="end" class="qlabel">Weakening ↘</text>`;
+  const titles=`<text x="${ml+pw/2}" y="${H-8}" text-anchor="middle" class="qtick">participation — avg stocks in screener (${esc(lvlName.toLowerCase())}) →</text>`
+    +`<text transform="translate(16 ${mt+ph/2}) rotate(-90)" text-anchor="middle" class="qtick">← shedding    adding →</text>`;
+  const showAll=items.length<=45;
+  const top=new Set([...items].sort((a,b)=>Math.abs(b.mom)-Math.abs(a.mom)).slice(0,12).map(d=>d.g));
+  const pts=items.map(d=>{
+    const x=X(d.level), y=Y(d.mom), r=Math.max(3.5, Math.min(13, Math.sqrt(Math.max(1,d.count))*1.6));
+    const col=d.mom>0.04?'var(--up)':(d.mom<-0.04?'var(--down)':'var(--flat)');
+    const flip=x>ml+pw*0.72, nm=esc(d.g.length>24?d.g.slice(0,23)+'…':d.g);
+    const label=(showAll||top.has(d.g))?`<text x="${(flip?x-r-4:x+r+4).toFixed(1)}" y="${(y+3.5).toFixed(1)}" text-anchor="${flip?'end':'start'}" class="qname">${nm}</text>`:'';
+    return `<g class="qpt" data-tip="${esc(d.g)}|${d.level.toFixed(1)}|${d.mom.toFixed(2)}|${d.count}"><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="${col}" fill-opacity="0.82" class="qbub"/>${label}</g>`;
+  }).join('');
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Sector rotation quadrant — participation versus momentum">${rects}${axes}${corners}${titles}${pts}</svg>`;
 }
 
 /* hover tooltip on the mini-charts */
@@ -279,9 +355,22 @@ $('#grid').addEventListener('mousemove',e=>{
 });
 $('#grid').addEventListener('mouseleave',()=>tt.style.opacity='0');
 
+/* hover tooltip on the quadrant bubbles */
+$('#quad').addEventListener('mousemove',e=>{
+  const el=e.target.closest('.qpt'); if(!el){tt.style.opacity='0';return;}
+  const p=el.dataset.tip.split('|'), mo=+p[2], dir=mo>0.04?'adding':(mo<-0.04?'shedding':'flat');
+  tt.innerHTML=`<b>${esc(p[0])}</b> · ${p[3]} stocks · ~${Math.round(+p[1])} avg · ${dir} ${mo>0?'+':''}${mo.toFixed(2)}/wk`;
+  tt.style.opacity='1'; const b=tt.getBoundingClientRect();
+  let x=e.clientX+12, y=e.clientY-b.height-8; if(x+b.width>innerWidth-8)x=e.clientX-b.width-12; if(y<8)y=e.clientY+16;
+  tt.style.left=x+'px'; tt.style.top=y+'px';
+});
+$('#quad').addEventListener('mouseleave',()=>tt.style.opacity='0');
+
 document.querySelectorAll('.preset[data-days]').forEach(b=>b.addEventListener('click',()=>{PERIOD=+b.dataset.days; render();}));
 document.querySelectorAll('.preset[data-level]').forEach(b=>b.addEventListener('click',()=>{LEVEL=b.dataset.level; localStorage.setItem('sec.level',LEVEL); render();}));
 document.querySelectorAll('.preset[data-chart]').forEach(b=>b.addEventListener('click',()=>{CHART=b.dataset.chart; localStorage.setItem('sec.chart',CHART); render();}));
+document.querySelectorAll('.preset[data-layout]').forEach(b=>b.addEventListener('click',()=>{LAYOUT=b.dataset.layout; localStorage.setItem('sec.layout',LAYOUT); render();}));
+$('#within').addEventListener('change',()=>{WITHIN=$('#within').value; render();});
 $('#offBack').addEventListener('click',()=>{OFFSET=Math.min((M.weeks||[]).length-1,OFFSET+1); render();});
 $('#offFwd').addEventListener('click',()=>{OFFSET=Math.max(0,OFFSET-1); render();});
 $('#themeBtn').addEventListener('click',()=>{
@@ -289,6 +378,10 @@ $('#themeBtn').addEventListener('click',()=>{
   const dark=matchMedia('(prefers-color-scheme: dark)').matches;
   document.documentElement.setAttribute('data-theme', cur?(cur==='dark'?'light':'dark'):(dark?'light':'dark'));
 });
+
+/* populate the quadrant's within-sector focus list */
+(function(){ const secs=Object.keys((M.counts&&M.counts.sector)||{}).sort();
+  $('#within').innerHTML='<option value="">All sectors</option>'+secs.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join(''); })();
 
 render();
 </script>

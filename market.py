@@ -28,7 +28,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 from scrape import build_driver, download_backtest_csv
 from build_dashboard import _iso
-from sectors_lib import LEVELS, SECTOR_STORE, load_sector_map
+from sectors_lib import LEVELS, SECTOR_STORE, load_sector_map, group_parents
 
 HERE = Path(__file__).resolve().parent
 DATA_DIR = HERE / "data"
@@ -216,6 +216,7 @@ def render_sectors(store):
         raise FileNotFoundError(f"Template missing: {SECTOR_TEMPLATE}")
     payload = dict(store)
     payload["cap_weeks"] = CAP_WEEKS
+    payload["parents"] = group_parents()          # sub-group → parent sector (quadrant filter)
     payload["generated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M")
     b64 = base64.b64encode(json.dumps(payload).encode("utf-8")).decode("ascii")
     SECTOR_OUT.write_text(SECTOR_TEMPLATE.read_text().replace("__SECTOR_B64__", b64))
