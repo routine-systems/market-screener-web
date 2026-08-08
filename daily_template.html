@@ -96,6 +96,8 @@
   .minibar>span{display:block; height:100%; background:var(--vol)}
   .rankn{color:var(--muted); font-variant-numeric:tabular-nums}
   footer{color:var(--muted); font-size:11.5px; margin-top:24px; text-align:center}
+  #tt{position:fixed; z-index:50; pointer-events:none; background:var(--ink); color:var(--surface); padding:6px 9px; border-radius:7px; font-size:12px; opacity:0; transition:opacity .08s; max-width:260px}
+  :root[data-theme="dark"] #tt, :root:where(:not([data-theme="light"])) #tt{color:#111}
 </style>
 </head>
 <body>
@@ -167,6 +169,7 @@
   <footer id="foot"></footer>
   </main>
 </div>
+<div id="tt"></div>
 
 <script>
 const HISTORY_B64="__HISTORY_B64__";
@@ -272,11 +275,12 @@ function renderTable(){
     const grid = nD<=DOTCAP
       ? '<span class="dots">'+r.present.map((p,i)=>`<span class="dot ${p?(r.consist===nD?'hot':'on'):''}" title="${MODEL.win[i]}"></span>`).join('')+'</span>'
       : `<span class="minibar" title="${r.consist}/${nD}"><span style="width:${(r.consist/nD*100).toFixed(1)}%"></span></span>`;
+    const tipDays=MODEL.win.map((d,i)=>`${d}: ${r.present[i]?'●':'—'}`).join(' · ');
     return `<tr>
       <td class="l rankn">${r.rank}</td>
       <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${r.inFil?'<span class="filt-dot" title="in -fil subset"></span>':''}${r.isNew?' <span class="up" title="new on latest day">✦</span>':''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}</td>
       <td class="l"><span class="xtab">${xc}<span class="xscore s${r.score}">${r.score}/3</span></span></td>
-      <td class="l"><span class="appc"><span class="frac">${r.consist}<small>/${nD}</small></span>${grid}</span></td>
+      <td class="l"><span class="appc" data-tip="row" data-w="${tipDays.replace(/"/g,'')}"><span class="frac">${r.consist}<small>/${nD}</small></span>${grid}</span></td>
       <td class="l mc">${r.sector||'—'}</td>
       <td class="l mc">${r.marketcap||'—'}</td>
     </tr>`;
@@ -286,6 +290,10 @@ function renderTable(){
 
 document.querySelectorAll('thead th').forEach(th=>th.addEventListener('click',()=>{const k=th.dataset.k; if(k===sortKey)sortAsc=!sortAsc; else{sortKey=k; sortAsc=(k==='symbol'||k==='sector');} renderTable();}));
 $('#search').addEventListener('input',renderTable);
+const tt=$('#tt');
+function showTip(html,x,y){tt.innerHTML=html;tt.style.opacity='1';const b=tt.getBoundingClientRect();let nx=x+12,ny=y-b.height-8;if(nx+b.width>innerWidth-8)nx=x-b.width-12;if(ny<8)ny=y+16;tt.style.left=nx+'px';tt.style.top=ny+'px';}
+$('#tbody').addEventListener('mousemove',e=>{const el=e.target.closest('[data-tip="row"]'); if(!el){tt.style.opacity='0';return;} showTip(el.dataset.w.split(' · ').join('<br>'),e.clientX,e.clientY);});
+$('#tbody').addEventListener('mouseleave',()=>{tt.style.opacity='0';});
 function toggle(id,setter){const b=$('#'+id); b.addEventListener('click',()=>{setter(); b.classList.toggle('on'); renderTable();});}
 toggle('allThree',()=>allThree=!allThree); toggle('pbOnly',()=>pbOnly=!pbOnly); toggle('mqOnly',()=>mqOnly=!mqOnly); toggle('filOnly',()=>filOnly=!filOnly); toggle('newOnly',()=>newOnly=!newOnly); toggle('crossOnly',()=>crossOnly=!crossOnly);
 $('#csvBtn').addEventListener('click',()=>{const {rows,win,nD}=MODEL; const head=['Rank','Symbol','Window','Score','InDly','InPB','InMQ','InFil','DaysInDly','WindowDays','Sector','Cap'];
