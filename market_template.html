@@ -96,6 +96,25 @@
       padding:5px 8px; border-radius:6px; font-size:12px; opacity:0; transition:opacity .08s; white-space:nowrap}
   :root[data-theme="dark"] #tt, :root:where(:not([data-theme="light"])) #tt{color:#111}
   footer{color:var(--muted); font-size:11.5px; margin-top:26px; text-align:center}
+  /* clickable charts → lightbox */
+  .card .spark, #mclwrap .spark{cursor:zoom-in}
+  .lb{position:fixed; inset:0; background:rgba(0,0,0,.64); display:flex; align-items:center; justify-content:center; z-index:60; padding:18px}
+  .lb[hidden]{display:none}
+  .lb-card{background:var(--surface); border:1px solid var(--border); border-radius:15px; padding:15px 18px 16px; width:min(1040px,96vw); max-height:93vh; overflow:auto; box-shadow:0 20px 64px rgba(0,0,0,.5); position:relative}
+  .lb-head{display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:12px}
+  .lb-name{font-weight:700; font-size:16px}
+  .lb-badge{font-size:11px; padding:2px 7px; border-radius:20px; border:1px solid var(--border)}
+  .lb-badge.up{color:var(--up)} .lb-badge.down{color:var(--down)} .lb-badge.flat{color:var(--flat)}
+  .lb-val .big{font-size:19px; font-weight:700}
+  .lb-val .dlt{font-size:12px} .lb-val .dlt.up{color:var(--up)} .lb-val .dlt.down{color:var(--down)}
+  .lb-sp{flex:1 1 12px}
+  .lb-ctrls{display:flex; gap:4px; align-items:center; flex-wrap:wrap}
+  .lb-ctrls .vr{width:1px; height:18px; background:var(--border); margin:0 3px}
+  .lb-close{background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--ink); cursor:pointer; width:30px; height:30px; font-size:14px; line-height:1}
+  .lb-close:hover{background:var(--hover,rgba(128,128,128,.12))}
+  .lb-chart{position:relative}
+  .lb-range{display:flex; justify-content:space-between; color:var(--muted); font-size:12px; margin-top:7px}
+  .lb-guide{position:absolute; top:0; bottom:0; width:1px; background:var(--axis,rgba(128,128,128,.5)); pointer-events:none; opacity:0}
 </style>
 </head>
 <body>
@@ -141,6 +160,29 @@
   </main>
 </div>
 <div id="tt"></div>
+
+<div id="lightbox" class="lb" hidden>
+  <div class="lb-card" role="dialog" aria-modal="true" aria-label="Chart detail">
+    <div class="lb-head">
+      <span class="lb-name" id="lbName"></span>
+      <span class="lb-badge" id="lbBadge"></span>
+      <span class="lb-val" id="lbVal"></span>
+      <span class="lb-sp"></span>
+      <div class="lb-ctrls">
+        <button class="preset" data-lbdays="21">1M</button>
+        <button class="preset" data-lbdays="63">3M</button>
+        <button class="preset" data-lbdays="126">6M</button>
+        <button class="preset" data-lbdays="999">All</button>
+        <span class="vr" id="lbTypeSep"></span>
+        <button class="preset lbtype" data-lbchart="line">Line</button>
+        <button class="preset lbtype" data-lbchart="hist">Bars</button>
+      </div>
+      <button class="lb-close" id="lbClose" aria-label="Close">✕</button>
+    </div>
+    <div class="lb-chart" id="lbChart"><div class="lb-guide" id="lbGuide"></div></div>
+    <div class="lb-range" id="lbRange"></div>
+  </div>
+</div>
 
 <script>
 const MARKET_B64="__MARKET_B64__";
@@ -316,6 +358,69 @@ $('#mclwrap').addEventListener('mousemove',e=>{
   tt.style.left=x+'px'; tt.style.top=y+'px';
 });
 $('#mclwrap').addEventListener('mouseleave',()=>tt.style.opacity='0');
+
+/* ── Chart lightbox: click any card (or the McClellan) for a large chart + its own
+   window / Line-Bars controls and a hover readout. ────────────────────────────────── */
+const LB={slug:null, period:126, chart:CHART};
+function lbMeta(slug){
+  if(slug==='__mcl__'){ const m=M.mcclellan||{days:[],osc:[]};
+    return {name:'McClellan Oscillator', dates:m.days||[], vals:(m.osc||[]).map(Number), mcl:true, unit:''}; }
+  const sc=(M.screeners||[]).find(s=>s.slug===slug)||{name:slug};
+  const full=seriesFor(slug);
+  return {name:sc.name, dates:full.map(p=>p[0]), vals:full.map(p=>p[1]), mcl:false, unit:' stocks'};
+}
+function drawLB(){
+  const meta=lbMeta(LB.slug), n=meta.dates.length;
+  const per=(LB.period>=999)?n:LB.period, end=n, start=Math.max(0,end-per);
+  const dates=meta.dates.slice(start,end), vals=meta.vals.slice(start,end);
+  const W=980,h=360; let svg='';
+  if(meta.mcl){
+    const ml=6,mr=6,mt=10,mb=10, pw=W-ml-mr, ph=h-mt-mb;
+    const ymax=Math.max(1,...vals.map(v=>Math.abs(v)))*1.1, yy=v=>mt+ph/2-(v/ymax)*(ph/2), zero=yy(0);
+    const slot=pw/vals.length, bw=Math.max(1,slot*0.72); let bars='';
+    for(let i=0;i<vals.length;i++){const v=vals[i],y1=yy(v),x=ml+i*slot+(slot-bw)/2;
+      bars+=`<rect x="${x.toFixed(1)}" y="${Math.min(y1,zero).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0.6,Math.abs(y1-zero)).toFixed(1)}" fill="${v>=0?'var(--up)':'var(--down)'}" fill-opacity="0.82"/>`;}
+    const path=vals.map((v,i)=>(i?'L':'M')+(ml+i*slot+slot/2).toFixed(1)+' '+yy(v).toFixed(1)).join(' ');
+    svg=`<svg viewBox="0 0 ${W} ${h}" width="100%" height="${h}" preserveAspectRatio="none"><g>${bars}</g>`
+      +`<line x1="${ml}" y1="${zero.toFixed(1)}" x2="${ml+pw}" y2="${zero.toFixed(1)}" stroke="var(--axis)" stroke-width="1"/>`
+      +`<path d="${path}" fill="none" stroke="var(--ink-2)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
+  }else if(LB.chart==='hist'){
+    const maWin=movavg(meta.vals, MA_P).slice(start,end), prev0=start>0?meta.vals[start-1]:null;
+    svg=histSVG(vals, maWin, W, h, prev0);
+  }else{ svg=sparkSVG(vals, COL[trendSign(vals)], W, h); }
+  const latest=vals[vals.length-1], prev=vals.length>1?vals[vals.length-2]:latest, day=+(latest-prev).toFixed(meta.mcl?1:0);
+  const sign=meta.mcl?(latest>0?1:latest<0?-1:0):trendSign(vals);
+  $('#lbName').textContent=meta.name;
+  const bd=$('#lbBadge'); bd.className='lb-badge '+CLS[sign];
+  bd.textContent=meta.mcl?(sign>0?'▲ positive':sign<0?'▼ negative':'→ flat'):(sign>0?'▲ rising':sign<0?'▼ falling':'→ flat');
+  $('#lbVal').innerHTML=`<span class="big">${meta.mcl?latest.toFixed(0):latest}</span> <span class="dlt ${day>0?'up':day<0?'down':'flat'}">${day>0?'▲ +':day<0?'▼ ':'→ '}${day}</span>`;
+  const host=$('#lbChart'), guide=$('#lbGuide');
+  host.innerHTML=svg; host.appendChild(guide);
+  host.dataset.dates=dates.join(','); host.dataset.vals=vals.join(','); host.dataset.unit=meta.unit;
+  const mn=Math.min(...vals), mx=Math.max(...vals);
+  $('#lbRange').innerHTML=`<span>${dates[0]||''}</span><span>${vals.length} d · min ${meta.mcl?mn.toFixed(0):mn} · max ${meta.mcl?mx.toFixed(0):mx}</span><span>${dates[dates.length-1]||''}</span>`;
+  const showType=!meta.mcl; $('#lbTypeSep').style.display=showType?'':'none';
+  document.querySelectorAll('.lbtype').forEach(b=>{b.style.display=showType?'':'none'; b.classList.toggle('on',b.dataset.lbchart===LB.chart);});
+  document.querySelectorAll('[data-lbdays]').forEach(b=>b.classList.toggle('on',+b.dataset.lbdays===LB.period));
+}
+function openLB(slug){ LB.slug=slug; LB.period=(PERIOD>=126?PERIOD:126); LB.chart=CHART; $('#lightbox').hidden=false; drawLB(); }
+function closeLB(){ $('#lightbox').hidden=true; tt.style.opacity='0'; }
+$('#grid').addEventListener('click',e=>{const c=e.target.closest('.spark[data-slug]'); if(c) openLB(c.dataset.slug);});
+$('#mclwrap').addEventListener('click',()=>{ if(((M.mcclellan&&M.mcclellan.days)||[]).length>1) openLB('__mcl__'); });
+document.querySelectorAll('[data-lbdays]').forEach(b=>b.addEventListener('click',()=>{LB.period=+b.dataset.lbdays; drawLB();}));
+document.querySelectorAll('.lbtype').forEach(b=>b.addEventListener('click',()=>{LB.chart=b.dataset.lbchart; drawLB();}));
+$('#lbClose').addEventListener('click',closeLB);
+$('#lightbox').addEventListener('click',e=>{ if(e.target.id==='lightbox') closeLB(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('#lightbox').hidden) closeLB(); });
+$('#lbChart').addEventListener('mousemove',e=>{
+  const host=$('#lbChart'), ds=(host.dataset.dates||'').split(','), vs=(host.dataset.vals||'').split(','); if(vs.length<2){tt.style.opacity='0';return;}
+  const r=host.getBoundingClientRect(); let i=Math.round((e.clientX-r.left)/r.width*(vs.length-1)); i=Math.max(0,Math.min(vs.length-1,i));
+  const g=$('#lbGuide'); g.style.left=((i/(vs.length-1))*r.width).toFixed(1)+'px'; g.style.opacity='1';
+  tt.innerHTML=`<b>${ds[i]}</b> · ${vs[i]}${host.dataset.unit||''}`; tt.style.opacity='1';
+  const b=tt.getBoundingClientRect(); let x=e.clientX+12,y=e.clientY-b.height-8; if(x+b.width>innerWidth-8)x=e.clientX-b.width-12; if(y<8)y=e.clientY+16;
+  tt.style.left=x+'px'; tt.style.top=y+'px';
+});
+$('#lbChart').addEventListener('mouseleave',()=>{tt.style.opacity='0'; $('#lbGuide').style.opacity='0';});
 
 document.querySelectorAll('.preset[data-days]').forEach(b=>b.addEventListener('click',()=>{PERIOD=+b.dataset.days; render();}));
 document.querySelectorAll('.preset[data-chart]').forEach(b=>b.addEventListener('click',()=>{CHART=b.dataset.chart; localStorage.setItem('mkt.chart', CHART); render();}));
