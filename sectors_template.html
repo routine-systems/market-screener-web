@@ -98,7 +98,9 @@
   .empty{color:var(--muted); font-size:13px; padding:24px 0}
   .within{background:var(--plane); color:var(--ink); border:1px solid var(--border); border-radius:7px; padding:5px 8px; font-size:12px; max-width:230px}
   .quadwrap{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 10px 6px; overflow-x:auto}
-  .quadwrap svg{display:block; width:100%; height:auto; min-width:560px}
+  /* aspect-ratio (not height:auto alone) so iOS Safari derives the height from the
+     viewBox instead of collapsing the SVG to zero height */
+  .quadwrap svg{display:block; width:100%; height:auto; aspect-ratio:920 / 540; min-width:560px}
   .qz-tl{fill:var(--vol)} .qz-tr{fill:var(--up)} .qz-bl{fill:var(--down)} .qz-br{fill:var(--ma)}
   .qlabel{fill:var(--muted); font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; opacity:.75}
   .qaxis{stroke:var(--axis)} .qframe{stroke:var(--grid); fill:none}
