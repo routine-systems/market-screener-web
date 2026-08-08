@@ -64,6 +64,10 @@
 
   .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
   .grid[hidden],.quadwrap[hidden]{display:none}
+  .grid.grouped{display:block}
+  .secgroup{border:1px solid var(--border); border-radius:14px; padding:11px 13px 3px; margin-bottom:16px}
+  .secgroup-h{display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--ink-2); margin:0 2px 11px}
+  .secgroup-n{font-size:11px; font-weight:600; color:var(--muted); background:var(--plane); border:1px solid var(--border); border-radius:999px; padding:1px 7px; font-variant-numeric:tabular-nums}
   @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
   @media(max-width:560px){.grid{grid-template-columns:1fr}}
   .card{background:var(--surface); border:1px solid var(--border); border-left-width:3px; border-radius:12px; padding:13px 14px 8px}
@@ -240,8 +244,8 @@ function render(){
   $('#viewGrp').style.display = isQuad?'none':'';
   const showWithin = isQuad && LEVEL!=='sector';
   $('#within').hidden = !showWithin; $('#within').value = WITHIN;
-  $('#sub').innerHTML = `<b>${Object.keys(groups).length}</b> ${esc(lvlName.toLowerCase())} groups · from `
-    + `<a href="${esc(M.url)}" target="_blank" rel="noopener">${esc(M.screener)}</a> (weekly) · `
+  $('#sub').innerHTML = `<b>${Object.keys(groups).length}</b> ${esc(lvlName.toLowerCase())} groups · weekly · `
+    + `<a href="${esc(M.url)}" target="_blank" rel="noopener">source ↗</a> · `
     + (M.updated_at?`updated <b>${esc(M.updated_at)}</b>`:'no data');
   $('#legend').innerHTML = isQuad
     ? `Quadrant of sector <b>movement</b> over the window — <b>x</b> = current participation (avg stocks in the screener), `
@@ -253,6 +257,7 @@ function render(){
         + `<b style="color:var(--bar-up)">green = up on the prior week</b> / <b style="color:var(--bar-down)">red = down</b> · `
         + `<b style="color:var(--ma)">line</b> = ${MA_P}-week average. Cards sorted by recent momentum — a rising count means the sector is gaining interest.`
       : `Each chart: weekly count of the sector's stocks in the screener. Cards sorted by recent momentum (rising first) — a rising count means the sector is gaining interest.`);
+  if(!isQuad && LEVEL!=='sector') $('#legend').innerHTML += ` · <b>grouped by sector</b>`;
 
   const end=Math.max(0, maxLen-1-OFFSET), start=Math.max(0, end-PERIOD+1);
   let rows=Object.keys(groups).map(g=>{
@@ -274,7 +279,8 @@ function render(){
 }
 
 function renderGrid(rows, winWeeks, start, end, lvlName){
-  const cards=rows.map(r=>{
+  const grid=$('#grid');
+  const cardOf = r => {
     const vals=r.win, sg=r.sg;
     const latest=vals[vals.length-1], prev=vals.length>1?vals[vals.length-2]:latest, wd=latest-prev;
     const dcls=wd>0?'up':(wd<0?'down':'flat'), darr=wd>0?'▲':(wd<0?'▼':'→');
@@ -298,8 +304,25 @@ function renderGrid(rows, winWeeks, start, end, lvlName){
         <a class="jump" href="daily.html?rot_level=${encodeURIComponent(LEVEL)}&rot_group=${encodeURIComponent(r.g)}" title="Show only ${esc(r.g)} in the Daily sheet">Daily ↗</a>
       </div>
     </div>`;
-  }).join('');
-  $('#grid').innerHTML = cards || `<div class="empty">No ${esc(lvlName.toLowerCase())} groups with ≥${MIN_STOCKS} stocks in this window.</div>`;
+  };
+  const empty = `<div class="empty">No ${esc(lvlName.toLowerCase())} groups with ≥${MIN_STOCKS} stocks in this window.</div>`;
+  const par = (LEVEL!=='sector' && M.parents && M.parents[LEVEL]) ? M.parents[LEVEL] : null;
+  if(!par){                                  // Sector level: flat grid (each card IS a sector)
+    grid.classList.remove('grouped');
+    grid.innerHTML = rows.map(cardOf).join('') || empty;
+    return;
+  }
+  // Industry / Basic: group the sub-groups under their parent SECTOR so the hierarchy shows —
+  // e.g. "Auto Components" sits under Automobile, not next to Pharma. Sectors ordered by their
+  // hottest sub-group; cards within keep the momentum sort.
+  const bySec={};
+  rows.forEach(r=>{ const s=par[r.g]||'Unclassified'; (bySec[s]=bySec[s]||[]).push(r); });
+  const order=Object.keys(bySec).sort((a,b)=>
+    Math.max(...bySec[b].map(r=>r.sl)) - Math.max(...bySec[a].map(r=>r.sl)) || a.localeCompare(b));
+  grid.classList.add('grouped');
+  grid.innerHTML = order.map(s=>
+    `<div class="secgroup"><div class="secgroup-h">${esc(s)}<span class="secgroup-n">${bySec[s].length}</span></div>`
+    + `<div class="grid">${bySec[s].map(cardOf).join('')}</div></div>`).join('') || empty;
 }
 
 // Rotation quadrant: x = current participation (avg stocks), y = momentum (Δ stocks/week),

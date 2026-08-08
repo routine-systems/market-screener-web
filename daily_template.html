@@ -159,7 +159,7 @@
       <button class="toolbtn g3" id="allThree" title="Only tickers in all three within the window">◎ All three</button>
       <button class="toolbtn" id="pbOnly">PB</button>
       <button class="toolbtn" id="mqOnly">MQ</button>
-      <button class="toolbtn filt" id="filOnly" title="Only tickers in the -fil subset">◆ Filter</button>
+      <button class="toolbtn filt" id="filOnly" title="Only tickers also in the stricter filter">◆ Filter</button>
       <button class="toolbtn" id="newOnly" title="New in dly on the latest day">✦ New</button>
       <button class="toolbtn" id="crossOnly" title="Also in the weekly sheet (for the week[s] in view)" hidden>◲ In weekly</button>
       <button class="toolbtn" id="rotOnly" title="Tag each ticker with its sector's rotation status (from the weekly sector screener)" hidden>◉ Rotation</button>
@@ -314,14 +314,14 @@ function renderTable(){
     if(x===y)return b.score-a.score||b.consist-a.consist; return sortAsc?x-y:y-x;});
   $('#rankhint').textContent=`${list.length} of ${rows.length} · ${nD===1?'1 day':nD+' days'}${SECFILTER?' · '+SECFILTER.group:''}`;
   $('#tbody').innerHTML=list.map(r=>{
-    const xc=`<span class="xc on" title="cp-ich-trend-bounce-dly (trend bounce)">DLY</span>`+SIGS.map(s=>`<span class="xc ${r.sig[s.key]?'on':''}" title="${s.name||s.label}">${s.label}</span>`).join('');
+    const xc=`<span class="xc on" title="Trend bounce (daily)">DLY</span>`+SIGS.map(s=>`<span class="xc ${r.sig[s.key]?'on':''}" title="${s.name||s.label}">${s.label}</span>`).join('');
     const grid = nD<=DOTCAP
       ? '<span class="dots">'+r.present.map((p,i)=>`<span class="dot ${p?(r.consist===nD?'hot':'on'):''}" title="${MODEL.win[i]}"></span>`).join('')+'</span>'
       : `<span class="minibar" title="${r.consist}/${nD}"><span style="width:${(r.consist/nD*100).toFixed(1)}%"></span></span>`;
     const tipDays=MODEL.win.map((d,i)=>`${d}: ${r.present[i]?'●':'—'}`).join(' · ');
     return `<tr>
       <td class="l rankn">${r.rank}</td>
-      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${rotDot(r.symbol)}${r.inFil?'<span class="filt-dot" title="in -fil subset"></span>':''}${r.isNew?' <span class="up" title="new on latest day">✦</span>':''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}</td>
+      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${rotDot(r.symbol)}${r.inFil?'<span class="filt-dot" title="also in the stricter filter"></span>':''}${r.isNew?' <span class="up" title="new on latest day">✦</span>':''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}</td>
       <td class="l"><span class="xtab">${xc}<span class="xscore s${r.score}">${r.score}/3</span></span></td>
       <td class="l"><span class="appc" data-tip="row" data-w="${tipDays.replace(/"/g,'')}"><span class="frac">${r.consist}<small>/${nD}</small></span>${grid}</span></td>
       <td class="l mc">${r.sector||'—'}</td>
@@ -364,7 +364,7 @@ $('#themeBtn').addEventListener('click',()=>{const cur=document.documentElement.
 function buildLegend(){
   const link=(u,t)=>u?`<a href="${u}" target="_blank" rel="noopener">${t}</a>`:t;
   const pb=SIGS.find(s=>s.key==='pb'), mq=SIGS.find(s=>s.key==='mq');
-  $('#legend').innerHTML=`${link(H.source_url,'DLY')} = trend-bounce · ${link(pb&&pb.url,'PB')} = price breakout · ${link(mq&&mq.url,'MQ')} = Minervini Q · score = how many of the three fired in the window · <span style="color:var(--filt)">◆</span> also in −fil · <span style="color:var(--up)">✦</span> new · dots = days in dly within the window${H.cross?` · <b>${H.cross.label}</b> also in ${H.cross.name}`:''}<span id="rotLegend"></span>`;
+  $('#legend').innerHTML=`${link(H.source_url,'DLY')} = trend-bounce · ${link(pb&&pb.url,'PB')} = price breakout · ${link(mq&&mq.url,'MQ')} = Minervini Q · score = how many of the three fired in the window · <span style="color:var(--filt)">◆</span> also in the stricter filter · <span style="color:var(--up)">✦</span> new · dots = days in the screen within the window${H.cross?` · <b>${H.cross.label}</b> also in ${H.cross.name}`:''}<span id="rotLegend"></span>`;
 }
 /* hover "chart links" popover — toggle-gated, off by default */
 const pv=$('#pv'); let preview=localStorage.getItem('dly.preview')==='1', pvSym=null, pvTimer=null;

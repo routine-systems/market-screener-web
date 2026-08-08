@@ -214,7 +214,7 @@
     </div>
     <div style="color:var(--muted); font-size:11.5px; margin-bottom:10px">
       Dots = weeks present (blue), <span style="color:var(--hot)">gold-blue</span> = every week ·
-      <span style="color:var(--filt)">●</span> also in −fil · <span class="cross-badge" style="margin:0">D</span> also in the daily sheet<span id="rotLegend"></span>
+      <span style="color:var(--filt)">●</span> also in the stricter filter · <span class="cross-badge" style="margin:0">D</span> also in the daily sheet<span id="rotLegend"></span>
     </div>
     <div class="tablewrap">
       <table id="tbl">
@@ -490,7 +490,7 @@ function renderTable(){
     const badge=r.count===nW&&nW>1?'<span class="badge">every wk</span>':'';
     return `<tr>
       <td class="l rankn">${r.rank}</td>
-      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${rotDot(r.symbol)}${r.inFilter?`<span class="filt-dot" title="Also in ${H.filter?H.filter.screener:'filtered'} · ${keys[nW-1]}"></span>`:''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}</td>
+      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${rotDot(r.symbol)}${r.inFilter?`<span class="filt-dot" title="Also in the stricter filter · ${keys[nW-1]}"></span>`:''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}</td>
       <td class="l"><span class="appc" data-tip="row" data-w="${tipWeeks.replace(/"/g,'')}"><span class="frac">${r.count}<small>/${nW}</small></span>${dotgrid(r)}${badge}</span></td>
       <td class="l mc">${r.sector||'—'}</td>
       <td class="l mc">${r.marketcap||'—'}</td>
