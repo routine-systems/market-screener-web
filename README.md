@@ -1,6 +1,6 @@
 # chartink-dashboard
 
-Three self-contained HTML dashboards built from Chartink screener **backtest history** —
+Four self-contained HTML dashboards built from Chartink screener **backtest history** —
 one download carries the full history (no waiting to accumulate).
 
 ## Usage
@@ -54,6 +54,16 @@ between **Line** (count over the window) and **Bars** (a histogram shaded per da
 green if the count rose vs the prior day, darker red if it fell — with a 10-day moving-average
 line drawn on top). Rolling **9-month** store; window presets 1M / 3M / 6M / 9M + ◀▶ offset.
 
+**Sector rotation** (`sectors.html`) — reads the **weekly** `cp-cmo-wkly` screener and maps each
+stock to a **finer sector classification** from `~/Downloads/data.csv` (NSE **Sector → Industry
+→ Basic Industry**; auto-refreshed into the committed `sector_map.csv`). For each week it counts
+how many of a group's stocks are in the screener — a **rising count = the sector is gaining
+interest**, and weekly data smooths out intermittent blips. Cards are **sorted by recent
+momentum** (rising first), each a Line/Bars+MA mini-chart. Controls: **Level** (Sector / Industry
+/ Basic), **Weeks** window (5 / 8 / 13 / 26 / 52 / All, default 13) + ◀▶ offset, **View** (Line /
+Bars, default Bars). Groups with a single stock in the window are hidden as noise. Built by the
+**market** command (no separate script); open it from the top nav.
+
 ## Freshness (when a plain run re-downloads)
 
 - **`weekly`** — when a new week has closed (data older than the most recent **Friday
@@ -79,8 +89,10 @@ market pages keep only what they need (counts / membership) and discard the raw 
 | `run.py` | Weekly entry (`--mode weekly` / `adhoc`) used by `dash.sh` |
 | `build_dashboard.py` / `template.html` | Build + UI for the weekly page |
 | `daily.py` / `daily_template.html` | Build + UI for the daily cross-tab page |
-| `market.py` / `market_template.html` | Build + UI for the market-breadth page |
-| `data/*.json` | Derived caches (weekly/daily history, market counts) — git-ignored |
+| `market.py` / `market_template.html` | Build + UI for the market-breadth page (also builds sectors) |
+| `sectors_template.html` | UI for the sector-rotation page (built by `market.py`) |
+| `sector_map.csv` | Trimmed Symbol → Sector/Industry/Basic-Industry map (from `~/Downloads/data.csv`) |
+| `data/*.json` | Derived caches (weekly/daily history, market + sector counts) — git-ignored |
 
 ## Requirements
 

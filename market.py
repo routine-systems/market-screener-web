@@ -49,6 +49,16 @@ SCREENERS = [
     ("cp-cmo", "CMO"),
 ]
 
+# --- Sector-rotation page (4th page): a WEEKLY screener + a finer sector map -----------------
+SECTOR_SLUG = "cp-cmo-wkly"
+SECTOR_STORE = DATA_DIR / "sector_weekly.json"
+SECTOR_TEMPLATE = HERE / "sectors_template.html"
+SECTOR_OUT = HERE / "sectors.html"
+SECTOR_MAP = HERE / "sector_map.csv"                 # committed, trimmed classification
+DOWNLOADS_MAP = Path.home() / "Downloads" / "data.csv"  # owner's richer source (auto-picked)
+CAP_WEEKS = 156                                       # ~3 years of weekly rows
+LEVELS = [("sector", "Sector"), ("industry", "Industry"), ("basic", "Basic Industry")]
+
 
 def counts_from_csv(path: Path):
     """Backtest CSV -> { 'YYYY-MM-DD': unique-symbol-count } per day."""
@@ -74,6 +84,90 @@ def load_store():
     return {"screeners": [], "counts": {}, "updated_at": None}
 
 
+def load_sector_map():
+    """symbol -> {'sector','industry','basic'}. Prefer ~/Downloads/data.csv (and refresh the
+    committed trimmed sector_map.csv from it); else fall back to the committed copy."""
+    src = DOWNLOADS_MAP if DOWNLOADS_MAP.exists() else SECTOR_MAP
+    if not src.exists():
+        return {}
+    reader = csv.DictReader(src.read_text(encoding="utf-8-sig", errors="replace").splitlines())
+    fields = {(k or "").lower().strip(): k for k in (reader.fieldnames or [])}
+
+    def col(*names):
+        for n in names:
+            if n in fields:
+                return fields[n]
+        return None
+
+    csym = col("symbol")
+    csec = col("sector")
+    cind = col("industry")
+    cbas = col("basic industry", "basicindustry", "basic")
+    smap = {}
+    for row in reader:
+        sym = (row.get(csym) or "").strip().upper()
+        if not sym:
+            continue
+        smap[sym] = {
+            "sector": (row.get(csec) or "").strip() or "Unclassified",
+            "industry": (row.get(cind) or "").strip() or "Unclassified",
+            "basic": (row.get(cbas) or "").strip() or "Unclassified",
+        }
+    if src == DOWNLOADS_MAP and smap:                 # keep a clean, reproducible repo copy
+        lines = ["Symbol,Sector,Industry,Basic Industry"]
+        for sym in sorted(smap):
+            g = smap[sym]
+            vals = (sym, g["sector"], g["industry"], g["basic"])
+            lines.append(",".join('"%s"' % v.replace('"', '""') for v in vals))
+        SECTOR_MAP.write_text("\n".join(lines) + "\n")
+    return smap
+
+
+def membership_from_csv(path: Path):
+    """Weekly backtest CSV -> { 'YYYY-MM-DD': set(symbols) } per week."""
+    reader = csv.DictReader(path.read_text(encoding="utf-8-sig", errors="replace").splitlines())
+    fields = {(k or "").lower().strip(): k for k in (reader.fieldnames or [])}
+    dcol, scol = fields.get("date"), fields.get("symbol")
+    if not dcol or not scol:
+        raise RuntimeError(f"CSV missing Date/Symbol: {reader.fieldnames}")
+    per = defaultdict(set)
+    for row in reader:
+        sym = (row.get(scol) or "").strip().upper()
+        iso = _iso(row.get(dcol) or "")
+        if sym and iso:
+            per[iso].add(sym)
+    return per
+
+
+def build_sector_store(per: dict, smap: dict):
+    """Per-week stock counts per group, at each classification level, aligned to a week list."""
+    weeks = sorted(per)[-CAP_WEEKS:]
+    counts = {lvl: defaultdict(lambda: [0] * len(weeks)) for lvl, _ in LEVELS}
+    totals, mapped, allsyms = [], set(), set()
+    for wi, w in enumerate(weeks):
+        syms = per[w]
+        totals.append(len(syms))
+        allsyms |= syms
+        for lvl, _ in LEVELS:
+            seen = defaultdict(int)
+            for s in syms:
+                g = smap.get(s)
+                seen[(g[lvl] if g else "Unclassified")] += 1
+                if g:
+                    mapped.add(s)
+            for g, c in seen.items():
+                counts[lvl][g][wi] = c
+    return {
+        "screener": SECTOR_SLUG,
+        "url": f"https://chartink.com/screener/{SECTOR_SLUG}",
+        "levels": LEVELS,
+        "weeks": weeks,
+        "counts": {lvl: dict(counts[lvl]) for lvl, _ in LEVELS},
+        "totals": totals,
+        "coverage": {"mapped": len(mapped & allsyms), "total": len(allsyms)},
+    }
+
+
 def cap(counts: dict):
     cutoff = (date.today() - timedelta(days=CAP_DAYS)).isoformat()
     return {d: c for d, c in counts.items() if d >= cutoff}
@@ -83,6 +177,7 @@ def scrape_all(pause: float, headless: bool, timeout: int):
     TMP.mkdir(parents=True, exist_ok=True)
     store = load_store()
     store["screeners"] = [{"slug": s, "name": n} for s, n in SCREENERS]
+    sector_store = None
     driver = build_driver(TMP, headless)
     try:
         for i, (slug, name) in enumerate(SCREENERS, 1):
@@ -106,8 +201,32 @@ def scrape_all(pause: float, headless: bool, timeout: int):
                       f"({days[0]}..{days[-1]}); latest count {store['counts'][slug][days[-1]]}")
             except Exception as e:  # noqa: BLE001
                 print(f"    ⚠ skipped: {e}")
-            if i < len(SCREENERS):
-                time.sleep(pause)
+            time.sleep(pause)
+
+        # 4th page: the weekly sector-rotation screener, mapped to a finer sector classification
+        print(f"[sectors] {SECTOR_SLUG} (weekly) + Downloads/data.csv classification")
+        try:
+            for p in TMP.glob("*.csv"):
+                p.unlink()
+            driver.get(f"https://chartink.com/screener/{SECTOR_SLUG}")
+            WebDriverWait(driver, timeout).until(
+                lambda d: d.execute_script("return document.readyState") == "complete")
+            time.sleep(6)
+            got = download_backtest_csv(driver, TMP, timeout, set())
+            per = membership_from_csv(got)
+            got.unlink()
+            smap = load_sector_map()
+            sector_store = build_sector_store(per, smap)
+            sector_store["updated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+            SECTOR_STORE.write_text(json.dumps(sector_store))
+            cov = sector_store["coverage"]
+            print(f"    {len(per)} weeks; latest {sector_store['totals'][-1]} stocks; "
+                  f"{len(sector_store['counts']['sector'])} sectors / "
+                  f"{len(sector_store['counts']['basic'])} basic-industries; "
+                  f"mapped {cov['mapped']}/{cov['total']}"
+                  + ("" if smap else "  (⚠ no sector map found)"))
+        except Exception as e:  # noqa: BLE001
+            print(f"    ⚠ sector page skipped: {e}")
     finally:
         driver.quit()
         try:
@@ -118,7 +237,7 @@ def scrape_all(pause: float, headless: bool, timeout: int):
             pass
     store["updated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M")
     STORE.write_text(json.dumps(store))
-    return store
+    return store, sector_store
 
 
 def render(store):
@@ -133,6 +252,19 @@ def render(store):
     return OUT
 
 
+def render_sectors(store):
+    if not SECTOR_TEMPLATE.exists():
+        raise FileNotFoundError(f"Template missing: {SECTOR_TEMPLATE}")
+    payload = dict(store)
+    payload["cap_weeks"] = CAP_WEEKS
+    payload["generated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+    b64 = base64.b64encode(json.dumps(payload).encode("utf-8")).decode("ascii")
+    SECTOR_OUT.write_text(SECTOR_TEMPLATE.read_text().replace("__SECTOR_B64__", b64))
+    print(f"🖼  Rendered {SECTOR_OUT.name} · {len(store['counts']['sector'])} sectors, "
+          f"{len(store['weeks'])} weeks")
+    return SECTOR_OUT
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Daily market-breadth counts dashboard")
     ap.add_argument("--pause", type=float, default=4.0, help="Seconds between screener downloads")
@@ -142,10 +274,18 @@ def main() -> int:
     args = ap.parse_args()
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    store = load_store() if args.no_scrape else scrape_all(args.pause, not args.show, args.timeout)
+    if args.no_scrape:
+        store = load_store()
+        sector_store = json.loads(SECTOR_STORE.read_text()) if SECTOR_STORE.exists() else None
+    else:
+        store, sector_store = scrape_all(args.pause, not args.show, args.timeout)
     if not store.get("screeners"):
         store["screeners"] = [{"slug": s, "name": n} for s, n in SCREENERS]
     render(store)
+    if sector_store:
+        render_sectors(sector_store)
+    else:
+        print("⚠ no sector data yet — run a scrape to build sectors.html")
     return 0
 
 

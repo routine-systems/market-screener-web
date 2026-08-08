@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
-# Daily market-breadth: refresh if we have not pulled since the most recent 2pm, then open.
+# Daily market-breadth + sector-rotation: refresh if we have not pulled since the most recent
+# 2pm, then open. Builds BOTH market.html and sectors.html (the 4th page: cp-cmo-wkly mapped
+# to Downloads/data.csv sectors). Open sectors.html from the top nav.
 #   ./market            refresh-if-stale, then open market.html
 #   ./market force      always refresh now, then open
 set -euo pipefail
@@ -27,8 +29,8 @@ print("1" if stale else "0")
 PY
 )"
 
-if [ "$FORCE" = "1" ] || [ "$STALE" = "1" ] || [ ! -f market.html ]; then
-  echo "↻ Fetching market breadth (8 screeners, pausing between)…"
+if [ "$FORCE" = "1" ] || [ "$STALE" = "1" ] || [ ! -f market.html ] || [ ! -f sectors.html ]; then
+  echo "↻ Fetching market breadth + sector rotation (10 screeners, pausing between)…"
   python3 market.py
 else
   echo "✓ Market data current (since the last 2pm). Opening…"
