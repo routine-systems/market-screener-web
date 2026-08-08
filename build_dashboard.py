@@ -139,6 +139,43 @@ def resolve_meta(backtest: Path, scanlink, timeframe):
     return scanlink, timeframe
 
 
+def rebuild(url, window, backtest=None, scanlink=None, timeframe=None,
+            filter_csv=None, filter_url=None) -> int:
+    """Build + render the weekly page from the LOCAL backtest CSV (no download).
+    Also attaches the -fil overlay and the daily cross-membership when present."""
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    slug = url.rstrip("/").split("/")[-1]
+    if not backtest:
+        cand = DATA_DIR / f"{slug}_backtest_latest.csv"
+        pool = [p for p in DATA_DIR.glob("*_backtest_latest.csv") if "-fil" not in p.name]
+        backtest = cand if cand.exists() else (sorted(pool)[-1] if pool else None)
+    if not backtest or not backtest.exists():
+        print("❌ No primary backtest CSV in data/ — run a scrape first.", file=sys.stderr)
+        return 1
+
+    scanlink, timeframe = resolve_meta(backtest, scanlink, timeframe)
+    h = build_history(backtest, url, scanlink, timeframe)
+
+    fcsv = filter_csv
+    if not fcsv:
+        cand = DATA_DIR / f"{slug}-fil_backtest_latest.csv"
+        fcsv = cand if cand.exists() else None
+    if fcsv and fcsv.exists():
+        attach_filter(h, fcsv, filter_url or (url + "-fil"))
+
+    dly = DATA_DIR / "history_daily.json"
+    if dly.exists():
+        d = json.loads(dly.read_text())
+        h["cross"] = {"label": "D", "name": "daily", "url": d.get("source_url"),
+                      "weeks": {x["week"]: sorted({t["symbol"] for t in x["tickers"]})
+                                for x in d.get("weeks", [])}}
+
+    save_history(h)
+    print(f"🔑 scanlink={h['scanlink']} timeframe={h['timeframe']}")
+    render(h, window)
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Render dashboard from a backtest CSV")
     ap.add_argument("--backtest", type=Path, help="Backtest CSV (default: newest in data/)")
@@ -149,42 +186,8 @@ def main() -> int:
     ap.add_argument("--filter", dest="filter_csv", type=Path, help="Filtered-subset backtest CSV (highlight dots)")
     ap.add_argument("--filter-url", help="Filtered-subset screener URL (default: <url>-fil)")
     args = ap.parse_args()
-
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    slug = args.url.rstrip("/").split("/")[-1]
-    backtest = args.backtest
-    if not backtest:
-        cand = DATA_DIR / f"{slug}_backtest_latest.csv"
-        pool = [p for p in DATA_DIR.glob("*_backtest_latest.csv") if "-fil" not in p.name]
-        backtest = cand if cand.exists() else (sorted(pool)[-1] if pool else None)
-    if not backtest or not backtest.exists():
-        print("❌ No primary backtest CSV in data/ — run scrape.py first.", file=sys.stderr)
-        return 1
-
-    scanlink, timeframe = resolve_meta(backtest, args.scanlink, args.timeframe)
-    h = build_history(backtest, args.url, scanlink, timeframe)
-
-    # optional filtered-subset screener → per-week membership for highlight dots
-    fcsv = args.filter_csv
-    if not fcsv:
-        cand = DATA_DIR / f"{slug}-fil_backtest_latest.csv"
-        fcsv = cand if cand.exists() else None
-    if fcsv and fcsv.exists():
-        attach_filter(h, fcsv, args.filter_url or (args.url + "-fil"))
-
-    # cross-reference: which of these weekly tickers are also in the DAILY sheet?
-    dly = DATA_DIR / "history_daily.json"
-    if dly.exists():
-        d = json.loads(dly.read_text())
-        h["cross"] = {"label": "D", "name": "daily", "url": d.get("source_url"),
-                      "weeks": {x["week"]: sorted({t["symbol"] for t in x["tickers"]})
-                                for x in d.get("weeks", [])}}
-        print(f"↔ cross: daily sheet has {len(h['cross']['weeks'])} days")
-
-    save_history(h)
-    print(f"🔑 scanlink={h['scanlink']} timeframe={h['timeframe']}")
-    render(h, args.window)
-    return 0
+    return rebuild(args.url, args.window, args.backtest, args.scanlink,
+                   args.timeframe, args.filter_csv, args.filter_url)
 
 
 if __name__ == "__main__":

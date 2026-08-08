@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Daily potentials cross-tab. Run 2-3x a day.
+#   ./daily            refresh-if-stale (>90 min), then open
+#   ./daily force      always refresh now, then open
+#   ./daily refresh    just re-extract the (expired) scanlink and rebuild — no re-download
+set -euo pipefail
+export PATH="/usr/local/bin:/opt/homebrew/bin:/Library/Frameworks/Python.framework/Versions/3.12/bin:/usr/bin:/bin"
+cd "$(dirname "$0")"
+
+STORE="data/history_daily.json"
+FRESH_MIN=90
+FORCE=0; REFRESH=0
+case "${1:-}" in
+  force|--force|-f) FORCE=1 ;;
+  refresh|--refresh|-r) REFRESH=1 ;;
+esac
+
+if [ "$REFRESH" = "1" ]; then
+  echo "🔑 Refreshing scanlink (no re-download)…"
+  python3 daily.py --refresh
+  open daily.html
+  exit 0
+fi
+
+STALE="$(python3 - "$STORE" "$FRESH_MIN" <<'PY'
+import sys, os, time
+path, mins = sys.argv[1], int(sys.argv[2])
+try:
+    age_min = (time.time() - os.path.getmtime(path)) / 60
+    print("1" if age_min > mins else "0")
+except OSError:
+    print("1")
+PY
+)"
+
+if [ "$FORCE" = "1" ] || [ "$STALE" = "1" ] || [ ! -f daily.html ]; then
+  echo "↻ Fetching daily potentials (4 screeners, pausing between)…"
+  python3 daily.py
+  # keep the weekly page's "D" cross-tags fresh with this new daily data (re-render, no re-scrape)
+  [ -f data/cp-ich-trend-bounce-wkly_backtest_latest.csv ] && python3 build_dashboard.py >/dev/null 2>&1 && echo "↔ refreshed weekly cross-tags" || true
+else
+  echo "✓ Daily data is recent (< ${FRESH_MIN} min). Opening…"
+fi
+open daily.html

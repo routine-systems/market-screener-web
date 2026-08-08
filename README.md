@@ -6,17 +6,22 @@ one download carries the full history (no waiting to accumulate).
 ## Usage
 
 ```bash
-./dash.sh      # Weekly potentials — run Fridays (auto-refreshes Fri ≥ 2pm)
-./daily.sh     # Daily potentials  — run 2–3× a day
-./market.sh    # Market breadth    — run daily after 2pm
+./weekly       # Weekly potentials — run Fridays (auto-refreshes Fri ≥ 2pm)
+./daily        # Daily potentials  — run 2–3× a day
+./market       # Market breadth    — run daily after 2pm
 ```
 
-Each command opens its page, **downloading fresh only when its data is stale**. Add
-`force` to re-pull immediately, any time:
+Each command opens its page, **downloading fresh only when its data is stale**. Two extra
+words work on `./weekly` and `./daily`:
 
 ```bash
-./daily.sh force
+./daily force      # re-download now, any time
+./weekly refresh   # re-extract the expired scanlink and rebuild — no re-download
 ```
+
+Use **`refresh`** when you open a page hours later and the in-scan highlight links have gone
+dead: Chartink expires the `scanlink`, and `refresh` re-fetches it in one quick page load
+(no full backtest re-download).
 
 The three pages cross-link via a top menu (**Weekly · Daily · Market**). `dash.sh` and
 `daily.sh` also cheaply re-render each other so the weekly↔daily cross-tags stay fresh.
@@ -48,11 +53,11 @@ presets 1M / 3M / 6M / 9M + ◀▶ offset.
 
 ## Freshness (when a plain run re-downloads)
 
-- **`dash.sh`** — when a new week has closed (data older than the most recent **Friday
+- **`weekly`** — when a new week has closed (data older than the most recent **Friday
   16:00**) or during **Friday closing hours (≥ 2pm)**.
-- **`daily.sh`** — when the store is older than **90 min**.
-- **`market.sh`** — when not pulled since the most recent **2pm**.
-- **`force`** on any of them always re-downloads.
+- **`daily`** — when the store is older than **90 min**.
+- **`market`** — when not pulled since the most recent **2pm**.
+- **`force`** always re-downloads; **`refresh`** only re-fetches the scanlink (no download).
 
 ## How it works
 
@@ -66,7 +71,7 @@ market pages keep only what they need (counts / membership) and discard the raw 
 
 | File | Role |
 |---|---|
-| `dash.sh` · `daily.sh` · `market.sh` | The three everyday commands (refresh-if-stale, then open) |
+| `weekly` · `daily` · `market` | The three everyday commands (refresh-if-stale, then open) |
 | `scrape.py` | Headless-Chrome: extract `scanlink`, download a backtest CSV |
 | `run.py` | Weekly entry (`--mode weekly` / `adhoc`) used by `dash.sh` |
 | `build_dashboard.py` / `template.html` | Build + UI for the weekly page |

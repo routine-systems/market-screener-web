@@ -27,8 +27,21 @@ def main() -> int:
     ap.add_argument("--window", type=int, default=5, help="Default rolling window (weeks)")
     ap.add_argument("--filter-url", help="Filtered-subset screener URL (default: <url>-fil)")
     ap.add_argument("--no-filter", action="store_true", help="Skip the filtered-subset overlay")
+    ap.add_argument("--refresh", action="store_true", help="Only re-extract the scanlink and rebuild (no download)")
     ap.add_argument("--show", action="store_true", help="Show the browser window")
     args = ap.parse_args()
+
+    # cheap fix for an expired scanlink: re-extract it and rebuild from the local CSV
+    if args.refresh:
+        try:
+            scr.scanlink_only(args.url, headless=not args.show)   # updates the sidecar meta
+        except Exception as e:  # noqa: BLE001
+            print(f"❌ scanlink refresh failed: {e}", file=sys.stderr)
+            return 1
+        rc = bd.rebuild(args.url, args.window)
+        if rc == 0:
+            print("✔ refresh complete → dashboard.html (scanlink updated, no re-download)")
+        return rc
 
     try:
         res = scr.scrape(args.url, headless=not args.show)

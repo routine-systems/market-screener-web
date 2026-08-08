@@ -27,7 +27,7 @@ from pathlib import Path
 
 from selenium.webdriver.support.ui import WebDriverWait
 
-from scrape import build_driver, download_backtest_csv, extract_scanlink
+from scrape import build_driver, download_backtest_csv, extract_scanlink, scanlink_only
 import build_dashboard as bd
 
 HERE = Path(__file__).resolve().parent
@@ -121,16 +121,22 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Daily potentials cross-tab dashboard")
     ap.add_argument("--pause", type=float, default=4.0, help="Seconds between screener downloads")
     ap.add_argument("--no-scrape", action="store_true", help="Re-render from stored history")
+    ap.add_argument("--refresh", action="store_true", help="Only re-extract the scanlink and rebuild (no download)")
     ap.add_argument("--show", action="store_true")
     ap.add_argument("--timeout", type=int, default=60)
     args = ap.parse_args()
 
     DATA_DIR.mkdir(parents=True, exist_ok=True)
-    if args.no_scrape:
+    if args.no_scrape or args.refresh:
         if not STORE.exists():
-            print("❌ No stored history — run without --no-scrape first.", file=sys.stderr)
+            print("❌ No stored history — run a full scrape first.", file=sys.stderr)
             return 1
         h = json.loads(STORE.read_text())
+        if args.refresh:                       # cheap fix for an expired scanlink
+            res = scanlink_only(BASE + PRIMARY, headless=not args.show)
+            h["scanlink"] = res["scanlink"]
+            h["timeframe"] = res.get("timeframe") or h.get("timeframe", "daily")
+            STORE.write_text(json.dumps(h))
     else:
         h = scrape_all(args.pause, not args.show, args.timeout)
         STORE.write_text(json.dumps(h))
