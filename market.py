@@ -17,6 +17,7 @@ turning. Run daily, after ~2pm.
 import argparse
 import base64
 import csv
+import hashlib
 import json
 import sys
 import time
@@ -197,17 +198,33 @@ def scrape_all(pause: float, headless: bool, timeout: int):
                 print(f"    ⚠ skipped: {e}")
             polite_pause(pause)
 
-        # McClellan Oscillator inputs — advances / declines daily counts
+        # McClellan Oscillator inputs — advances / declines daily counts.
+        # Chartink's backtest table loads asynchronously: right after navigating to the
+        # second slug it can still hold the first slug's backtest, so the download comes
+        # back byte-identical (adv==dec → a flat, meaningless oscillator). Guard: if a
+        # slug's CSV matches the previously-scraped slug exactly, hard-reload and retry
+        # with a longer settle before giving up.
+        prev_hash = None
         for slug in (MCL_ADV, MCL_DEC):
             print(f"[mcl] {slug}")
             try:
-                for p in TMP.glob("*.csv"):
-                    p.unlink()
-                driver.get(f"https://chartink.com/screener/{slug}")
-                WebDriverWait(driver, timeout).until(
-                    lambda d: d.execute_script("return document.readyState") == "complete")
-                time.sleep(6)
-                got = download_backtest_csv(driver, TMP, timeout, set())
+                got = None
+                for attempt in range(3):
+                    for p in TMP.glob("*.csv"):
+                        p.unlink()
+                    driver.get(f"https://chartink.com/screener/{slug}")
+                    WebDriverWait(driver, timeout).until(
+                        lambda d: d.execute_script("return document.readyState") == "complete")
+                    time.sleep(8 + attempt * 5)
+                    cand = download_backtest_csv(driver, TMP, timeout, set())
+                    h = hashlib.sha1(cand.read_bytes()).hexdigest()
+                    if h != prev_hash:
+                        got, prev_hash = cand, h
+                        break
+                    print(f"    ↻ identical to previous slug (stale backtest); retry {attempt + 1}/3")
+                    cand.unlink()
+                if got is None:
+                    raise RuntimeError("only a stale (duplicate) backtest after 3 tries")
                 new = counts_from_csv(got)
                 got.unlink()
                 merged = store["counts"].get(slug, {})
