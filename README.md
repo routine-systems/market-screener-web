@@ -39,7 +39,10 @@ also in the stricter `-fil` subset (**◆ In filter** toggle); a **D** badge mar
 also in the daily sheet (**◲ In daily**). Ticker links open the in-scan Chartink chart.
 A **rotation dot** after each ticker shows whether its sector is rotating **in** (green),
 **out** (red) or flat (hollow ring) — from the weekly sector screener; toggle **◉ Rotation**
-and choose the granularity (Sector / Industry / Basic).
+and choose the granularity (Sector / Industry / Basic). **⧉ Chart links** (off by default) shows
+a hover card of quick chart links — **Chartink** (in-scan, with scan highlights) · **TradingView**
+· **Yahoo** — so you can open a chart straight from the row (Chartink pages can't be embedded,
+so this links out rather than previewing inline).
 
 **Daily potentials** (`daily.html`) — ranks the day's `cp-ich-trend-bounce-dly` tickers
 by a **cross-tab score**: in `dly` + also in `cp-pb` + also in `cp-mq`, counted **anywhere
@@ -47,7 +50,8 @@ in the selected window** (default 5 days) → 1–3; **all three ranks highest**
 the legend are the three source links. Gold dot = `-fil`; **W** badge = also in the weekly
 sheet (**◲ In weekly**). Consistency dot-grid (hover for per-day breakdown). Controls:
 From/To + ◀▶ offset + presets (1D / 5D / 10D / 21D / All); toggles All-three / PB / MQ /
-Filter / New. The same **rotation dot** (**◉ Rotation**) tags each ticker's sector status.
+Filter / New. The same **rotation dot** (**◉ Rotation**) and **⧉ Chart links** hover card
+(Chartink · TradingView · Yahoo, off by default) work here too.
 
 **Market breadth** (`market.html`) — the **daily count** of stocks in 9 market-trend
 screeners (Total, Nifty, Nifty 500, Futures, Indices, Mid/Small, BankNifty, Stage-2, CMO),

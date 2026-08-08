@@ -102,6 +102,14 @@
   footer{color:var(--muted); font-size:11.5px; margin-top:24px; text-align:center}
   #tt{position:fixed; z-index:50; pointer-events:none; background:var(--ink); color:var(--surface); padding:6px 9px; border-radius:7px; font-size:12px; opacity:0; transition:opacity .08s; max-width:260px}
   :root[data-theme="dark"] #tt, :root:where(:not([data-theme="light"])) #tt{color:#111}
+  #pv{position:fixed; z-index:80; display:none; background:var(--surface); color:var(--ink); border:1px solid var(--border);
+      border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,0.28); padding:9px 11px; min-width:186px}
+  #pv.on{display:block}
+  #pv .sym{font-weight:700; font-size:13px; margin-bottom:7px}
+  #pv .lk{display:flex; gap:6px; flex-wrap:wrap}
+  #pv .lk a{color:var(--vol); text-decoration:none; border:1px solid var(--border); border-radius:7px; padding:4px 9px; font-size:12px; font-weight:600}
+  #pv .lk a:hover{background:var(--sol-blue); color:#fff; border-color:var(--sol-blue)}
+  #pv .hint{color:var(--muted); font-size:10.5px; margin-top:7px}
 </style>
 </head>
 <body>
@@ -156,6 +164,7 @@
       <button class="toolbtn" id="rotOnly" title="Tag each ticker with its sector's rotation status (from the weekly sector screener)" hidden>◉ Rotation</button>
       <select id="rotLevel" title="Rotation granularity" hidden><option value="sector">Sector</option><option value="industry">Industry</option><option value="basic">Basic</option></select>
       <span id="secFilterWrap"></span>
+      <button class="toolbtn" id="previewBtn" title="On hover over a ticker, show quick links to open its chart (Chartink in-scan · TradingView · Yahoo)">⧉ Chart links</button>
       <input id="search" type="search" placeholder="Search symbol / sector…" autocomplete="off">
       <button class="toolbtn" id="csvBtn">⭳ CSV</button>
     </div>
@@ -178,6 +187,7 @@
   </main>
 </div>
 <div id="tt"></div>
+<div id="pv"></div>
 
 <script>
 const HISTORY_B64="__HISTORY_B64__";
@@ -344,6 +354,31 @@ function buildLegend(){
   const pb=SIGS.find(s=>s.key==='pb'), mq=SIGS.find(s=>s.key==='mq');
   $('#legend').innerHTML=`${link(H.source_url,'DLY')} = trend-bounce · ${link(pb&&pb.url,'PB')} = price breakout · ${link(mq&&mq.url,'MQ')} = Minervini Q · score = how many of the three fired in the window · <span style="color:var(--filt)">◆</span> also in −fil · <span style="color:var(--up)">✦</span> new · dots = days in dly within the window${H.cross?` · <b>${H.cross.label}</b> also in ${H.cross.name}`:''}<span id="rotLegend"></span>`;
 }
+/* hover "chart links" popover — toggle-gated, off by default */
+const pv=$('#pv'); let preview=localStorage.getItem('dly.preview')==='1', pvSym=null, pvTimer=null;
+function pvLinks(sym){
+  const s=encodeURIComponent(sym);
+  return `<div class="sym">${escH(sym)}</div><div class="lk">`
+    +`<a href="${stockUrl(sym)}" target="_blank" rel="noopener">Chartink ↗</a>`
+    +`<a href="https://www.tradingview.com/chart/?symbol=NSE%3A${s}" target="_blank" rel="noopener">TradingView ↗</a>`
+    +`<a href="https://finance.yahoo.com/quote/${s}.NS" target="_blank" rel="noopener">Yahoo ↗</a>`
+    +`</div><div class="hint">Chartink opens the in-scan chart (scan highlights)</div>`;
+}
+function showPv(a,sym){ pvSym=sym; pv.innerHTML=pvLinks(sym); pv.classList.add('on');
+  const r=a.getBoundingClientRect(), b=pv.getBoundingClientRect();
+  let x=r.left, y=r.bottom+6;
+  if(x+b.width>innerWidth-8) x=innerWidth-8-b.width;
+  if(y+b.height>innerHeight-8) y=r.top-b.height-6;
+  pv.style.left=Math.max(8,x)+'px'; pv.style.top=Math.max(8,y)+'px';
+}
+function hidePv(){ pv.classList.remove('on'); pvSym=null; }
+$('#previewBtn').addEventListener('click',()=>{ preview=!preview; $('#previewBtn').classList.toggle('on',preview); localStorage.setItem('dly.preview',preview?'1':'0'); if(!preview)hidePv(); });
+$('#tbody').addEventListener('mouseover',e=>{ if(!preview)return; const a=e.target.closest('a.stk'); if(!a)return; const sym=a.textContent.trim(); clearTimeout(pvTimer); if(sym!==pvSym) showPv(a,sym); });
+$('#tbody').addEventListener('mouseout',e=>{ if(!preview)return; const a=e.target.closest('a.stk'); if(!a)return; if(e.relatedTarget&&pv.contains(e.relatedTarget))return; pvTimer=setTimeout(hidePv,220); });
+pv.addEventListener('mouseenter',()=>clearTimeout(pvTimer));
+pv.addEventListener('mouseleave',()=>{ pvTimer=setTimeout(hidePv,180); });
+$('#previewBtn').classList.toggle('on',preview);
+
 buildControls();
 buildLegend();
 render();
