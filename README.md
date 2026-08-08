@@ -16,12 +16,13 @@ words work on `./weekly` and `./daily`:
 
 ```bash
 ./daily force      # re-download now, any time
-./weekly refresh   # re-extract the expired scanlink and rebuild — no re-download
+./weekly refresh   # re-extract the expired scanlinks and rebuild — no re-download
 ```
 
 Use **`refresh`** when you open a page hours later and the in-scan highlight links have gone
-dead: Chartink expires the `scanlink`, and `refresh` re-fetches it in one quick page load
-(no full backtest re-download).
+dead: Chartink expires the `scanlink`. `refresh` re-fetches it (quick page loads, no full
+re-download) and — from either `./weekly` or `./daily` — readies **both** the weekly and
+daily scanlinks, since you may open both.
 
 The three pages cross-link via a top menu (**Weekly · Daily · Market**). `dash.sh` and
 `daily.sh` also cheaply re-render each other so the weekly↔daily cross-tags stay fresh.

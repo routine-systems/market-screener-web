@@ -2,7 +2,7 @@
 # Daily potentials cross-tab. Run 2-3x a day.
 #   ./daily            refresh-if-stale (>90 min), then open
 #   ./daily force      always refresh now, then open
-#   ./daily refresh    just re-extract the (expired) scanlink and rebuild — no re-download
+#   ./daily refresh    re-extract BOTH (expired) scanlinks (daily + weekly) and rebuild — no re-download
 set -euo pipefail
 export PATH="/usr/local/bin:/opt/homebrew/bin:/Library/Frameworks/Python.framework/Versions/3.12/bin:/usr/bin:/bin"
 cd "$(dirname "$0")"
@@ -16,8 +16,9 @@ case "${1:-}" in
 esac
 
 if [ "$REFRESH" = "1" ]; then
-  echo "🔑 Refreshing scanlink (no re-download)…"
+  echo "🔑 Refreshing both scanlinks (daily + weekly, no re-download)…"
   python3 daily.py --refresh
+  [ -f data/cp-ich-trend-bounce-wkly_backtest_latest.csv ] && python3 run.py --mode weekly --refresh || true
   open daily.html
   exit 0
 fi

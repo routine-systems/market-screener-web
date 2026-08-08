@@ -2,7 +2,7 @@
 # Weekly potentials. Opens dashboard.html, downloading fresh only if the data is stale.
 #   ./weekly           refresh-if-stale, then open
 #   ./weekly force     always re-download now, then open
-#   ./weekly refresh   just re-extract the (expired) scanlink and rebuild — no re-download
+#   ./weekly refresh   re-extract BOTH (expired) scanlinks (weekly + daily) and rebuild — no re-download
 set -euo pipefail
 export PATH="/usr/local/bin:/opt/homebrew/bin:/Library/Frameworks/Python.framework/Versions/3.12/bin:/usr/bin:/bin"
 cd "$(dirname "$0")"
@@ -19,8 +19,9 @@ case "${1:-}" in
 esac
 
 if [ "$REFRESH" = "1" ]; then
-  echo "🔑 Refreshing scanlink (no re-download)…"
+  echo "🔑 Refreshing both scanlinks (weekly + daily, no re-download)…"
   python3 run.py --mode weekly --refresh --url "$URL"
+  [ -f data/history_daily.json ] && python3 daily.py --refresh || true
   open "$DASH"
   exit 0
 fi
