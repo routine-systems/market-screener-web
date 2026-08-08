@@ -12,6 +12,7 @@
     --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
     --up:#0ca30c; --down:#d03b3b; --flat:#66655f; --vol:#1c5cab; --sol-blue:#1c5cab; --up-ink:#0a7d0a; --down-ink:#b3271f;
     --up-soft:rgba(12,163,12,0.10); --down-soft:rgba(208,59,59,0.10);
+    --bar-up:#0a7d0a; --bar-down:#b3271f; --ma:#b26a00;
   }
   @media (prefers-color-scheme: dark){
     :root:where(:not([data-theme="light"])){
@@ -21,6 +22,7 @@
       --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
       --up:#0ca30c; --down:#e66767; --flat:#898781; --vol:#4d93ea; --sol-blue:#1c5cab; --up-ink:#16b816; --down-ink:#e66767;
       --up-soft:rgba(12,163,12,0.16); --down-soft:rgba(230,103,103,0.16);
+      --bar-up:#0d8f0d; --bar-down:#c53030; --ma:#e8a02a;
     }
   }
   :root[data-theme="dark"]{
@@ -30,6 +32,7 @@
     --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
     --up:#0ca30c; --down:#e66767; --flat:#898781; --vol:#4d93ea; --sol-blue:#1c5cab; --up-ink:#16b816; --down-ink:#e66767;
     --up-soft:rgba(12,163,12,0.16); --down-soft:rgba(230,103,103,0.16);
+    --bar-up:#0d8f0d; --bar-down:#c53030; --ma:#e8a02a;
   }
   *{box-sizing:border-box}
   html,body{margin:0}
@@ -116,9 +119,13 @@
     <button class="offbtn" id="offBack" title="Shift the window one day older">◀</button>
     <span class="offlbl" id="offlbl"></span>
     <button class="offbtn" id="offFwd" title="Shift the window one day newer">▶</button>
+    <span style="width:14px"></span>
+    <span class="lab">View</span>
+    <button class="preset chart" data-chart="line">Line</button>
+    <button class="preset chart" data-chart="hist">Bars</button>
     <span class="summary" id="summary"></span>
   </div>
-  <div class="legend">Each mini-chart: <b>badge / colour</b> = ~10-day trend (rising / falling) · <b>number</b> = today's change vs the prior day.</div>
+  <div class="legend" id="legend"></div>
 
   <section class="grid" id="grid"></section>
   <footer id="foot"></footer>
@@ -132,6 +139,8 @@ const $=s=>document.querySelector(s);
 function b64utf8(b){try{return decodeURIComponent(escape(atob(b)));}catch(e){return atob(b);}}
 const M=JSON.parse(b64utf8(MARKET_B64));
 let PERIOD=63, OFFSET=0;   // default 3M (trading days); OFFSET = days back from latest
+let CHART=(localStorage.getItem('mkt.chart')==='hist')?'hist':'line';   // line | hist
+const MA_P=10;             // moving-average period drawn on the histogram
 
 function seriesFor(slug){
   const c=(M.counts&&M.counts[slug])||{};
@@ -157,12 +166,46 @@ function sparkSVG(vals, color, w, h){
     <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.4" fill="${color}"/>
   </svg>`;
 }
+function movavg(vals, p){   // trailing simple MA; leading points average what's available
+  const out=[];
+  for(let i=0;i<vals.length;i++){
+    const s=vals.slice(Math.max(0,i-p+1), i+1);
+    out.push(s.reduce((a,b)=>a+b,0)/s.length);
+  }
+  return out;
+}
+// Histogram: each day's bar shaded darker-green if it rose vs the prior day, darker-red if it
+// fell; a MA_P-period moving-average line is drawn over the bars. `prev0` = the value just
+// before the window (colours the first visible bar); `maVals` = MA aligned to the window.
+function histSVG(vals, maVals, w, h, prev0){
+  if(!vals.length) return '';
+  const min=Math.min(...vals, ...maVals), max=Math.max(...vals, ...maVals), rng=(max-min)||1;
+  const n=vals.length, slot=w/n, bw=Math.max(1, slot*0.72), pad=5;
+  const y=v=>h-((v-min)/rng)*(h-pad)-1;
+  let bars='';
+  for(let i=0;i<n;i++){
+    const p=(i>0)?vals[i-1]:prev0;
+    const col=(p==null)?'var(--flat)':(vals[i]>p?'var(--bar-up)':(vals[i]<p?'var(--bar-down)':'var(--flat)'));
+    const yy=y(vals[i]), x=i*slot+(slot-bw)/2;
+    bars+=`<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${bw.toFixed(1)}" height="${(h-yy).toFixed(1)}" fill="${col}"/>`;
+  }
+  const pts=maVals.map((v,i)=>[i*slot+slot/2, y(v)]);
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none">
+    <g>${bars}</g>
+    <path d="${line}" fill="none" stroke="var(--ma)" stroke-width="1.7" vector-effect="non-scaling-stroke"/>
+  </svg>`;
+}
 const COL={1:'var(--up)',[-1]:'var(--down)',0:'var(--flat)'};
 const WORD={1:'rising',[-1]:'falling',0:'flat'};
 const CLS={1:'up',[-1]:'down',0:'flat'};
 
 function render(){
-  document.querySelectorAll('.preset').forEach(b=>b.classList.toggle('on', +b.dataset.days===PERIOD));
+  document.querySelectorAll('.preset[data-days]').forEach(b=>b.classList.toggle('on', +b.dataset.days===PERIOD));
+  document.querySelectorAll('.preset[data-chart]').forEach(b=>b.classList.toggle('on', b.dataset.chart===CHART));
+  $('#legend').innerHTML = CHART==='hist'
+    ? `Each mini-chart: <b>bars</b> = daily count — <b style="color:var(--bar-up)">green = up day</b> / <b style="color:var(--bar-down)">red = down day</b> · <b style="color:var(--ma)">line</b> = ${MA_P}-day moving average · card <b>badge / colour</b> = ~10-day trend.`
+    : `Each mini-chart: <b>badge / colour</b> = ~10-day trend (rising / falling) · <b>number</b> = today's change vs the prior day.`;
   const maxLen=Math.max(1,...(M.screeners||[]).map(sc=>seriesFor(sc.slug).length));
   $('#offlbl').textContent = OFFSET===0?'latest':`−${OFFSET} d`;
   $('#offBack').disabled = OFFSET>=maxLen-1;
@@ -182,14 +225,23 @@ function render(){
     const day=latest-prev;
     const dcls=day>0?'up':(day<0?'down':'flat'), darr=day>0?'▲':(day<0?'▼':'→');
     const span=sc.slug==='cp-tsi-mkt-total'?' span2':'';
-    const h=sc.slug==='cp-tsi-mkt-total'?64:46;
+    const W=300, h=sc.slug==='cp-tsi-mkt-total'?64:46;
+    let svg;
+    if(CHART==='hist'){
+      const fullVals=full.map(p=>p[1]);
+      const maWin=movavg(fullVals, MA_P).slice(start, end+1);
+      const prev0=start>0?fullVals[start-1]:null;
+      svg=histSVG(vals, maWin, W, h, prev0);
+    }else{
+      svg=sparkSVG(vals, COL[sign], W, h);
+    }
     return `<div class="card ${CLS[sign]}${span}">
       <div class="chead">
         <span class="cname">${sc.name}</span>
         <span class="cbadge ${CLS[sign]}">${darr==='→'&&sign===0?'→':(sign>0?'▲':sign<0?'▼':'→')} ${WORD[sign]}</span>
         <span class="cnum"><span class="big">${latest}</span> <span class="dlt ${dcls}">${darr}${day>0?'+':''}${day}</span></span>
       </div>
-      <div class="spark" data-slug="${sc.slug}" data-dates="${win.map(p=>p[0]).join(',')}" data-vals="${vals.join(',')}">${sparkSVG(vals, COL[sign], 300, h)}</div>
+      <div class="spark" data-slug="${sc.slug}" data-dates="${win.map(p=>p[0]).join(',')}" data-vals="${vals.join(',')}">${svg}</div>
       <div class="crange"><span>${win[0][0]}</span><span>${win.length} d</span><span>${win[win.length-1][0]}</span></div>
     </div>`;
   }).join('');
@@ -212,7 +264,8 @@ $('#grid').addEventListener('mousemove',e=>{
 });
 $('#grid').addEventListener('mouseleave',()=>tt.style.opacity='0');
 
-document.querySelectorAll('.preset').forEach(b=>b.addEventListener('click',()=>{PERIOD=+b.dataset.days; render();}));
+document.querySelectorAll('.preset[data-days]').forEach(b=>b.addEventListener('click',()=>{PERIOD=+b.dataset.days; render();}));
+document.querySelectorAll('.preset[data-chart]').forEach(b=>b.addEventListener('click',()=>{CHART=b.dataset.chart; localStorage.setItem('mkt.chart', CHART); render();}));
 $('#offBack').addEventListener('click',()=>{const maxLen=Math.max(1,...(M.screeners||[]).map(sc=>seriesFor(sc.slug).length)); OFFSET=Math.min(maxLen-1,OFFSET+1); render();});
 $('#offFwd').addEventListener('click',()=>{OFFSET=Math.max(0,OFFSET-1); render();});
 $('#themeBtn').addEventListener('click',()=>{

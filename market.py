@@ -46,6 +46,7 @@ SCREENERS = [
     ("cp-tsi-mkt-mid-smallcap", "Mid / Small cap"),
     ("cp-tsi-mkt-banknifty", "BankNifty"),
     ("cp-stage-2", "Stage-2"),
+    ("cp-cmo", "CMO"),
 ]
 
 

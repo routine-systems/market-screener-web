@@ -46,11 +46,13 @@ sheet (**◲ In weekly**). Consistency dot-grid (hover for per-day breakdown). C
 From/To + ◀▶ offset + presets (1D / 5D / 10D / 21D / All); toggles All-three / PB / MQ /
 Filter / New.
 
-**Market breadth** (`market.html`) — the **daily count** of stocks in 8 market-trend
-screeners (Total, Nifty, Nifty 500, Futures, Indices, Mid/Small, BankNifty, Stage-2), as
-mini count-charts **coloured by recent trend** (green rising / red falling, with a badge
-and day-delta) so a page-scan shows the market turning. Rolling **9-month** store; window
-presets 1M / 3M / 6M / 9M + ◀▶ offset.
+**Market breadth** (`market.html`) — the **daily count** of stocks in 9 market-trend
+screeners (Total, Nifty, Nifty 500, Futures, Indices, Mid/Small, BankNifty, Stage-2, CMO),
+as mini count-charts **coloured by recent trend** (green rising / red falling, with a badge
+and day-delta) so a page-scan shows the market turning. A **View** toggle switches all charts
+between **Line** (count over the window) and **Bars** (a histogram shaded per day — darker
+green if the count rose vs the prior day, darker red if it fell — with a 10-day moving-average
+line drawn on top). Rolling **9-month** store; window presets 1M / 3M / 6M / 9M + ◀▶ offset.
 
 ## Freshness (when a plain run re-downloads)
 
