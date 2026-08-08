@@ -1,0 +1,38 @@
+name: refresh
+
+# Scrapes Chartink and redeploys screener.chiragpatnaik.com — no laptop needed.
+#   schedule: Mon–Fri 11:00 UTC = 4:30pm IST (NSE closes 3:30pm IST)
+#   workflow_dispatch: on-demand (the "↻ Refresh" button hits this via the GitHub API)
+# A full scrape runs each time so every deploy is internally consistent (rotation dots +
+# W/D cross-badges all reference each other); weekly data only changes on Fridays anyway.
+on:
+  schedule:
+    - cron: '0 11 * * 1-5'
+  workflow_dispatch:
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: 62231b040ed00c96cdcf3a4541eab958
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Python deps
+        run: pip install selenium webdriver-manager
+      - name: Scrape weekly (+ -fil)
+        run: python3 run.py --mode weekly --url https://chartink.com/screener/cp-ich-trend-bounce-wkly
+      - name: Scrape daily (dly + -fil + PB + MQ)
+        run: python3 daily.py
+      - name: Scrape market breadth + sector rotation
+        run: python3 market.py
+      - name: Rebuild all pages and deploy to Cloudflare Pages
+        run: bash publish
