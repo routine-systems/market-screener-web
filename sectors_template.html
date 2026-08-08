@@ -161,11 +161,12 @@ function b64utf8(b){try{return decodeURIComponent(escape(atob(b)));}catch(e){ret
 const M=JSON.parse(b64utf8(SECTOR_B64));
 const LEVEL_KEYS=(M.levels||[]).map(l=>l[0]);
 let LEVEL=localStorage.getItem('sec.level'); if(!LEVEL_KEYS.includes(LEVEL)) LEVEL=LEVEL_KEYS[0]||'sector';
-let PERIOD=13, OFFSET=0;                                   // window in weeks
+let LAYOUT=(localStorage.getItem('sec.layout')==='quad')?'quad':'grid';   // grid cards | quadrant
+let PERIOD_BY={grid:13, quad:8};                          // default window per layout (weeks)
+let PERIOD=PERIOD_BY[LAYOUT], OFFSET=0;
 let CHART=(localStorage.getItem('sec.chart')==='line')?'line':'hist';   // default Bars
 const MA_P=4;                                              // 4-week moving average
 const MIN_STOCKS=2;                                        // hide 1-stock noise
-let LAYOUT=(localStorage.getItem('sec.layout')==='quad')?'quad':'grid';   // grid cards | quadrant
 let WITHIN='';                                             // quadrant focus: '' = all sectors
 
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
@@ -310,10 +311,14 @@ function renderQuad(rows, lvlName){
   if(items.length<2){ box.innerHTML=`<div class="empty" style="padding:34px 14px">Need ≥2 ${esc(lvlName.toLowerCase())} groups to plot${WITHIN?` in ${esc(WITHIN)}`:''}.</div>`; return; }
   const W=920,H=540, ml=54,mr=54,mt=30,mb=48, pw=W-ml-mr, ph=H-mt-mb;
   const levels=items.map(d=>d.level), moms=items.map(d=>d.mom);
-  let xmin=Math.min(...levels), xmax=Math.max(...levels); if(xmin===xmax){xmin-=1; xmax+=1;}
-  const xp=(xmax-xmin)*0.08; xmin-=xp; xmax+=xp;
+  // x on a log scale — participation is right-skewed (a few big sectors), so log spreads the
+  // dense small-sector cluster and keeps the median crosshair near the centre.
+  const lx=v=>Math.log(Math.max(1, v));
+  let xmin=Math.min(...levels.map(lx)), xmax=Math.max(...levels.map(lx)); if(xmin===xmax){xmin-=0.5; xmax+=0.5;}
+  const xp=(xmax-xmin)*0.06; xmin-=xp; xmax+=xp;
   const ym=Math.max(0.001, ...moms.map(Math.abs))*1.18;
-  const X=v=>ml+(v-xmin)/(xmax-xmin)*pw, Y=v=>mt+ph/2-(v/ym)*(ph/2);
+  const X=v=>ml+(lx(v)-xmin)/(xmax-xmin)*pw;
+  const Y=v=>Math.max(mt+4, Math.min(mt+ph-4, mt+ph/2-(v/ym)*(ph/2)));
   const sorted=[...levels].sort((a,b)=>a-b), medL=sorted[Math.floor(sorted.length/2)];
   const cx=X(medL), cy=Y(0);
   const rects=`<rect x="${ml}" y="${mt}" width="${(cx-ml).toFixed(1)}" height="${(cy-mt).toFixed(1)}" class="qz-tl" fill-opacity="0.07"/>`
@@ -327,7 +332,7 @@ function renderQuad(rows, lvlName){
     +`<text x="${ml+8}" y="${mt+16}" class="qlabel">↖ Improving</text>`
     +`<text x="${ml+8}" y="${mt+ph-8}" class="qlabel">↙ Lagging</text>`
     +`<text x="${ml+pw-8}" y="${mt+ph-8}" text-anchor="end" class="qlabel">Weakening ↘</text>`;
-  const titles=`<text x="${ml+pw/2}" y="${H-8}" text-anchor="middle" class="qtick">participation — avg stocks in screener (${esc(lvlName.toLowerCase())}) →</text>`
+  const titles=`<text x="${ml+pw/2}" y="${H-8}" text-anchor="middle" class="qtick">participation — avg stocks in screener, log scale (${esc(lvlName.toLowerCase())}) →</text>`
     +`<text transform="translate(16 ${mt+ph/2}) rotate(-90)" text-anchor="middle" class="qtick">← shedding    adding →</text>`;
   const showAll=items.length<=45;
   const top=new Set([...items].sort((a,b)=>Math.abs(b.mom)-Math.abs(a.mom)).slice(0,12).map(d=>d.g));
@@ -366,10 +371,10 @@ $('#quad').addEventListener('mousemove',e=>{
 });
 $('#quad').addEventListener('mouseleave',()=>tt.style.opacity='0');
 
-document.querySelectorAll('.preset[data-days]').forEach(b=>b.addEventListener('click',()=>{PERIOD=+b.dataset.days; render();}));
+document.querySelectorAll('.preset[data-days]').forEach(b=>b.addEventListener('click',()=>{PERIOD=+b.dataset.days; PERIOD_BY[LAYOUT]=PERIOD; render();}));
 document.querySelectorAll('.preset[data-level]').forEach(b=>b.addEventListener('click',()=>{LEVEL=b.dataset.level; localStorage.setItem('sec.level',LEVEL); render();}));
 document.querySelectorAll('.preset[data-chart]').forEach(b=>b.addEventListener('click',()=>{CHART=b.dataset.chart; localStorage.setItem('sec.chart',CHART); render();}));
-document.querySelectorAll('.preset[data-layout]').forEach(b=>b.addEventListener('click',()=>{LAYOUT=b.dataset.layout; localStorage.setItem('sec.layout',LAYOUT); render();}));
+document.querySelectorAll('.preset[data-layout]').forEach(b=>b.addEventListener('click',()=>{LAYOUT=b.dataset.layout; localStorage.setItem('sec.layout',LAYOUT); PERIOD=PERIOD_BY[LAYOUT]; render();}));
 $('#within').addEventListener('change',()=>{WITHIN=$('#within').value; render();});
 $('#offBack').addEventListener('click',()=>{OFFSET=Math.min((M.weeks||[]).length-1,OFFSET+1); render();});
 $('#offFwd').addEventListener('click',()=>{OFFSET=Math.max(0,OFFSET-1); render();});
