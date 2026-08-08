@@ -1,132 +1,84 @@
 # chartink-dashboard
 
-Weekly tracker for a Chartink screener. It downloads the screener's **backtest
-history** (≈3 years of weekly scan membership in one CSV) and builds a single-file
-HTML dashboard that **ranks tickers by how many weeks — of a selectable window —
-they appeared in**. Because the backtest CSV already contains every week, the whole
-history is available from a single download; no waiting to accumulate.
+Three self-contained HTML dashboards built from Chartink screener **backtest history** —
+one download carries the full history (no waiting to accumulate).
 
-Built for `cp-ich-trend-bounce-wkly` but works with any screener URL.
-
-## What it does (the requirements)
-
-1. **Refresh when you open it** — `./dash.sh` scrapes and rebuilds, pulling fresh
-   when a new week has closed or during Friday closing hours (see below).
-2. **Full weekly history from one file** — the scraper takes the **BACKTEST HISTORY →
-   Download → CSV** export (`Date, Symbol, Marketcapname, Sector`), grouped into weeks.
-3. **Rank by appearance over a window** — `dashboard.html` ranks every ticker by how
-   many of the selected weeks it appeared in (5/5, 4/5, …), with a per-week presence
-   grid, plus "new this week" / "dropped", per-week counts, and appearance-frequency.
-   A **week-range selector** (From/To + Last 5 / 8 / 13 / 26 / 52 / All presets,
-   default the latest 5) re-ranks live over any range.
-4. **In-scan ticker links** — each ticker links into its Chartink `stocks-new` chart
-   *in the scan's context* (the chart highlights the weeks it matched). This uses the
-   per-screener `scanlink` hash, which Chartink **rotates**, so every run re-extracts
-   it. (`nav_token` is not required.)
-5. **Filtered-subset overlay** — a second screener (`<url>-fil`, a stricter subset) is
-   scraped too; ranked tickers that also appear in it (latest week of the range) get a
-   gold highlight dot, and a **"◆ In filter"** toggle filters to just those. Best-effort
-   (skips cleanly if absent); disable with `--no-filter`.
-
-## Everyday use — one command
+## Usage
 
 ```bash
-./dash.sh          # opens the dashboard; downloads fresh only when needed
-./dash.sh force    # force a fresh pull now (any time), then open
+./dash.sh      # Weekly potentials — run Fridays (auto-refreshes Fri ≥ 2pm)
+./daily.sh     # Daily potentials  — run 2–3× a day
+./market.sh    # Market breadth    — run daily after 2pm
 ```
 
-Plain `./dash.sh` re-downloads when either: a new week has closed (data predates the
-most recent **Friday 16:00**), or it's **Friday closing hours (≥ 2pm)** — the weekly
-candle is still forming, so it refreshes every run so you can plan Monday. Otherwise
-it just opens `dashboard.html`. `force` always re-downloads (use it to re-pull as the
-Friday close firms up).
-
-## Two modes (`run.py`)
-
-Both scrape the backtest CSV and rebuild; they differ only in intent/scheduling
-(the single download already carries all weeks — there is no forward accumulation):
-
-| Mode | Use |
-|---|---|
-| `--mode weekly` | A fresh weekly capture (what `dash.sh` calls). |
-| `--mode adhoc`  | A manual refresh you run anytime. |
+Each command opens its page, **downloading fresh only when its data is stale**. Add
+`force` to re-pull immediately, any time:
 
 ```bash
-python3 run.py --mode weekly           # Friday capture
-python3 run.py --mode adhoc            # refresh now
-python3 run.py --mode weekly --show    # watch the browser
+./daily.sh force
 ```
 
-## Market breadth (daily) — second page
+The three pages cross-link via a top menu (**Weekly · Daily · Market**). `dash.sh` and
+`daily.sh` also cheaply re-render each other so the weekly↔daily cross-tags stay fresh.
 
-A separate page tracking the **daily count** of stocks in each market-trend screener
-(Total, Nifty, Nifty 500, Futures, Indices, Mid/Small, BankNifty, Stage-2). An uptick
-across them signals the market turning; each mini count-chart is **coloured by its recent
-trend** (green rising / red falling, with a badge and day-delta) so a glance across the
-page shows direction. Counts merge into a rolling **9-month** store; run **daily after 2pm**.
+---
 
-```bash
-./market.sh          # refresh if not pulled since the last 2pm, then open market.html
-./market.sh force    # refresh now
-```
+## What each page shows
 
-Each screener's backtest is downloaded, reduced to per-day counts (raw CSVs discarded),
-with a pause between downloads. Window presets 1M/3M/6M/9M; trend is the slope of the last
-~10 trading days.
+**Weekly potentials** (`dashboard.html`) — ranks tickers by how many of a selectable
+**week window** they appeared in (5/5, 4/5 …), with a per-week presence grid (hover for
+the breakdown), "new / dropped", and per-week + frequency charts. Controls: From/To +
+◀▶ offset + presets (Last 5 / 8 / 13 / 26 / 52 / All, default 5). A gold dot marks names
+also in the stricter `-fil` subset (**◆ In filter** toggle); a **D** badge marks names
+also in the daily sheet (**◲ In daily**). Ticker links open the in-scan Chartink chart.
 
-## Daily potentials (cross-tab) — third page
+**Daily potentials** (`daily.html`) — ranks the day's `cp-ich-trend-bounce-dly` tickers
+by a **cross-tab score**: in `dly` + also in `cp-pb` + also in `cp-mq`, counted **anywhere
+in the selected window** (default 5 days) → 1–3; **all three ranks highest**. DLY/PB/MQ in
+the legend are the three source links. Gold dot = `-fil`; **W** badge = also in the weekly
+sheet (**◲ In weekly**). Consistency dot-grid (hover for per-day breakdown). Controls:
+From/To + ◀▶ offset + presets (1D / 5D / 10D / 21D / All); toggles All-three / PB / MQ /
+Filter / New.
 
-`daily.html` ranks the day's `cp-ich-trend-bounce-dly` tickers by a **cross-tab score**
-across three daily screeners — in `dly` (always) + also in `cp-pb` (price breakout) +
-also in `cp-mq` (Minervini Quotient) → **1–3; a ticker in all three ranks highest**.
-`cp-ich-trend-bounce-dly-fil` shows as the gold highlight dot; a **consistency** dot-grid
-shows how many of the last 10 days it has been in `dly`. Toggles: All three / PB / MQ /
-Filter / New; a day picker views any past day. Run **2–3× a day**.
+**Market breadth** (`market.html`) — the **daily count** of stocks in 8 market-trend
+screeners (Total, Nifty, Nifty 500, Futures, Indices, Mid/Small, BankNifty, Stage-2), as
+mini count-charts **coloured by recent trend** (green rising / red falling, with a badge
+and day-delta) so a page-scan shows the market turning. Rolling **9-month** store; window
+presets 1M / 3M / 6M / 9M + ◀▶ offset.
 
-```bash
-./daily.sh          # refresh if the store is > 90 min old, then open daily.html
-./daily.sh force    # refresh now
-```
+## Freshness (when a plain run re-downloads)
 
-## Menu
+- **`dash.sh`** — when a new week has closed (data older than the most recent **Friday
+  16:00**) or during **Friday closing hours (≥ 2pm)**.
+- **`daily.sh`** — when the store is older than **90 min**.
+- **`market.sh`** — when not pulled since the most recent **2pm**.
+- **`force`** on any of them always re-downloads.
 
-All three pages — `dashboard.html` (Weekly) · `daily.html` (Daily) · `market.html` (Market)
-— share a top nav that links to each other.
+## How it works
+
+Each screener's **BACKTEST HISTORY → Download → CSV** is scraped headlessly; the Python
+parses it (grouped by date) and bakes the data into the HTML at build time. The per-screener
+`scanlink` (which Chartink rotates) is re-extracted each run for the in-scan links. Daily /
+market pages keep only what they need (counts / membership) and discard the raw CSVs, so
+`data/` stays small.
 
 ## Files
 
 | File | Role |
 |---|---|
-| `scrape.py` | Headless-Chrome: extract `scanlink`, download the **backtest** CSV → `data/<slug>_backtest_latest.csv` + `<slug>_latest.meta.json` |
-| `build_dashboard.py` | Parse the backtest CSV into weeks, render `dashboard.html` |
-| `template.html` | The dashboard UI; history baked in at build time (double-click to open) |
-| `run.py` | Single entry: `--mode weekly` / `--mode adhoc` |
-| `dash.sh` | Everyday command: refresh-if-needed, then open `dashboard.html` |
-| `market.py` | Scrape all market screeners → rolling 9-month count store → render `market.html` |
-| `market_template.html` | The market-breadth page (mini count-charts) |
-| `market.sh` | Daily command: refresh-if-stale (2pm cutoff), then open `market.html` |
-| `daily.py` | Scrape dly + dly-fil + cp-pb + cp-mq → cross-tab store → render `daily.html` |
-| `daily_template.html` | The daily-potentials cross-tab page |
-| `daily.sh` | Run 2-3x/day: refresh-if-stale (90 min), then open `daily.html` |
-| `data/history.json` · `data/market_counts.json` | Derived caches (weekly history · daily counts) |
+| `dash.sh` · `daily.sh` · `market.sh` | The three everyday commands (refresh-if-stale, then open) |
+| `scrape.py` | Headless-Chrome: extract `scanlink`, download a backtest CSV |
+| `run.py` | Weekly entry (`--mode weekly` / `adhoc`) used by `dash.sh` |
+| `build_dashboard.py` / `template.html` | Build + UI for the weekly page |
+| `daily.py` / `daily_template.html` | Build + UI for the daily cross-tab page |
+| `market.py` / `market_template.html` | Build + UI for the market-breadth page |
+| `data/*.json` | Derived caches (weekly/daily history, market counts) — git-ignored |
 
 ## Requirements
 
-- Python 3.12, Chrome, and `pip install selenium webdriver-manager` (already present here).
-
-## Manual run (step by step)
-
-```bash
-python3 scrape.py --url https://chartink.com/screener/cp-ich-trend-bounce-wkly
-python3 build_dashboard.py --backtest data/cp-ich-trend-bounce-wkly_backtest_latest.csv \
-    --url https://chartink.com/screener/cp-ich-trend-bounce-wkly --window 5
-open dashboard.html
-```
-
-Drop any Chartink **Backtest** CSV onto the open dashboard to load it (in-memory).
+Python 3.12, Chrome, and `pip install selenium webdriver-manager` (already present here).
 
 ## Notes
 
-- The backtest CSV has membership + sector + market cap, but **no price** (close/%chg/
-  volume). The ranking table shows Symbol · appearances · Sector · Cap · all-time count.
-- Data is unofficial, scraped from Chartink's public screener page for personal use.
+- Backtest CSVs carry membership + sector + market cap, but **no price** (close/%chg/volume).
+- Data is unofficial, scraped from Chartink's public screener pages for personal use.
