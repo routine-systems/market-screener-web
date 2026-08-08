@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0d0d'/%3E%3Crect x='6.5' y='18' width='4.5' height='8' rx='1.4' fill='%234d93ea'/%3E%3Crect x='13.75' y='12' width='4.5' height='14' rx='1.4' fill='%2316b816'/%3E%3Crect x='21' y='6.5' width='4.5' height='19.5' rx='1.4' fill='%2316b816'/%3E%3C/svg%3E">
 <title>Daily Potentials</title>
 <style>
   :root{
@@ -28,7 +29,9 @@
     --up:#0ca30c; --down:#e66767; --vol:#4d93ea; --filt:#f0b83e;
     --up-soft:rgba(12,163,12,0.16); --vol-soft:rgba(57,135,229,0.16); --chip:#232322; --dot-off:#39383550; --hot:#86b6ef;
   }
-  *{box-sizing:border-box} html,body{margin:0}
+  *{box-sizing:border-box}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .spin{display:inline-block; animation:spin .8s linear infinite} html,body{margin:0}
   body{background:var(--plane); color:var(--ink); font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased}
   .wrap{max-width:1180px; margin:0 auto; padding:18px 20px 64px}
   .nav{display:flex; gap:4px; margin-bottom:16px; border-bottom:1px solid var(--grid)}
@@ -353,10 +356,10 @@ $('#themeBtn').addEventListener('click',()=>{const cur=document.documentElement.
 (function(){ const rb=document.getElementById('refreshBtn'); if(!rb) return;
   if(location.protocol==='file:'){ rb.style.display='none'; return; }
   rb.addEventListener('click', async ()=>{
-    const o=rb.textContent; rb.disabled=true; rb.textContent='↻ Queuing…';
+    const o=rb.textContent; rb.disabled=true; rb.innerHTML='<span class="spin">↻</span> Queuing…';
     try{ const r=await fetch('/api/refresh',{method:'POST'}); const j=await r.json().catch(()=>({}));
-      if(r.ok&&j.ok){ rb.textContent='✔ Queued · reload in ~4 min'; }
-      else { rb.textContent='⚠ failed'; rb.disabled=false; setTimeout(()=>{rb.textContent=o;},5000); }
+      if(r.ok&&j.ok){ rb.innerHTML='<span class="spin">↻</span> Refreshing… (~10 min)'; return; }
+      rb.textContent='⚠ failed'; rb.disabled=false; setTimeout(()=>{rb.textContent=o;},5000);
     }catch(e){ rb.textContent='⚠ error'; rb.disabled=false; setTimeout(()=>{rb.textContent=o;},5000); }
   });
 })();

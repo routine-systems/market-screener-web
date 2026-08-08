@@ -17,7 +17,7 @@ rm -rf dist && mkdir dist
 cp dashboard.html daily.html market.html sectors.html dist/
 [ -d functions ] && cp -r functions dist/functions || true   # Pages Function: /api/refresh
 cat > dist/index.html <<'HTML'
-<!doctype html><html lang="en"><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=dashboard.html"><title>Screener</title><body style="font-family:system-ui;background:#0d0d0d;color:#eee;padding:40px"><a style="color:#4d93ea" href="dashboard.html">Open the weekly screener →</a></body></html>
+<!doctype html><html lang="en"><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=dashboard.html"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0d0d'/%3E%3Crect x='6.5' y='18' width='4.5' height='8' rx='1.4' fill='%234d93ea'/%3E%3Crect x='13.75' y='12' width='4.5' height='14' rx='1.4' fill='%2316b816'/%3E%3Crect x='21' y='6.5' width='4.5' height='19.5' rx='1.4' fill='%2316b816'/%3E%3C/svg%3E"><title>Screener</title><body style="font-family:system-ui;background:#0d0d0d;color:#eee;padding:40px"><a style="color:#4d93ea" href="dashboard.html">Open the weekly screener →</a></body></html>
 HTML
 
 echo "🌎 Deploying to Cloudflare Pages (screener)…"

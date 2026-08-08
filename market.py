@@ -50,6 +50,10 @@ SCREENERS = [
     ("cp-cmo", "CMO"),
 ]
 
+# McClellan Oscillator inputs — advances / declines daily counts (not shown as grid cards)
+MCL_ADV = "cp-mcl-adv"
+MCL_DEC = "cp-mcl-dec"
+
 # --- Sector-rotation page (4th page): a WEEKLY screener + a finer sector map -----------------
 # LEVELS / SECTOR_STORE / load_sector_map are shared in sectors_lib (imported above).
 SECTOR_SLUG = "cp-cmo-wkly"
@@ -80,6 +84,37 @@ def load_store():
     if STORE.exists():
         return json.loads(STORE.read_text())
     return {"screeners": [], "counts": {}, "updated_at": None}
+
+
+def _ema(vals, n):
+    a = 2.0 / (n + 1)
+    e = None
+    out = []
+    for v in vals:
+        e = v if e is None else a * v + (1 - a) * e
+        out.append(e)
+    return out
+
+
+def compute_mcclellan(adv: dict, dec: dict):
+    """Ratio-adjusted McClellan Oscillator from advances/declines daily counts:
+    RANA = 1000·(adv−dec)/(adv+dec); Oscillator = EMA19(RANA) − EMA39(RANA)."""
+    days = sorted(set(adv) & set(dec))
+    if len(days) < 2:
+        return {"days": [], "osc": [], "net": []}
+    # Degenerate input: if the advances and declines screeners return identical
+    # counts every day, adv−dec ≡ 0 → a flat, meaningless oscillator. Suppress it
+    # (the chart self-hides) until the two screeners actually differ.
+    if all(adv.get(d) == dec.get(d) for d in days):
+        return {"days": [], "osc": [], "net": [], "degenerate": True}
+    net = []
+    for d in days:
+        a, c = adv.get(d, 0), dec.get(d, 0)
+        tot = a + c
+        net.append(1000.0 * (a - c) / tot if tot else 0.0)
+    e19, e39 = _ema(net, 19), _ema(net, 39)
+    osc = [round(e19[i] - e39[i], 1) for i in range(len(days))]
+    return {"days": days, "osc": osc, "net": [round(x, 1) for x in net]}
 
 
 def membership_from_csv(path: Path):
@@ -162,6 +197,28 @@ def scrape_all(pause: float, headless: bool, timeout: int):
                 print(f"    ⚠ skipped: {e}")
             polite_pause(pause)
 
+        # McClellan Oscillator inputs — advances / declines daily counts
+        for slug in (MCL_ADV, MCL_DEC):
+            print(f"[mcl] {slug}")
+            try:
+                for p in TMP.glob("*.csv"):
+                    p.unlink()
+                driver.get(f"https://chartink.com/screener/{slug}")
+                WebDriverWait(driver, timeout).until(
+                    lambda d: d.execute_script("return document.readyState") == "complete")
+                time.sleep(6)
+                got = download_backtest_csv(driver, TMP, timeout, set())
+                new = counts_from_csv(got)
+                got.unlink()
+                merged = store["counts"].get(slug, {})
+                merged.update(new)
+                store["counts"][slug] = cap(merged)
+                days = sorted(store["counts"][slug])
+                print(f"    {len(new)} days; stored {len(days)}; latest {store['counts'][slug][days[-1]]}")
+            except Exception as e:  # noqa: BLE001
+                print(f"    ⚠ {slug} skipped: {e}")
+            polite_pause(pause)
+
         # 4th page: the weekly sector-rotation screener, mapped to a finer sector classification
         print(f"[sectors] {SECTOR_SLUG} (weekly) + Downloads/data.csv classification")
         try:
@@ -204,6 +261,7 @@ def render(store):
         raise FileNotFoundError(f"Template missing: {TEMPLATE}")
     payload = dict(store)
     payload["cap_days"] = CAP_DAYS
+    payload["mcclellan"] = compute_mcclellan(store["counts"].get(MCL_ADV, {}), store["counts"].get(MCL_DEC, {}))
     payload["generated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M")
     b64 = base64.b64encode(json.dumps(payload).encode("utf-8")).decode("ascii")
     OUT.write_text(TEMPLATE.read_text().replace("__MARKET_B64__", b64))
