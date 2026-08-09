@@ -139,3 +139,196 @@ Python 3.12, Chrome, and `pip install selenium webdriver-manager` (already prese
 
 - Backtest CSVs carry membership + sector + market cap, but **no price** (close/%chg/volume).
 - Data is unofficial, scraped from Chartink's public screener pages for personal use.
+- Future shortlists must apply the scheduled-event proximity gate in
+  [`notes/recommendation_policy.md`](notes/recommendation_policy.md) before presenting entries.
+
+## Bhavcopy research store
+
+`bhavcopy_store.py` maintains the NSE full-bhavcopy research dataset as one validated
+Parquet file per trading day under `data/bhavcopy/`. The raw CSV response is parsed in
+memory and discarded. Every NSE row and field is retained, including all series, previous
+close, OHLC, last price, average price, traded quantity, turnover, trade count,
+deliverable quantity, and delivery percentage.
+
+The stock-level research window starts at 2016-01-01. For dates absent from the newer
+full-bhavcopy endpoint, the downloader joins NSE's official historical equity bhavcopy
+ZIP with the security-wise MTO delivery report. The canonical store still retains one
+row per source symbol and series. The atomic manifest makes interrupted calendar runs
+resumable.
+
+Retrieve missing or legacy-schema dates from the NSE archive:
+
+```bash
+python3 bhavcopy_store.py backfill --start 2016-01-01
+python3 bhavcopy_store.py status
+```
+
+Install the store dependencies with `pip install pandas pyarrow requests`. Query the
+dataset directly with pandas or a Parquet-aware engine:
+
+```python
+import pandas as pd
+
+day = pd.read_parquet("data/bhavcopy/IN_cash_20260807.parquet")
+cash_equities = day[day["series"].isin(["EQ", "BE"])]
+delivery = day.loc[:, ["symbol", "volume", "deliv_qty", "deliv_per"]]
+```
+
+The downloader rejects stale holiday responses whose embedded `DATE1` differs from the
+requested date. It checks calendar days to retain special weekend trading sessions. Writes
+use a temporary Parquet file followed by an atomic replacement.
+
+## Signal backtest research
+
+`backtest_research.py` runs the four research courses against the two-year bhavcopy store:
+
+1. event-study baselines for the six Chartink histories;
+2. point-in-time technical and delivery overlays with chronological holdouts;
+3. capacity-constrained portfolio simulations with explicit costs;
+4. purged walk-forward Ridge and histogram-gradient-boosting rankings.
+
+Run the pipeline and its deterministic tests with:
+
+```bash
+python3 backtest_research.py
+python3 -m unittest -v test_backtest_research.py test_bhavcopy_store.py
+```
+
+The narrative report is written to `reports/backtest_research.md`. Machine-readable tables,
+plots, event outcomes, features, fills, equity curves, and model predictions are written under
+`reports/` and `data/`. The pipeline reads the local store and does not upload artifacts.
+
+### Maintained strategy suite
+
+`strategy_suite.py` holds the reusable strategy registry. Each `StrategySpec` selects a
+Chartink signal, a session exit, and an optional rolling occurrence trigger. The suite applies
+the same chronological splits, ₹5-crore turnover floor, four sector-rotation variants,
+cost model, ₹10-lakh reference book, and ₹2-lakh whole-share book to every registered spec.
+
+Add another strategy by appending a `StrategySpec` to `STRATEGIES`; the scenario matrix,
+portfolio ledgers, report, and registry uniqueness test expand from that entry.
+
+```bash
+python3 strategy_suite.py
+python3 -m unittest -v test_strategy_suite.py test_confluence_research.py \
+  test_backtest_research.py test_bhavcopy_store.py
+```
+
+The suite writes `reports/strategy_suite.csv`, `reports/research_decision_table.csv`,
+`reports/matched_weekly_horizons.csv`, `reports/capital_sensitivity.csv`,
+`reports/strategy_period_robustness.csv`, `reports/strategy_suite.md`, and whole-ledger
+Parquet artifacts under `data/backtests/`.
+The matched-weekly output holds the entry cohort constant when comparing 20, 50, and 100
+sessions, which prevents end-of-dataset maturity from changing the stocks under comparison.
+
+`risk_exit_research.py` tests the weekly persistence lead with fixed initial stops and
+absolute next-open gap caps. It uses a ₹1-lakh, five-position, whole-share pilot book,
+including a cost-aware 1%-risk sizing mode. It writes its matrix and ledgers to
+`reports/weekly_risk_exit_research.csv` and `data/backtests/weekly_risk_exit_*.parquet`.
+
+```bash
+python3 risk_exit_research.py
+python3 -m unittest -v test_risk_exit_research.py
+```
+
+`weekly_pilot.py` applies the selected persistence, Industry rotation, liquidity,
+entry-gap, stop, and cost-aware sizing rules to the latest stored weekly observation.
+It writes `reports/weekly_pilot_plan.md`, upserts
+`data/pilot/recommendation_log.csv`, and creates a trade-log schema without placing orders.
+
+```bash
+python3 weekly_pilot.py
+python3 -m unittest -v test_weekly_pilot.py
+```
+
+### India accumulation-entry and KuBra research
+
+`india_derived_strategy_research.py` maintains price-and-delivery-derived strategies that
+do not depend on Chartink history files. The accumulation family separates multi-week
+delivery-volume setup events from EMA20-reclaim and rolling-high breakout entries. The
+KuBra family preserves the source latch and tests direction-reset and volume sensitivities.
+
+The event stage is isolated from portfolio evaluation to limit peak memory use:
+
+```bash
+python3 india_derived_strategy_research.py --stage events
+python3 india_derived_strategy_research.py --stage evaluate
+python3 -m unittest -v test_india_derived_strategy_research.py
+```
+
+The strategy matrix writes `reports/india_derived_strategy_research.csv`,
+`reports/india_derived_strategy_candidates.csv`, and selected whole-share ledgers under
+`data/backtests/`. `india_derived_risk_exit_research.py` tests fixed stops for surviving
+accumulation rules:
+
+```bash
+python3 india_derived_risk_exit_research.py
+python3 -m unittest -v test_india_derived_risk_exit_research.py \
+  test_risk_exit_research.py
+python3 india_derived_artifact_audit.py
+```
+
+### US market-data and benchmark stores
+
+`us_market_data.py` builds a local current-listed US stock-and-ETF universe from the
+official Nasdaq Trader symbol directories. It downloads Yahoo daily OHLCV into 128
+resumable Parquet buckets and audits duplicates, prices, volumes, and OHLC relationships.
+Individual securities are capped at 2016-01-01. Historical extensions merge atomically
+with populated buckets. Alpha Vantage listing metadata supplies a durable delisted-universe
+layer, but backtests must use the dated listing snapshot rather than today's directory.
+
+```bash
+python3 us_market_data.py universe
+python3 us_market_data.py extend-history --start 2016-01-01 --end-exclusive 2024-08-09
+python3 us_market_data.py classify-history-gaps --range 2016-01-01_2024-08-09
+python3 us_market_data.py retry-history-gaps --range 2016-01-01_2024-08-09
+python3 us_market_data.py repair-ohlc
+python3 us_market_data.py retry-missing
+python3 us_market_data.py audit
+python3 -m unittest -v test_us_market_data.py
+```
+
+`market_indices.py` stores benchmark indices separately so their histories can extend to
+the maximum range returned by the provider. The initial catalog contains six US and five
+Indian benchmarks. Every row records its provider symbol and source URL.
+
+```bash
+python3 market_indices.py backfill --markets all
+python3 market_indices.py audit
+python3 -m unittest -v test_market_indices.py
+```
+
+`alpha_vantage_metadata.py` maintains earnings events, dated active and delisted listings,
+quarterly shares outstanding, a resumable task queue, and a 25-request UTC-day ledger in
+`data/us/alpha_vantage/metadata.sqlite3`. It loads `ALPHA_VANTAGE_API_KEY` from the ignored
+`.env` file and never writes the key to the database.
+
+```bash
+python3 alpha_vantage_metadata.py seed
+python3 alpha_vantage_metadata.py run
+python3 alpha_vantage_metadata.py status
+python3 -m unittest -v test_alpha_vantage_metadata.py
+```
+
+See `notes/market_data_stores.md` for schemas, provenance, coverage audits, and restart
+procedures. No ingestion command uploads data to R2.
+
+### Scheduled local updates
+
+`market_sync.py` updates India at 21:00 IST with a 23:00 fallback. It updates the
+US at 08:00 IST with a 10:00 fallback. Both LaunchAgents run at login, detect
+missed sessions, merge bounded updates atomically, and record runs in
+`data/ops/sync_state.sqlite3`.
+
+The US run also writes daily and completed-week signal artifacts under
+`data/signals/us/`. It applies the translated EMA/cloud-bounce formula, the MACD
+filter, liquidity gates, three-of-five persistence, and a seven-day known
+earnings blackout.
+
+```bash
+./ops/install_local_sync.sh
+python3 market_sync.py status
+```
+
+See `notes/local_market_sync.md` for schedule, recovery, signal, and operations
+details. The local update path contains no Cloudflare write.
