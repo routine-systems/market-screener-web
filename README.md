@@ -225,6 +225,8 @@ sessions, which prevents end-of-dataset maturity from changing the stocks under 
 absolute next-open gap caps. It uses a ₹1-lakh, five-position, whole-share pilot book,
 including a cost-aware 1%-risk sizing mode. It writes its matrix and ledgers to
 `reports/weekly_risk_exit_research.csv` and `data/backtests/weekly_risk_exit_*.parquet`.
+The maintained pilot selection uses a 50-session time exit, 8% initial stop, ±2% opening
+gap cap, Industry-rising filter, and cost-aware 1%-risk sizing.
 
 ```bash
 python3 risk_exit_research.py
@@ -233,13 +235,21 @@ python3 -m unittest -v test_risk_exit_research.py
 
 `weekly_pilot.py` applies the selected persistence, Industry rotation, liquidity,
 entry-gap, stop, and cost-aware sizing rules to the latest stored weekly observation.
+It refreshes bounded official NSE board-meeting and corporate-action records for every
+mechanical survivor. A failed event lookup withholds the entry. The five-session pre-event
+and two-session post-event blackout covers financial results, board meetings, and ex-dates.
 It writes `reports/weekly_pilot_plan.md`, upserts
 `data/pilot/recommendation_log.csv`, and creates a trade-log schema without placing orders.
 
 ```bash
 python3 weekly_pilot.py
+python3 weekly_pilot.py --opening-prices /path/to/opening-prices.csv
 python3 -m unittest -v test_weekly_pilot.py
 ```
+
+The optional CSV requires `symbol,opening_price`. Rows remain non-actionable before an
+official opening print passes the absolute ±2% gap gate. Official event records persist in
+`data/india_events/candidate_events.parquet` with a source and fetch timestamp.
 
 ### India accumulation-entry and KuBra research
 
@@ -310,6 +320,37 @@ python3 alpha_vantage_metadata.py status
 python3 -m unittest -v test_alpha_vantage_metadata.py
 ```
 
+`sec_fundamentals_store.py` reads compact members from official SEC quarterly archives by
+HTTP range request. It retains filing dates, filing-time SIC classifications, XBRL common-share
+facts, and conservative security-to-CIK links. Raw SEC ZIP archives are not retained. A share
+fact enters research only after its filing date and only when that date is not earlier than the
+fact date.
+
+`us_delisted_market_data.py` builds a separate Yahoo history store for Alpha Vantage delisted
+stocks and ETFs. It excludes symbols reused by an active security and clips every row to the
+recorded listing interval. Provider gaps remain explicit in the durable manifest.
+
+`us_point_in_time_research.py` runs the translated daily and weekly formulas across current and
+recovered-delisted histories. It compares price, dollar-liquidity, market-cap, ETF, and SEC-sector
+cohorts with next-open execution, 0.10% costs per side, SPY-relative returns, chronological
+subperiods, and signal-date-clustered confidence intervals.
+
+```bash
+python3 sec_fundamentals_store.py refresh
+python3 sec_fundamentals_store.py audit
+python3 us_delisted_market_data.py backfill
+python3 us_delisted_market_data.py audit
+python3 us_point_in_time_research.py run
+python3 us_point_in_time_research.py audit
+pytest -q test_sec_fundamentals_store.py test_us_delisted_market_data.py \
+  test_us_point_in_time_research.py
+```
+
+The current US research does not promote an actionable signal. Daily cohorts underperform SPY.
+Weekly `WKLY_FIL` earns positive absolute returns but negative SPY-relative returns at 50 and
+100 sessions. The $300 million stock-cap cohort reduces the 50-session deficit without reversing
+it. See `reports/us_point_in_time_research.md`.
+
 See `notes/market_data_stores.md` for schemas, provenance, coverage audits, and restart
 procedures. No ingestion command uploads data to R2.
 
@@ -323,7 +364,7 @@ missed sessions, merge bounded updates atomically, and record runs in
 The US run also writes daily and completed-week signal artifacts under
 `data/signals/us/`. It applies the translated EMA/cloud-bounce formula, the MACD
 filter, liquidity gates, three-of-five persistence, and a seven-day known
-earnings blackout.
+earnings blackout. It checks the official SEC derivative store at most once per seven days.
 
 ```bash
 ./ops/install_local_sync.sh
