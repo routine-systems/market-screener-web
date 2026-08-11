@@ -24,7 +24,12 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Chartink weekly tracker — weekly / adhoc")
     ap.add_argument("--mode", choices=["weekly", "adhoc"], default="weekly")
     ap.add_argument("--url", default=scr.DEFAULT_URL, help="Chartink screener URL")
-    ap.add_argument("--window", type=int, default=5, help="Default rolling window (weeks)")
+    ap.add_argument(
+        "--window",
+        type=int,
+        default=bd.DEFAULT_WINDOW,
+        help="Default rolling window (weeks)",
+    )
     ap.add_argument("--filter-url", help="Filtered-subset screener URL (default: <url>-fil)")
     ap.add_argument("--no-filter", action="store_true", help="Skip the filtered-subset overlay")
     ap.add_argument("--refresh", action="store_true", help="Only re-extract the scanlink and rebuild (no download)")

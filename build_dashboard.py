@@ -31,6 +31,7 @@ HISTORY = DATA_DIR / "history.json"
 TEMPLATE = HERE / "template.html"
 OUT = HERE / "dashboard.html"
 DEFAULT_URL = "https://chartink.com/screener/cp-ich-trend-bounce-wkly"
+DEFAULT_WINDOW = 8
 
 
 def _iso(d: str) -> str:
@@ -192,7 +193,12 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Render dashboard from a backtest CSV")
     ap.add_argument("--backtest", type=Path, help="Backtest CSV (default: newest in data/)")
     ap.add_argument("--url", default=DEFAULT_URL, help="Source screener URL")
-    ap.add_argument("--window", type=int, default=5, help="Default rolling window (weeks)")
+    ap.add_argument(
+        "--window",
+        type=int,
+        default=DEFAULT_WINDOW,
+        help="Default rolling window (weeks)",
+    )
     ap.add_argument("--scanlink", help="In-scan link hash (else read from sidecar)")
     ap.add_argument("--timeframe", help="Screener timeframe (e.g. weekly)")
     ap.add_argument("--filter", dest="filter_csv", type=Path, help="Filtered-subset backtest CSV (highlight dots)")

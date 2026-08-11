@@ -53,7 +53,7 @@ Two secrets make it live (create-your-own; not committed):
 **Weekly potentials** (`dashboard.html`) — ranks tickers by how many of a selectable
 **week window** they appeared in (5/5, 4/5 …), with a per-week presence grid (hover for
 the breakdown), "new / dropped", and per-week + frequency charts. Controls: From/To +
-◀▶ offset + presets (Last 5 / 8 / 13 / 26 / 52 / All, default 5). A gold dot marks names
+◀▶ offset + presets (Last 5 / 8 / 13 / 26 / 52 / All, default 8). A gold dot marks names
 also in the stricter `-fil` subset (**◆ In filter** toggle); a **D** badge marks names
 also in the daily sheet (**◲ In daily**). Ticker links open the in-scan Chartink chart.
 A **rotation dot** after each ticker shows whether its sector is rotating **in** (green),
@@ -139,6 +139,8 @@ Python 3.12, Chrome, and `pip install selenium webdriver-manager` (already prese
 
 - Backtest CSVs carry membership + sector + market cap, but **no price** (close/%chg/volume).
 - Data is unofficial, scraped from Chartink's public screener pages for personal use.
+- TradingView indicator merging and numbered screener replication follow
+  [`notes/tradingview_indicator_screener_workflow.md`](notes/tradingview_indicator_screener_workflow.md).
 - Future shortlists must apply the scheduled-event proximity gate in
   [`notes/recommendation_policy.md`](notes/recommendation_policy.md) before presenting entries.
 
@@ -179,6 +181,62 @@ requested date. It checks calendar days to retain special weekend trading sessio
 use a temporary Parquet file followed by an atomic replacement.
 
 ## Signal backtest research
+
+Generate the repeatable weekly India composite shortlist with official event gates:
+
+```bash
+python3 combined_recommendation.py
+python3 combined_recommendation.py --timeframe daily  # explicit request only
+pytest -q test_combined_recommendation.py
+```
+
+The component hierarchy and combination rules live in `notes/recommendation_policy.md`. The
+current shortlist is written to `reports/combined_recommendation_shortlist.csv` and
+`reports/combined_recommendation_shortlist.md`.
+
+The forward-test ledger captures presented rows and every mechanical survivor before the
+event-refresh budget. It freezes the first decision snapshot, appends one outcome snapshot per
+available session, and renders `recommendations.html`:
+
+```bash
+python3 recommendation_forward_test.py
+pytest -q test_recommendation_diagnostics.py test_recommendation_forward_test.py
+```
+
+Canonical forward-test artifacts are
+`data/forward_test/recommendation_decisions.parquet`,
+`data/forward_test/recommendation_outcomes.parquet`,
+`data/forward_test/recommendation_annotations.parquet`, and
+`reports/recommendation_forward_test.csv`. Short-volume, turnover, delivery-quantity,
+breakout-proximity, close-location, true-range, and volatility-compression diagnostics remain
+zero-weight annotations until a chronological forward sample supports a predeclared rule. The
+same rule applies to weekly `CMO(14)` and its ten-period EMA direction. The formulas and study
+history live in `notes/zero_weight_research.md`, outside the executable policy.
+
+Automatic recommendation generation remains weekly. Daily OHLCV, delivery fields, signal
+artifacts, diagnostics, and stored forward outcomes continue to update. Use the explicit
+`--timeframe daily` override only when a daily shortlist is requested.
+
+The cross-market weekly CMO study tests the rising EMA state and its fresh false-to-true trigger:
+
+```bash
+python3 weekly_cmo_research.py --stage india
+python3 weekly_cmo_research.py --stage us
+python3 weekly_cmo_research.py --stage evaluate
+pytest -q test_weekly_cmo_research.py
+```
+
+The derivative follow-up tests CMO EMA acceleration and the exact weekly VBSM Pine translation:
+
+```bash
+python3 weekly_momentum_derivative_research.py --stage india
+python3 weekly_momentum_derivative_research.py --stage us
+python3 weekly_momentum_derivative_research.py --stage evaluate
+pytest -q test_weekly_momentum_derivative_research.py
+```
+
+Both remain zero-weight forward annotations. Their result and algebraic limitations are recorded
+in `notes/zero_weight_research.md`.
 
 `backtest_research.py` runs the four research courses against the two-year bhavcopy store:
 
@@ -278,6 +336,29 @@ python3 -m unittest -v test_india_derived_risk_exit_research.py \
 python3 india_derived_artifact_audit.py
 ```
 
+### Twin Smoothed Heikin Ashi research
+
+`twin_heikin_ashi_research.py` translates the supplied EMA(8)/EMA(20) double-smoothed Heikin
+Ashi candles. It tests daily and completed-weekly entries when price closes above both bullish
+candles. Body-top and wick-top boundaries are compared. Entries are split between bullish-color
+reversals and established-color continuation recrosses.
+
+The study uses next-session-open execution, 0.25% cost per side, NIFTYBEES-relative returns,
+point-in-time ₹5-crore liquidity and rotation sensitivities, and common chronological 60/40
+splits. It compares unfiltered entries, mandatory consolidation suppression, and Twin HA
+confluence on the first bar exiting consolidation. The event and portfolio stages run
+separately to limit peak memory use:
+
+```bash
+python3 twin_heikin_ashi_research.py --stage events
+python3 twin_heikin_ashi_research.py --stage evaluate
+python3 -m unittest -v test_twin_heikin_ashi_research.py
+```
+
+The study writes `reports/twin_heikin_ashi_research.md`, full CSV matrices under `reports/`,
+point-in-time events under `data/features/`, and selected portfolio ledgers under
+`data/backtests/`.
+
 ### US market-data and benchmark stores
 
 `us_market_data.py` builds a local current-listed US stock-and-ETF universe from the
@@ -346,10 +427,64 @@ pytest -q test_sec_fundamentals_store.py test_us_delisted_market_data.py \
   test_us_point_in_time_research.py
 ```
 
-The current US research does not promote an actionable signal. Daily cohorts underperform SPY.
-Weekly `WKLY_FIL` earns positive absolute returns but negative SPY-relative returns at 50 and
-100 sessions. The $300 million stock-cap cohort reduces the 50-session deficit without reversing
-it. See `reports/us_point_in_time_research.md`.
+`us_rotation_research.py` maps each filing-time SIC classification to one of 16 investable US
+sector or industry ETF proxies. It constructs completed-week price-trend and SPY-relative-trend
+states, then compares unfiltered, matched, and strict-rotation cohorts without using a future SIC
+filing. The proxy state store and comparison outputs are written to `data/us/rotation/` and
+`reports/us_rotation_research.*`.
+
+`us_twin_heikin_ashi_research.py` applies the translated EMA(8)/EMA(20) Twin HA body and wick
+breakouts to current and recovered-delisted US instruments. It evaluates daily 5/10/20-session
+and completed-weekly 20/50/100-session outcomes with next-open execution, 0.10% costs per side,
+SPY-relative returns, point-in-time shares and SIC classifications, consolidation filters, and
+the US rotation states. Stocks and ETFs remain separate research cohorts.
+
+```bash
+python3 us_rotation_research.py
+python3 us_twin_heikin_ashi_research.py --stage events
+python3 us_twin_heikin_ashi_research.py --stage evaluate
+pytest -q test_us_rotation_research.py test_us_twin_heikin_ashi_research.py
+```
+
+`us_signal_formulas.py` adds PB and MQ research translations to the current daily artifact.
+`us_signal_formula_parity.py` compares those translations with the captured Chartink histories.
+PB reaches 68.76% recall and MQ reaches 1.66% recall, so both remain zero-weight annotations and
+cannot create eligibility. Their parity evidence is archived in
+`notes/zero_weight_research.md`.
+
+`us_portfolio_research.py` runs the capital-constrained combination matrix for `DLY_FIL`,
+`WKLY_FIL`, and three-of-five `WKLY_FIL`. It combines each primary signal with Twin body, Twin
+wick, strict sector-ETF rotation, and six fixed-stop settings. The simulator uses whole shares,
+five concurrent positions, a ±2% opening-gap cap, 0.10% costs per side, and cost-aware 1%-risk
+sizing. The leading late `WKLY_FIL` confluence does not repeat in the early period, so it does not
+change the research-only policy.
+
+`us_combined_recommendation.py` produces a deterministic weekly research shortlist. It
+refreshes Nasdaq earnings, ex-dividend, and split calendars for the top event pool. Any calendar
+failure withholds every affected row. The US research gate keeps `actionable_entry=false` after
+the event, opening-gap, capacity, and sizing calculations.
+
+```bash
+python3 us_signal_formula_parity.py
+python3 us_portfolio_research.py
+python3 us_combined_recommendation.py
+python3 us_parity_audit.py
+pytest -q test_us_signal_formulas.py test_us_portfolio_research.py \
+  test_us_event_calendar.py test_us_combined_recommendation.py test_us_parity_audit.py
+```
+
+The combined shortlist lives at `reports/us_combined_recommendation_shortlist.csv`. The audit
+lives at `reports/us_parity_audit.json` and separates blocking operational checks from research
+promotion checks.
+
+The Twin HA study writes bucketed events under `data/us/twin_heikin_ashi_events/` and its
+chronological comparison matrix under `reports/us_twin_heikin_ashi_research.*`. See
+`notes/zero_weight_research.md` for the inactive US interpretation.
+
+The current US research does not promote an actionable signal. Daily capital-constrained variants
+trail SPY in both chronological periods. The late `WKLY_FIL` portfolio has positive SPY-relative
+cells, but those cells fail the early-period stability check. See
+`reports/us_point_in_time_research.md` and `reports/us_portfolio_research.md`.
 
 See `notes/market_data_stores.md` for schemas, provenance, coverage audits, and restart
 procedures. No ingestion command uploads data to R2.
@@ -361,10 +496,15 @@ US at 08:00 IST with a 10:00 fallback. Both LaunchAgents run at login, detect
 missed sessions, merge bounded updates atomically, and record runs in
 `data/ops/sync_state.sqlite3`.
 
+The India run refreshes forward-test outcomes after official market data arrives. Each scheduled
+combined recommendation run freezes a new India or US weekly decision batch before updating the
+HTML page. Daily shortlist generation requires the explicit command-line override.
+
 The US run also writes daily and completed-week signal artifacts under
 `data/signals/us/`. It applies the translated EMA/cloud-bounce formula, the MACD
-filter, liquidity gates, three-of-five persistence, and a seven-day known
-earnings blackout. It checks the official SEC derivative store at most once per seven days.
+filter, liquidity gates, point-in-time market cap, and three-of-five persistence. It refreshes
+sector-ETF rotation states, the fail-closed official-event shortlist, and the parity audit. It
+checks the official SEC derivative store at most once per seven days.
 
 ```bash
 ./ops/install_local_sync.sh
