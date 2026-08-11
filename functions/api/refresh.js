@@ -1,13 +1,13 @@
 // Cloudflare Pages Function: POST /api/refresh → dispatch the GitHub Actions "refresh"
-// workflow (which re-scrapes Chartink and redeploys this site). The whole hostname is
+// workflow (which produces the immutable web bundle). The whole hostname is
 // behind Cloudflare Access, so only the allow-listed users can reach this endpoint.
 //
 // Needs a project env secret GH_DISPATCH_TOKEN — a GitHub fine-grained PAT scoped to
-// NakliTechie/chartink-dashboard with Actions: Read and write. Set it with:
+// NakliTechie/market-signals with Actions: Read and write. Set it with:
 //   wrangler pages secret put GH_DISPATCH_TOKEN --project-name screener
 
-const REPO = "NakliTechie/chartink-dashboard";
-const WORKFLOW = "refresh.yml";
+const DEFAULT_REPO = "NakliTechie/market-signals";
+const DEFAULT_WORKFLOW = "produce-signals.yml";
 
 function json(obj, status = 200) {
   return new Response(JSON.stringify(obj), {
@@ -19,8 +19,10 @@ function json(obj, status = 200) {
 export async function onRequestPost({ env }) {
   const token = env.GH_DISPATCH_TOKEN;
   if (!token) return json({ ok: false, error: "GH_DISPATCH_TOKEN not configured" }, 500);
+  const repo = env.SIGNAL_REPO || DEFAULT_REPO;
+  const workflow = env.SIGNAL_WORKFLOW || DEFAULT_WORKFLOW;
   const r = await fetch(
-    `https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}/dispatches`,
+    `https://api.github.com/repos/${repo}/actions/workflows/${workflow}/dispatches`,
     {
       method: "POST",
       headers: {
@@ -39,5 +41,5 @@ export async function onRequestPost({ env }) {
 }
 
 export async function onRequestGet() {
-  return json({ ok: true, hint: "POST here to queue a Chartink refresh + redeploy" });
+  return json({ ok: true, hint: "POST here to queue a new signal bundle" });
 }

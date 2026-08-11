@@ -11,7 +11,7 @@
 // fine-grained PAT with Actions: read+write on the repo, set via wrangler pages secret).
 // The whole hostname is behind Cloudflare Access, so only allow-listed users reach this.
 
-const REPO = "NakliTechie/chartink-dashboard";
+const DEFAULT_REPO = "NakliTechie/market-signals";
 const WORKFLOW = "scanlink.yml";
 
 function json(obj, status = 200) {
@@ -38,8 +38,9 @@ export async function onRequestGet({ env }) {
 export async function onRequestPost({ env }) {
   const token = env.GH_DISPATCH_TOKEN;
   if (!token) return json({ ok: false, error: "GH_DISPATCH_TOKEN not configured" }, 500);
+  const repo = env.SIGNAL_REPO || DEFAULT_REPO;
   const r = await fetch(
-    `https://api.github.com/repos/${REPO}/actions/workflows/${WORKFLOW}/dispatches`,
+    `https://api.github.com/repos/${repo}/actions/workflows/${WORKFLOW}/dispatches`,
     {
       method: "POST",
       headers: {
