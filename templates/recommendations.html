@@ -12,7 +12,8 @@
 <div class="controls"><button class="on" data-filter="weekly">Weekly</button><button data-filter="IN">India</button><button data-filter="US">US</button><button data-filter="miss">Opportunity misses</button><button data-filter="daily">Daily archive</button><button data-filter="all">All history</button><input id="search" placeholder="Search symbol or stage"></div>
 <div class="table"><table><thead><tr><th>Signal</th><th>Market</th><th>Frame</th><th>Symbol</th><th>Decision</th><th>Score</th><th>Twin HA</th><th>Return</th><th>Excess</th><th>MFE</th><th>MAE</th></tr></thead><tbody id="rows"></tbody></table></div>
 </div><script>
-const payload=JSON.parse(atob("__RECOMMENDATIONS_B64__"));
+function b64utf8(value){try{return decodeURIComponent(escape(atob(value)));}catch(error){return atob(value)}}
+const payload=JSON.parse(b64utf8("__RECOMMENDATIONS_B64__"));
 const esc=v=>String(v??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const pct=v=>v==null||Number.isNaN(Number(v))?'—':`${(Number(v)*100).toFixed(1)}%`;
 document.querySelector('#subtitle').textContent=`Immutable decisions and point-in-time outcomes · rendered ${payload.generated_at||'—'}`;
