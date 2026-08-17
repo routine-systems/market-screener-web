@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0d0d'/%3E%3Crect x='6.5' y='18' width='4.5' height='8' rx='1.4' fill='%234d93ea'/%3E%3Crect x='13.75' y='12' width='4.5' height='14' rx='1.4' fill='%2316b816'/%3E%3Crect x='21' y='6.5' width='4.5' height='19.5' rx='1.4' fill='%2316b816'/%3E%3C/svg%3E">
+<title>Sector Rotation</title>
+<style>
+  :root{
+    color-scheme: light;
+    --plane:#f9f9f7; --surface:#fcfcfb;
+    --ink:#0b0b0b; --ink-2:#52514e; --muted:#66655f;
+    --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
+    --up:#0ca30c; --down:#d03b3b; --flat:#66655f; --vol:#1c5cab; --sol-blue:#1c5cab; --up-ink:#0a7d0a; --down-ink:#b3271f;
+    --up-soft:rgba(12,163,12,0.10); --down-soft:rgba(208,59,59,0.10);
+    --bar-up:#0a7d0a; --bar-down:#b3271f; --ma:#b26a00;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:where(:not([data-theme="light"])){
+      color-scheme: dark;
+      --plane:#0d0d0d; --surface:#1a1a19;
+      --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+      --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+      --up:#0ca30c; --down:#e66767; --flat:#898781; --vol:#4d93ea; --sol-blue:#1c5cab; --up-ink:#16b816; --down-ink:#e66767;
+      --up-soft:rgba(12,163,12,0.16); --down-soft:rgba(230,103,103,0.16);
+      --bar-up:#0d8f0d; --bar-down:#c53030; --ma:#e8a02a;
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --plane:#0d0d0d; --surface:#1a1a19;
+    --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+    --up:#0ca30c; --down:#e66767; --flat:#898781; --vol:#4d93ea; --sol-blue:#1c5cab; --up-ink:#16b816; --down-ink:#e66767;
+    --up-soft:rgba(12,163,12,0.16); --down-soft:rgba(230,103,103,0.16);
+    --bar-up:#0d8f0d; --bar-down:#c53030; --ma:#e8a02a;
+  }
+  *{box-sizing:border-box}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .spin{display:inline-block; animation:spin .8s linear infinite}
+  html,body{margin:0}
+  body{background:var(--plane); color:var(--ink);
+    font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px; margin:0 auto; padding:18px 20px 64px}
+  .nav{display:flex; gap:4px; margin-bottom:16px; border-bottom:1px solid var(--grid)}
+  .nav a{padding:8px 14px; font-size:13px; font-weight:600; color:var(--ink-2); text-decoration:none; border-bottom:2px solid transparent; margin-bottom:-1px}
+  .nav a:hover{color:var(--ink)}
+  .nav a.on{color:var(--ink); border-bottom-color:var(--vol)}
+  .nav .sp{flex:1 1 auto}
+  @media(max-width:640px){
+    .wrap{padding:14px 12px 48px}
+    .nav{flex-wrap:wrap; row-gap:4px}          /* buttons wrap onto their own row */
+    .nav .sp{flex-basis:100%; height:0; margin:0}
+    .nav a{padding:7px 10px; font-size:12.5px}
+  }
+  .nav .themebtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:8px; padding:5px 10px; font-size:12px; cursor:pointer; align-self:center}
+  header.top{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:6px}
+  h1{font-size:20px; margin:0; letter-spacing:-0.01em}
+  .sub{color:var(--ink-2); font-size:13px; margin:2px 0 18px}
+  .sub a{color:var(--vol); text-decoration:underline}
+  .spacer{flex:1 1 auto}
+  .presets{display:flex; gap:6px; align-items:center; margin-bottom:12px; flex-wrap:wrap}
+  .presets .lab{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:0.04em; margin-right:2px}
+  .preset{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 10px; font-size:12px; cursor:pointer}
+  .preset:hover{color:var(--ink)}
+  .preset.on{background:var(--sol-blue); color:#fff; border-color:var(--sol-blue)}
+  .offbtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 9px; font-size:12px; font-weight:700; cursor:pointer}
+  .offbtn:hover:not(:disabled){color:var(--ink); border-color:var(--vol)} .offbtn:disabled{opacity:.3; cursor:default}
+  .offlbl{color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; min-width:52px; text-align:center}
+  .legend{color:var(--muted); font-size:11.5px; margin:-2px 0 16px}
+  .summary{color:var(--ink-2); font-size:13px; margin-left:auto}
+  .summary b.u{color:var(--up-ink)} .summary b.d{color:var(--down-ink)} .summary b.f{color:var(--flat)}
+
+  .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+  .grid[hidden],.quadwrap[hidden]{display:none}
+  .grid.grouped{display:block}
+  .secgroup{border:1px solid var(--border); border-radius:14px; padding:11px 13px 3px; margin-bottom:16px}
+  .secgroup-h{display:flex; align-items:center; gap:8px; font-size:13px; font-weight:700; color:var(--ink-2); margin:0 2px 11px}
+  .secgroup-n{font-size:11px; font-weight:600; color:var(--muted); background:var(--plane); border:1px solid var(--border); border-radius:999px; padding:1px 7px; font-variant-numeric:tabular-nums}
+  @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--surface); border:1px solid var(--border); border-left-width:3px; border-radius:12px; padding:13px 14px 8px}
+  .card.up{border-left-color:var(--up)} .card.down{border-left-color:var(--down)} .card.flat{border-left-color:var(--flat)}
+  .chead{display:flex; align-items:baseline; gap:8px}
+  .cname{font-size:13px; font-weight:600; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .cbadge{flex:0 0 auto; font-size:11px; font-weight:700; padding:1px 6px; border-radius:999px}
+  .cbadge.up{color:var(--up-ink); background:var(--up-soft)} .cbadge.down{color:var(--down-ink); background:var(--down-soft)} .cbadge.flat{color:var(--flat)}
+  .cnum{flex:0 0 auto; margin-left:auto; text-align:right}
+  .cnum .big{font-size:22px; font-weight:600; letter-spacing:-0.02em; font-variant-numeric:tabular-nums}
+  .cnum .dlt{font-size:12px; font-variant-numeric:tabular-nums; font-weight:600}
+  .cnum .dlt.up{color:var(--up-ink)} .cnum .dlt.down{color:var(--down-ink)} .cnum .dlt.flat{color:var(--muted)}
+  .spark{margin-top:8px; position:relative; cursor:crosshair}
+  .spark svg{display:block}
+  .crange{display:flex; justify-content:space-between; color:var(--muted); font-size:10.5px; font-variant-numeric:tabular-nums; margin-top:2px}
+  .jumps{display:flex; gap:6px; justify-content:flex-end; margin-top:7px}
+  .jump{font-size:10.5px; font-weight:600; color:var(--ink-2); text-decoration:none; border:1px solid var(--border); border-radius:6px; padding:2px 8px; background:var(--surface)}
+  .jump:hover{color:#fff; background:var(--sol-blue); border-color:var(--sol-blue)}
+  .empty{color:var(--muted); font-size:13px; padding:24px 0}
+  .within{background:var(--plane); color:var(--ink); border:1px solid var(--border); border-radius:7px; padding:5px 8px; font-size:12px; max-width:230px}
+  .quadwrap{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px 10px 6px; overflow-x:auto}
+  /* aspect-ratio (not height:auto alone) so iOS Safari derives the height from the
+     viewBox instead of collapsing the SVG to zero height */
+  .quadwrap svg{display:block; width:100%; height:auto; aspect-ratio:920 / 540; min-width:560px}
+  .qz-tl{fill:var(--vol)} .qz-tr{fill:var(--up)} .qz-bl{fill:var(--down)} .qz-br{fill:var(--ma)}
+  .qlabel{fill:var(--muted); font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; opacity:.75}
+  .qaxis{stroke:var(--axis)} .qframe{stroke:var(--grid); fill:none}
+  .qtick{fill:var(--muted); font-size:11px}
+  .qname{fill:var(--ink-2); font-size:10.5px}
+  .qpt{cursor:crosshair} .qbub{stroke:var(--surface); stroke-width:1}
+
+  #tt{position:fixed; z-index:50; pointer-events:none; background:var(--ink); color:var(--surface);
+      padding:5px 8px; border-radius:6px; font-size:12px; opacity:0; transition:opacity .08s; white-space:nowrap}
+  :root[data-theme="dark"] #tt, :root:where(:not([data-theme="light"])) #tt{color:#111}
+  footer{color:var(--muted); font-size:11.5px; margin-top:26px; text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="nav" aria-label="Views">
+    <a href="dashboard.html">Weekly</a>
+    <a href="daily.html">Daily</a>
+    <a href="market.html">Market</a>
+    <a href="sectors.html" class="on" aria-current="page">Sectors</a>
+    <a href="recommendations.html">Forward Test</a>
+    <span class="sp"></span>
+    <button class="themebtn" id="refreshBtn" title="Re-scrape Chartink and rebuild all pages (~3–4 min) — reload after">↻ Refresh</button>
+    <button class="themebtn" id="themeBtn">◐ Theme</button>
+  </nav>
+
+  <main>
+  <header class="top">
+    <h1>Sector rotation</h1>
+    <div class="spacer"></div>
+  </header>
+  <div class="sub" id="sub"></div>
+
+  <div class="presets">
+    <span class="lab">Layout</span>
+    <button class="preset" data-layout="grid">Grid</button>
+    <button class="preset" data-layout="quad">Quadrant</button>
+    <span style="width:12px"></span>
+    <span class="lab">Level</span>
+    <button class="preset" data-level="sector">Sector</button>
+    <button class="preset" data-level="industry">Industry</button>
+    <button class="preset" data-level="basic">Basic</button>
+    <span style="width:12px"></span>
+    <span class="lab">Weeks</span>
+    <button class="preset" data-days="5">5</button>
+    <button class="preset" data-days="8">8</button>
+    <button class="preset" data-days="13">13</button>
+    <button class="preset" data-days="26">26</button>
+    <button class="preset" data-days="52">52</button>
+    <button class="preset" data-days="999">All</button>
+    <span style="width:6px"></span>
+    <button class="offbtn" id="offBack" title="Shift the window one week older">◀</button>
+    <span class="offlbl" id="offlbl"></span>
+    <button class="offbtn" id="offFwd" title="Shift the window one week newer">▶</button>
+    <span style="width:12px"></span>
+    <span id="viewGrp"><span class="lab">View</span>
+      <button class="preset" data-chart="line">Line</button>
+      <button class="preset" data-chart="hist">Bars</button></span>
+    <select id="within" class="within" hidden title="Focus the quadrant on one sector's sub-groups"></select>
+    <span class="summary" id="summary"></span>
+  </div>
+  <div class="legend" id="legend"></div>
+
+  <section class="grid" id="grid"></section>
+  <section class="quadwrap" id="quad" hidden></section>
+  <footer id="foot"></footer>
+  </main>
+</div>
+<div id="tt"></div>
+
+<script>
+const SECTOR_B64="__SECTOR_B64__";
+const $=s=>document.querySelector(s);
+function b64utf8(b){try{return decodeURIComponent(escape(atob(b)));}catch(e){return atob(b);}}
+const M=JSON.parse(b64utf8(SECTOR_B64));
+const LEVEL_KEYS=(M.levels||[]).map(l=>l[0]);
+let LEVEL=localStorage.getItem('sec.level'); if(!LEVEL_KEYS.includes(LEVEL)) LEVEL=LEVEL_KEYS[0]||'sector';
+let LAYOUT=(localStorage.getItem('sec.layout')==='quad')?'quad':'grid';   // grid cards | quadrant
+let PERIOD_BY={grid:13, quad:8};                          // default window per layout (weeks)
+let PERIOD=PERIOD_BY[LAYOUT], OFFSET=0;
+let CHART=(localStorage.getItem('sec.chart')==='line')?'line':'hist';   // default Bars
+const MA_P=4;                                              // 4-week moving average
+const MIN_STOCKS=2;                                        // hide 1-stock noise
+let WITHIN='';                                             // quadrant focus: '' = all sectors
+
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function movavg(vals, p){
+  const out=[];
+  for(let i=0;i<vals.length;i++){const s=vals.slice(Math.max(0,i-p+1), i+1); out.push(s.reduce((a,b)=>a+b,0)/s.length);}
+  return out;
+}
+function lsSlope(vals){
+  const n=vals.length; if(n<2) return 0;
+  const mx=(n-1)/2, my=vals.reduce((a,b)=>a+b,0)/n;
+  let num=0,den=0; for(let i=0;i<n;i++){num+=(i-mx)*(vals[i]-my); den+=(i-mx)*(i-mx);}
+  return den?num/den:0;
+}
+function signOf(sl, mean){const eps=Math.max(0.04, mean*0.015); return sl>eps?1:(sl<-eps?-1:0);}
+function sparkSVG(vals, color, w, h){
+  if(vals.length<2) return '';
+  const min=Math.min(...vals), max=Math.max(...vals), rng=(max-min)||1, dx=w/(vals.length-1);
+  const pts=vals.map((v,i)=>[i*dx, h-((v-min)/rng)*(h-6)-3]);
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const area=`M0 ${h} `+pts.map(p=>'L'+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')+` L${w} ${h} Z`;
+  const last=pts[pts.length-1];
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none">
+    <path d="${area}" fill="${color}" opacity="0.13"/>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="1.6" vector-effect="non-scaling-stroke"/>
+    <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.4" fill="${color}"/>
+  </svg>`;
+}
+// Histogram: each week's bar shaded darker-green if the sector's count rose vs the prior week,
+// darker-red if it fell; a MA_P-week moving-average line is drawn over the bars.
+function histSVG(vals, maVals, w, h, prev0){
+  if(!vals.length) return '';
+  const min=Math.min(...vals, ...maVals), max=Math.max(...vals, ...maVals), rng=(max-min)||1;
+  const n=vals.length, slot=w/n, bw=Math.max(1, slot*0.72), pad=5;
+  const y=v=>h-((v-min)/rng)*(h-pad)-1;
+  let bars='';
+  for(let i=0;i<n;i++){
+    const p=(i>0)?vals[i-1]:prev0;
+    const col=(p==null)?'var(--flat)':(vals[i]>p?'var(--bar-up)':(vals[i]<p?'var(--bar-down)':'var(--flat)'));
+    const yy=y(vals[i]), x=i*slot+(slot-bw)/2;
+    bars+=`<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${bw.toFixed(1)}" height="${(h-yy).toFixed(1)}" fill="${col}"/>`;
+  }
+  const pts=maVals.map((v,i)=>[i*slot+slot/2, y(v)]);
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none">
+    <g>${bars}</g>
+    <path d="${line}" fill="none" stroke="var(--ma)" stroke-width="1.7" vector-effect="non-scaling-stroke"/>
+  </svg>`;
+}
+const COL={1:'var(--up)',[-1]:'var(--down)',0:'var(--flat)'};
+const WORD={1:'rising',[-1]:'cooling',0:'flat'};
+const CLS={1:'up',[-1]:'down',0:'flat'};
+
+function render(){
+  document.querySelectorAll('.preset[data-days]').forEach(b=>b.classList.toggle('on', +b.dataset.days===PERIOD));
+  document.querySelectorAll('.preset[data-level]').forEach(b=>b.classList.toggle('on', b.dataset.level===LEVEL));
+  document.querySelectorAll('.preset[data-chart]').forEach(b=>b.classList.toggle('on', b.dataset.chart===CHART));
+  document.querySelectorAll('.preset[data-layout]').forEach(b=>b.classList.toggle('on', b.dataset.layout===LAYOUT));
+
+  const weeks=M.weeks||[], maxLen=weeks.length;
+  OFFSET=Math.max(0, Math.min(OFFSET, Math.max(0,maxLen-1)));
+  $('#offlbl').textContent = OFFSET===0?'latest':`−${OFFSET} wk`;
+  $('#offBack').disabled = OFFSET>=maxLen-1;
+  $('#offFwd').disabled = OFFSET<=0;
+
+  const lvlName=(M.levels.find(l=>l[0]===LEVEL)||[LEVEL,LEVEL])[1];
+  const groups=M.counts[LEVEL]||{};
+  const cov=M.coverage||{};
+  const isQuad=LAYOUT==='quad';
+  $('#viewGrp').style.display = isQuad?'none':'';
+  const showWithin = isQuad && LEVEL!=='sector';
+  $('#within').hidden = !showWithin; $('#within').value = WITHIN;
+  $('#sub').innerHTML = `<b>${Object.keys(groups).length}</b> ${esc(lvlName.toLowerCase())} groups · weekly · `
+    + `<a href="${esc(M.url)}" target="_blank" rel="noopener">source ↗</a> · `
+    + (M.updated_at?`updated <b>${esc(M.updated_at)}</b>`:'no data');
+  $('#legend').innerHTML = isQuad
+    ? `Quadrant of sector <b>movement</b> over the window — <b>x</b> = current participation (avg stocks in the screener), `
+      + `<b>y</b> = momentum (stocks added per week). Above the mid-line = <b style="color:var(--up)">adding</b>, below = `
+      + `<b style="color:var(--down)">shedding</b>; right of centre = larger than the median ${esc(lvlName.toLowerCase())}. `
+      + `<b>Leading ↗</b> · <b>↖ Improving</b> · <b>Weakening ↘</b> · <b>↙ Lagging</b> · bubble size = latest count.`
+    : (CHART==='hist'
+      ? `Each chart: <b>bars</b> = how many of the sector's stocks are in the screener that week — `
+        + `<b style="color:var(--bar-up)">green = up on the prior week</b> / <b style="color:var(--bar-down)">red = down</b> · `
+        + `<b style="color:var(--ma)">line</b> = ${MA_P}-week average. Cards sorted by recent momentum — a rising count means the sector is gaining interest.`
+      : `Each chart: weekly count of the sector's stocks in the screener. Cards sorted by recent momentum (rising first) — a rising count means the sector is gaining interest.`);
+  if(!isQuad && LEVEL!=='sector') $('#legend').innerHTML += ` · <b>grouped by sector</b>`;
+
+  const end=Math.max(0, maxLen-1-OFFSET), start=Math.max(0, end-PERIOD+1);
+  let rows=Object.keys(groups).map(g=>{
+    const full=groups[g], win=full.slice(start, end+1);
+    const sl=lsSlope(win), mean=win.reduce((a,b)=>a+b,0)/(win.length||1);
+    return {g, full, win, mx:Math.max(0,...win), sl, latest:win.length?win[win.length-1]:0, sg:signOf(sl, mean)};
+  }).filter(r=>r.mx>=MIN_STOCKS);
+  rows.sort((a,b)=> b.sl-a.sl || b.latest-a.latest || a.g.localeCompare(b.g));
+
+  let up=0,down=0,flat=0; rows.forEach(r=>{ if(r.sg>0)up++; else if(r.sg<0)down++; else flat++; });
+  $('#summary').innerHTML=`<b class="u">${up} ▲</b> · <b class="d">${down} ▼</b> · <b class="f">${flat} →</b>`;
+
+  const winWeeks=weeks.slice(start, end+1);
+  if(isQuad){ $('#grid').hidden=true; $('#quad').hidden=false; renderQuad(rows, lvlName); }
+  else { $('#quad').hidden=true; $('#grid').hidden=false; renderGrid(rows, winWeeks, start, end, lvlName); }
+
+  $('#foot').textContent=`Generated ${M.generated_at||''} · ${rows.length} groups shown (≥${MIN_STOCKS} stocks)`
+    + (cov.total?` · ${cov.mapped}/${cov.total} symbols classified from data.csv`:'')+` · weekly, run daily after 2pm`;
+}
+
+function renderGrid(rows, winWeeks, start, end, lvlName){
+  const grid=$('#grid');
+  const cardOf = r => {
+    const vals=r.win, sg=r.sg;
+    const latest=vals[vals.length-1], prev=vals.length>1?vals[vals.length-2]:latest, wd=latest-prev;
+    const dcls=wd>0?'up':(wd<0?'down':'flat'), darr=wd>0?'▲':(wd<0?'▼':'→');
+    const W=300, h=48;
+    let svg;
+    if(CHART==='hist'){
+      const maWin=movavg(r.full, MA_P).slice(start, end+1);
+      const prev0=start>0?r.full[start-1]:null;
+      svg=histSVG(vals, maWin, W, h, prev0);
+    } else svg=sparkSVG(vals, COL[sg], W, h);
+    return `<div class="card ${CLS[sg]}">
+      <div class="chead">
+        <span class="cname" title="${esc(r.g)}">${esc(r.g)}</span>
+        <span class="cbadge ${CLS[sg]}">${sg>0?'▲':sg<0?'▼':'→'} ${WORD[sg]}</span>
+        <span class="cnum"><span class="big">${latest}</span> <span class="dlt ${dcls}">${darr}${wd>0?'+':''}${wd}</span></span>
+      </div>
+      <div class="spark" data-dates="${winWeeks.join(',')}" data-vals="${vals.join(',')}">${svg}</div>
+      <div class="crange"><span>${winWeeks[0]||''}</span><span>${vals.length} wk</span><span>${winWeeks[winWeeks.length-1]||''}</span></div>
+      <div class="jumps">
+        <a class="jump" href="dashboard.html?rot_level=${encodeURIComponent(LEVEL)}&rot_group=${encodeURIComponent(r.g)}" title="Show only ${esc(r.g)} in the Weekly sheet">Weekly ↗</a>
+        <a class="jump" href="daily.html?rot_level=${encodeURIComponent(LEVEL)}&rot_group=${encodeURIComponent(r.g)}" title="Show only ${esc(r.g)} in the Daily sheet">Daily ↗</a>
+      </div>
+    </div>`;
+  };
+  const empty = `<div class="empty">No ${esc(lvlName.toLowerCase())} groups with ≥${MIN_STOCKS} stocks in this window.</div>`;
+  const par = (LEVEL!=='sector' && M.parents && M.parents[LEVEL]) ? M.parents[LEVEL] : null;
+  if(!par){                                  // Sector level: flat grid (each card IS a sector)
+    grid.classList.remove('grouped');
+    grid.innerHTML = rows.map(cardOf).join('') || empty;
+    return;
+  }
+  // Industry / Basic: group the sub-groups under their parent SECTOR so the hierarchy shows —
+  // e.g. "Auto Components" sits under Automobile, not next to Pharma. Sectors ordered by their
+  // hottest sub-group; cards within keep the momentum sort.
+  const bySec={};
+  rows.forEach(r=>{ const s=par[r.g]||'Unclassified'; (bySec[s]=bySec[s]||[]).push(r); });
+  const order=Object.keys(bySec).sort((a,b)=>
+    Math.max(...bySec[b].map(r=>r.sl)) - Math.max(...bySec[a].map(r=>r.sl)) || a.localeCompare(b));
+  grid.classList.add('grouped');
+  grid.innerHTML = order.map(s=>
+    `<div class="secgroup"><div class="secgroup-h">${esc(s)}<span class="secgroup-n">${bySec[s].length}</span></div>`
+    + `<div class="grid">${bySec[s].map(cardOf).join('')}</div></div>`).join('') || empty;
+}
+
+// Rotation quadrant: x = current participation (avg stocks), y = momentum (Δ stocks/week),
+// centre lines at the median participation and zero momentum → Leading / Improving / Weakening / Lagging.
+function renderQuad(rows, lvlName){
+  const box=$('#quad');
+  let items=rows.map(r=>{ const k=Math.min(4, r.win.length)||1;
+    return {g:r.g, level:r.win.slice(-k).reduce((a,b)=>a+b,0)/k, mom:r.sl, count:r.latest}; });
+  if(LEVEL!=='sector' && WITHIN){ const par=(M.parents&&M.parents[LEVEL])||{}; items=items.filter(it=>par[it.g]===WITHIN); }
+  if(items.length<2){ box.innerHTML=`<div class="empty" style="padding:34px 14px">Need ≥2 ${esc(lvlName.toLowerCase())} groups to plot${WITHIN?` in ${esc(WITHIN)}`:''}.</div>`; return; }
+  const W=920,H=540, ml=54,mr=54,mt=30,mb=48, pw=W-ml-mr, ph=H-mt-mb;
+  const moms=items.map(d=>d.mom);
+  // x by participation RANK (empirical percentile), not raw/log value: a handful of huge
+  // groups plus a long tail of tiny ones (esp. at industry/basic level) crush a value axis
+  // to one side and slide the median divider off-centre. Ranking spreads points evenly at
+  // every level and lands the divider dead-centre; bubble size still encodes absolute size.
+  const order=items.map((d,i)=>({i,l:d.level})).sort((a,b)=>a.l-b.l);
+  const xfrac=new Array(items.length);
+  order.forEach((o,idx)=>{ xfrac[o.i]=items.length>1 ? 0.04+idx/(items.length-1)*0.92 : 0.5; });
+  const ym=Math.max(0.001, ...moms.map(Math.abs))*1.18;
+  const X=i=>ml+xfrac[i]*pw;
+  const Y=v=>Math.max(mt+4, Math.min(mt+ph-4, mt+ph/2-(v/ym)*(ph/2)));
+  const cx=ml+0.5*pw, cy=Y(0);
+  const rects=`<rect x="${ml}" y="${mt}" width="${(cx-ml).toFixed(1)}" height="${(cy-mt).toFixed(1)}" class="qz-tl" fill-opacity="0.07"/>`
+    +`<rect x="${cx.toFixed(1)}" y="${mt}" width="${(ml+pw-cx).toFixed(1)}" height="${(cy-mt).toFixed(1)}" class="qz-tr" fill-opacity="0.07"/>`
+    +`<rect x="${ml}" y="${cy.toFixed(1)}" width="${(cx-ml).toFixed(1)}" height="${(mt+ph-cy).toFixed(1)}" class="qz-bl" fill-opacity="0.07"/>`
+    +`<rect x="${cx.toFixed(1)}" y="${cy.toFixed(1)}" width="${(ml+pw-cx).toFixed(1)}" height="${(mt+ph-cy).toFixed(1)}" class="qz-br" fill-opacity="0.07"/>`;
+  const axes=`<rect x="${ml}" y="${mt}" width="${pw}" height="${ph}" class="qframe" stroke-width="1"/>`
+    +`<line x1="${ml}" y1="${cy.toFixed(1)}" x2="${ml+pw}" y2="${cy.toFixed(1)}" class="qaxis" stroke-width="1.2"/>`
+    +`<line x1="${cx.toFixed(1)}" y1="${mt}" x2="${cx.toFixed(1)}" y2="${mt+ph}" class="qaxis" stroke-width="1" stroke-dasharray="3 3"/>`;
+  const corners=`<text x="${ml+pw-8}" y="${mt+16}" text-anchor="end" class="qlabel">Leading ↗</text>`
+    +`<text x="${ml+8}" y="${mt+16}" class="qlabel">↖ Improving</text>`
+    +`<text x="${ml+8}" y="${mt+ph-8}" class="qlabel">↙ Lagging</text>`
+    +`<text x="${ml+pw-8}" y="${mt+ph-8}" text-anchor="end" class="qlabel">Weakening ↘</text>`;
+  const titles=`<text x="${ml+pw/2}" y="${H-8}" text-anchor="middle" class="qtick">participation — ${esc(lvlName.toLowerCase())} ranked smallest → largest (median at centre)</text>`
+    +`<text transform="translate(16 ${mt+ph/2}) rotate(-90)" text-anchor="middle" class="qtick">← shedding    adding →</text>`;
+  const showAll=items.length<=45;
+  const top=new Set([...items].sort((a,b)=>Math.abs(b.mom)-Math.abs(a.mom)).slice(0,12).map(d=>d.g));
+  const pts=items.map((d,i)=>{
+    const x=X(i), y=Y(d.mom), r=Math.max(3.5, Math.min(13, Math.sqrt(Math.max(1,d.count))*1.6));
+    const col=d.mom>0.04?'var(--up)':(d.mom<-0.04?'var(--down)':'var(--flat)');
+    const flip=x>ml+pw*0.72, nm=esc(d.g.length>24?d.g.slice(0,23)+'…':d.g);
+    const label=(showAll||top.has(d.g))?`<text x="${(flip?x-r-4:x+r+4).toFixed(1)}" y="${(y+3.5).toFixed(1)}" text-anchor="${flip?'end':'start'}" class="qname">${nm}</text>`:'';
+    return `<g class="qpt" data-tip="${esc(d.g)}|${d.level.toFixed(1)}|${d.mom.toFixed(2)}|${d.count}"><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="${col}" fill-opacity="0.82" class="qbub"/>${label}</g>`;
+  }).join('');
+  box.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Sector rotation quadrant — participation versus momentum">${rects}${axes}${corners}${titles}${pts}</svg>`;
+}
+
+/* hover tooltip on the mini-charts */
+const tt=$('#tt');
+$('#grid').addEventListener('mousemove',e=>{
+  const sp=e.target.closest('.spark'); if(!sp){tt.style.opacity='0';return;}
+  const dates=sp.dataset.dates.split(','), vals=sp.dataset.vals.split(',');
+  const r=sp.getBoundingClientRect(); let i=Math.round((e.clientX-r.left)/r.width*(vals.length-1));
+  i=Math.max(0,Math.min(vals.length-1,i));
+  tt.innerHTML=`wk of <b>${dates[i]}</b> · ${vals[i]} stocks`;
+  tt.style.opacity='1'; const b=tt.getBoundingClientRect();
+  let x=e.clientX+12, y=e.clientY-b.height-8; if(x+b.width>innerWidth-8)x=e.clientX-b.width-12; if(y<8)y=e.clientY+16;
+  tt.style.left=x+'px'; tt.style.top=y+'px';
+});
+$('#grid').addEventListener('mouseleave',()=>tt.style.opacity='0');
+
+/* hover tooltip on the quadrant bubbles */
+$('#quad').addEventListener('mousemove',e=>{
+  const el=e.target.closest('.qpt'); if(!el){tt.style.opacity='0';return;}
+  const p=el.dataset.tip.split('|'), mo=+p[2], dir=mo>0.04?'adding':(mo<-0.04?'shedding':'flat');
+  tt.innerHTML=`<b>${esc(p[0])}</b> · ${p[3]} stocks · ~${Math.round(+p[1])} avg · ${dir} ${mo>0?'+':''}${mo.toFixed(2)}/wk`;
+  tt.style.opacity='1'; const b=tt.getBoundingClientRect();
+  let x=e.clientX+12, y=e.clientY-b.height-8; if(x+b.width>innerWidth-8)x=e.clientX-b.width-12; if(y<8)y=e.clientY+16;
+  tt.style.left=x+'px'; tt.style.top=y+'px';
+});
+$('#quad').addEventListener('mouseleave',()=>tt.style.opacity='0');
+
+document.querySelectorAll('.preset[data-days]').forEach(b=>b.addEventListener('click',()=>{PERIOD=+b.dataset.days; PERIOD_BY[LAYOUT]=PERIOD; render();}));
+document.querySelectorAll('.preset[data-level]').forEach(b=>b.addEventListener('click',()=>{LEVEL=b.dataset.level; localStorage.setItem('sec.level',LEVEL); render();}));
+document.querySelectorAll('.preset[data-chart]').forEach(b=>b.addEventListener('click',()=>{CHART=b.dataset.chart; localStorage.setItem('sec.chart',CHART); render();}));
+document.querySelectorAll('.preset[data-layout]').forEach(b=>b.addEventListener('click',()=>{LAYOUT=b.dataset.layout; localStorage.setItem('sec.layout',LAYOUT); PERIOD=PERIOD_BY[LAYOUT]; render();}));
+$('#within').addEventListener('change',()=>{WITHIN=$('#within').value; render();});
+$('#offBack').addEventListener('click',()=>{OFFSET=Math.min((M.weeks||[]).length-1,OFFSET+1); render();});
+$('#offFwd').addEventListener('click',()=>{OFFSET=Math.max(0,OFFSET-1); render();});
+$('#themeBtn').addEventListener('click',()=>{
+  const cur=document.documentElement.getAttribute('data-theme');
+  const dark=matchMedia('(prefers-color-scheme: dark)').matches;
+  document.documentElement.setAttribute('data-theme', cur?(cur==='dark'?'light':'dark'):(dark?'light':'dark'));
+});
+
+/* on-demand refresh → GitHub Actions (hosted site only) */
+(function(){ const rb=document.getElementById('refreshBtn'); if(!rb) return;
+  if(location.protocol==='file:'){ rb.style.display='none'; return; }
+  rb.addEventListener('click', async ()=>{
+    const o=rb.textContent; rb.disabled=true; rb.innerHTML='<span class="spin">↻</span> Queuing…';
+    try{ const r=await fetch('/api/refresh',{method:'POST'}); const j=await r.json().catch(()=>({}));
+      if(r.ok&&j.ok){ rb.innerHTML='<span class="spin">↻</span> Refreshing… (~10 min)'; return; }
+      rb.textContent='⚠ failed'; rb.disabled=false; setTimeout(()=>{rb.textContent=o;},5000);
+    }catch(e){ rb.textContent='⚠ error'; rb.disabled=false; setTimeout(()=>{rb.textContent=o;},5000); }
+  });
+})();
+
+/* populate the quadrant's within-sector focus list */
+(function(){ const secs=Object.keys((M.counts&&M.counts.sector)||{}).sort();
+  $('#within').innerHTML='<option value="">All sectors</option>'+secs.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join(''); })();
+
+render();
+</script>
+</body>
+</html>

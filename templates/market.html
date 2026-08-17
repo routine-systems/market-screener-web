@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0d0d'/%3E%3Crect x='6.5' y='18' width='4.5' height='8' rx='1.4' fill='%234d93ea'/%3E%3Crect x='13.75' y='12' width='4.5' height='14' rx='1.4' fill='%2316b816'/%3E%3Crect x='21' y='6.5' width='4.5' height='19.5' rx='1.4' fill='%2316b816'/%3E%3C/svg%3E">
+<title>Market Breadth</title>
+<style>
+  :root{
+    color-scheme: light;
+    --plane:#f9f9f7; --surface:#fcfcfb;
+    --ink:#0b0b0b; --ink-2:#52514e; --muted:#66655f;
+    --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
+    --up:#0ca30c; --down:#d03b3b; --flat:#66655f; --vol:#1c5cab; --sol-blue:#1c5cab; --up-ink:#0a7d0a; --down-ink:#b3271f;
+    --up-soft:rgba(12,163,12,0.10); --down-soft:rgba(208,59,59,0.10);
+    --bar-up:#0a7d0a; --bar-down:#b3271f; --ma:#b26a00;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:where(:not([data-theme="light"])){
+      color-scheme: dark;
+      --plane:#0d0d0d; --surface:#1a1a19;
+      --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+      --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+      --up:#0ca30c; --down:#e66767; --flat:#898781; --vol:#4d93ea; --sol-blue:#1c5cab; --up-ink:#16b816; --down-ink:#e66767;
+      --up-soft:rgba(12,163,12,0.16); --down-soft:rgba(230,103,103,0.16);
+      --bar-up:#0d8f0d; --bar-down:#c53030; --ma:#e8a02a;
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --plane:#0d0d0d; --surface:#1a1a19;
+    --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+    --up:#0ca30c; --down:#e66767; --flat:#898781; --vol:#4d93ea; --sol-blue:#1c5cab; --up-ink:#16b816; --down-ink:#e66767;
+    --up-soft:rgba(12,163,12,0.16); --down-soft:rgba(230,103,103,0.16);
+    --bar-up:#0d8f0d; --bar-down:#c53030; --ma:#e8a02a;
+  }
+  *{box-sizing:border-box}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .spin{display:inline-block; animation:spin .8s linear infinite}
+  html,body{margin:0}
+  body{background:var(--plane); color:var(--ink);
+    font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px; margin:0 auto; padding:18px 20px 64px}
+  .nav{display:flex; gap:4px; margin-bottom:16px; border-bottom:1px solid var(--grid)}
+  .nav a{padding:8px 14px; font-size:13px; font-weight:600; color:var(--ink-2); text-decoration:none; border-bottom:2px solid transparent; margin-bottom:-1px}
+  .nav a:hover{color:var(--ink)}
+  .nav a.on{color:var(--ink); border-bottom-color:var(--vol)}
+  .nav .sp{flex:1 1 auto}
+  @media(max-width:640px){
+    .wrap{padding:14px 12px 48px}
+    .nav{flex-wrap:wrap; row-gap:4px}          /* buttons wrap onto their own row */
+    .nav .sp{flex-basis:100%; height:0; margin:0}
+    .nav a{padding:7px 10px; font-size:12.5px}
+    .lb{padding:7px}
+    .lb-card{padding:12px 12px 14px; border-radius:12px; max-height:94vh}
+    .lb-head{gap:7px}
+  }
+  .nav .themebtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:8px; padding:5px 10px; font-size:12px; cursor:pointer; align-self:center}
+  header.top{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:6px}
+  h1{font-size:20px; margin:0; letter-spacing:-0.01em}
+  .sub{color:var(--ink-2); font-size:13px; margin:2px 0 18px}
+  .sub a{color:var(--vol); text-decoration:underline}
+  .purpose{color:var(--ink-2); font-size:12.5px; margin:2px 0 6px}
+  .spacer{flex:1 1 auto}
+  .toolbtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2);
+    border-radius:8px; padding:7px 11px; font-size:13px; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px}
+  .toolbtn:hover{color:var(--ink)}
+  .presets{display:flex; gap:6px; align-items:center; margin-bottom:16px; flex-wrap:wrap}
+  .presets .lab{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:0.04em; margin-right:2px}
+  .preset{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 10px; font-size:12px; cursor:pointer}
+  .preset:hover{color:var(--ink)}
+  .preset.on{background:var(--sol-blue); color:#fff; border-color:var(--sol-blue)}
+  .offbtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 9px; font-size:12px; font-weight:700; cursor:pointer}
+  .offbtn:hover:not(:disabled){color:var(--ink); border-color:var(--vol)} .offbtn:disabled{opacity:.3; cursor:default}
+  .offlbl{color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; min-width:44px; text-align:center}
+  .legend{color:var(--muted); font-size:11.5px; margin:-6px 0 16px}
+  .summary{color:var(--ink-2); font-size:13px; margin-left:auto}
+  .summary b.u{color:var(--up-ink)} .summary b.d{color:var(--down-ink)} .summary b.f{color:var(--flat)}
+
+  .mclwrap{margin-bottom:16px}
+  .mcl{background:var(--surface); border:1px solid var(--border); border-left-width:3px; border-radius:12px; padding:13px 15px 9px}
+  .mcl.pos{border-left-color:var(--up)} .mcl.neg{border-left-color:var(--down)} .mcl.flat{border-left-color:var(--flat)}
+  .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+  @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:560px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--surface); border:1px solid var(--border); border-left-width:3px; border-radius:12px; padding:13px 14px 8px}
+  .card.span2{grid-column:span 2}
+  @media(max-width:560px){.card.span2{grid-column:auto}}
+  .card.up{border-left-color:var(--up)} .card.down{border-left-color:var(--down)} .card.flat{border-left-color:var(--flat)}
+  .chead{display:flex; align-items:baseline; gap:8px}
+  .cname{font-size:13px; font-weight:600}
+  .cbadge{font-size:11px; font-weight:700; padding:1px 6px; border-radius:999px}
+  .cbadge.up{color:var(--up-ink); background:var(--up-soft)} .cbadge.down{color:var(--down-ink); background:var(--down-soft)} .cbadge.flat{color:var(--flat)}
+  .cnum{margin-left:auto; text-align:right}
+  .cnum .big{font-size:22px; font-weight:600; letter-spacing:-0.02em; font-variant-numeric:tabular-nums}
+  .cnum .dlt{font-size:12px; font-variant-numeric:tabular-nums; font-weight:600}
+  .cnum .dlt.up{color:var(--up-ink)} .cnum .dlt.down{color:var(--down-ink)} .cnum .dlt.flat{color:var(--muted)}
+  .spark{margin-top:8px; position:relative; cursor:crosshair}
+  .spark svg{display:block}
+  .crange{display:flex; justify-content:space-between; color:var(--muted); font-size:10.5px; font-variant-numeric:tabular-nums; margin-top:2px}
+  .empty{color:var(--muted); font-size:12px; padding:14px 0}
+
+  #tt{position:fixed; z-index:50; pointer-events:none; background:var(--ink); color:var(--surface);
+      padding:5px 8px; border-radius:6px; font-size:12px; opacity:0; transition:opacity .08s; white-space:nowrap}
+  :root[data-theme="dark"] #tt, :root:where(:not([data-theme="light"])) #tt{color:#111}
+  footer{color:var(--muted); font-size:11.5px; margin-top:26px; text-align:center}
+  /* clickable charts → lightbox */
+  .card .spark, #mclwrap .spark{cursor:zoom-in}
+  .lb{position:fixed; inset:0; background:rgba(0,0,0,.64); display:flex; align-items:center; justify-content:center; z-index:60; padding:18px}
+  .lb[hidden]{display:none}
+  .lb-card{background:var(--surface); border:1px solid var(--border); border-radius:15px; padding:15px 18px 16px; width:min(1040px,96vw); max-height:93vh; overflow:auto; box-shadow:0 20px 64px rgba(0,0,0,.5); position:relative}
+  .lb-head{display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:12px}
+  .lb-name{font-weight:700; font-size:16px}
+  .lb-badge{font-size:11px; padding:2px 7px; border-radius:20px; border:1px solid var(--border)}
+  .lb-badge.up{color:var(--up)} .lb-badge.down{color:var(--down)} .lb-badge.flat{color:var(--flat)}
+  .lb-val .big{font-size:19px; font-weight:700}
+  .lb-val .dlt{font-size:12px} .lb-val .dlt.up{color:var(--up)} .lb-val .dlt.down{color:var(--down)}
+  .lb-sp{flex:1 1 12px}
+  .lb-ctrls{display:flex; gap:4px; align-items:center; flex-wrap:wrap}
+  .lb-ctrls .vr{width:1px; height:18px; background:var(--border); margin:0 3px}
+  .lb-close{background:transparent; border:1px solid var(--border); border-radius:8px; color:var(--ink); cursor:pointer; width:30px; height:30px; font-size:14px; line-height:1}
+  .lb-close:hover{background:var(--hover,rgba(128,128,128,.12))}
+  .lb-chart{position:relative}
+  .lb-range{display:flex; justify-content:space-between; color:var(--muted); font-size:12px; margin-top:7px}
+  .lb-guide{position:absolute; top:0; bottom:0; width:1px; background:var(--axis,rgba(128,128,128,.5)); pointer-events:none; opacity:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="nav" aria-label="Views">
+    <a href="dashboard.html">Weekly</a>
+    <a href="daily.html">Daily</a>
+    <a href="market.html" class="on" aria-current="page">Market</a>
+    <a href="sectors.html">Sectors</a>
+    <a href="recommendations.html">Forward Test</a>
+    <span class="sp"></span>
+    <button class="themebtn" id="refreshBtn" title="Re-scrape Chartink and rebuild all pages (~3–4 min) — reload after">↻ Refresh</button>
+    <button class="themebtn" id="themeBtn">◐ Theme</button>
+  </nav>
+
+  <main>
+  <header class="top">
+    <h1>Market breadth</h1>
+    <div class="spacer"></div>
+  </header>
+  <div class="sub" id="sub"></div>
+
+  <div class="presets">
+    <span class="lab">Window</span>
+    <button class="preset" data-days="21">1M</button>
+    <button class="preset" data-days="63">3M</button>
+    <button class="preset" data-days="126">6M</button>
+    <button class="preset" data-days="999">9M</button>
+    <span style="width:8px"></span>
+    <button class="offbtn" id="offBack" title="Shift the window one day older">◀</button>
+    <span class="offlbl" id="offlbl"></span>
+    <button class="offbtn" id="offFwd" title="Shift the window one day newer">▶</button>
+    <span style="width:14px"></span>
+    <span class="lab">View</span>
+    <button class="preset chart" data-chart="line">Line</button>
+    <button class="preset chart" data-chart="hist">Bars</button>
+    <span class="summary" id="summary"></span>
+  </div>
+  <div class="legend" id="legend"></div>
+
+  <section class="mclwrap" id="mclwrap" hidden></section>
+  <section class="grid" id="grid"></section>
+  <footer id="foot"></footer>
+  </main>
+</div>
+<div id="tt"></div>
+
+<div id="lightbox" class="lb" hidden>
+  <div class="lb-card" role="dialog" aria-modal="true" aria-label="Chart detail">
+    <div class="lb-head">
+      <span class="lb-name" id="lbName"></span>
+      <span class="lb-badge" id="lbBadge"></span>
+      <span class="lb-val" id="lbVal"></span>
+      <span class="lb-sp"></span>
+      <div class="lb-ctrls">
+        <button class="preset" data-lbdays="21">1M</button>
+        <button class="preset" data-lbdays="63">3M</button>
+        <button class="preset" data-lbdays="126">6M</button>
+        <button class="preset" data-lbdays="999">All</button>
+        <span class="vr" id="lbTypeSep"></span>
+        <button class="preset lbtype" data-lbchart="line">Line</button>
+        <button class="preset lbtype" data-lbchart="hist">Bars</button>
+      </div>
+      <button class="lb-close" id="lbClose" aria-label="Close">✕</button>
+    </div>
+    <div class="lb-chart" id="lbChart"><div class="lb-guide" id="lbGuide"></div></div>
+    <div class="lb-range" id="lbRange"></div>
+  </div>
+</div>
+
+<script>
+const MARKET_B64="__MARKET_B64__";
+const $=s=>document.querySelector(s);
+function b64utf8(b){try{return decodeURIComponent(escape(atob(b)));}catch(e){return atob(b);}}
+const M=JSON.parse(b64utf8(MARKET_B64));
+let PERIOD=63, OFFSET=0;   // default 3M (trading days); OFFSET = days back from latest
+let CHART=(localStorage.getItem('mkt.chart')==='hist')?'hist':'line';   // line | hist
+const MA_P=10;             // moving-average period drawn on the histogram
+
+function seriesFor(slug){
+  const c=(M.counts&&M.counts[slug])||{};
+  return Object.keys(c).sort().map(d=>[d, c[d]]);   // [ [iso,count], ... ] asc
+}
+function trendSign(vals){
+  const n=Math.min(10, vals.length); if(n<3) return 0;
+  const s=vals.slice(-n), mx=(n-1)/2, my=s.reduce((a,b)=>a+b,0)/n;
+  let num=0,den=0; for(let i=0;i<n;i++){num+=(i-mx)*(s[i]-my); den+=(i-mx)*(i-mx);}
+  const slope=den?num/den:0, eps=Math.max(0.05, my*0.01);
+  return slope>eps?1:(slope<-eps?-1:0);
+}
+function sparkSVG(vals, color, w, h){
+  if(vals.length<2) return '';
+  const min=Math.min(...vals), max=Math.max(...vals), rng=(max-min)||1, dx=w/(vals.length-1);
+  const pts=vals.map((v,i)=>[i*dx, h-((v-min)/rng)*(h-6)-3]);
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const area=`M0 ${h} `+pts.map(p=>'L'+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ')+` L${w} ${h} Z`;
+  const last=pts[pts.length-1];
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none">
+    <path d="${area}" fill="${color}" opacity="0.13"/>
+    <path d="${line}" fill="none" stroke="${color}" stroke-width="1.6" vector-effect="non-scaling-stroke"/>
+    <circle cx="${last[0].toFixed(1)}" cy="${last[1].toFixed(1)}" r="2.4" fill="${color}"/>
+  </svg>`;
+}
+function movavg(vals, p){   // trailing simple MA; leading points average what's available
+  const out=[];
+  for(let i=0;i<vals.length;i++){
+    const s=vals.slice(Math.max(0,i-p+1), i+1);
+    out.push(s.reduce((a,b)=>a+b,0)/s.length);
+  }
+  return out;
+}
+// Histogram: each day's bar shaded darker-green if it rose vs the prior day, darker-red if it
+// fell; a MA_P-period moving-average line is drawn over the bars. `prev0` = the value just
+// before the window (colours the first visible bar); `maVals` = MA aligned to the window.
+function histSVG(vals, maVals, w, h, prev0){
+  if(!vals.length) return '';
+  const min=Math.min(...vals, ...maVals), max=Math.max(...vals, ...maVals), rng=(max-min)||1;
+  const n=vals.length, slot=w/n, bw=Math.max(1, slot*0.72), pad=5;
+  const y=v=>h-((v-min)/rng)*(h-pad)-1;
+  let bars='';
+  for(let i=0;i<n;i++){
+    const p=(i>0)?vals[i-1]:prev0;
+    const col=(p==null)?'var(--flat)':(vals[i]>p?'var(--bar-up)':(vals[i]<p?'var(--bar-down)':'var(--flat)'));
+    const yy=y(vals[i]), x=i*slot+(slot-bw)/2;
+    bars+=`<rect x="${x.toFixed(1)}" y="${yy.toFixed(1)}" width="${bw.toFixed(1)}" height="${(h-yy).toFixed(1)}" fill="${col}"/>`;
+  }
+  const pts=maVals.map((v,i)=>[i*slot+slot/2, y(v)]);
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" height="${h}" preserveAspectRatio="none">
+    <g>${bars}</g>
+    <path d="${line}" fill="none" stroke="var(--ma)" stroke-width="1.7" vector-effect="non-scaling-stroke"/>
+  </svg>`;
+}
+const COL={1:'var(--up)',[-1]:'var(--down)',0:'var(--flat)'};
+const WORD={1:'rising',[-1]:'falling',0:'flat'};
+const CLS={1:'up',[-1]:'down',0:'flat'};
+
+function render(){
+  document.querySelectorAll('.preset[data-days]').forEach(b=>b.classList.toggle('on', +b.dataset.days===PERIOD));
+  document.querySelectorAll('.preset[data-chart]').forEach(b=>b.classList.toggle('on', b.dataset.chart===CHART));
+  $('#legend').innerHTML = CHART==='hist'
+    ? `Each mini-chart: <b>bars</b> = daily count — <b style="color:var(--bar-up)">green = up day</b> / <b style="color:var(--bar-down)">red = down day</b> · <b style="color:var(--ma)">line</b> = ${MA_P}-day moving average · card <b>badge / colour</b> = ~10-day trend.`
+    : `Each mini-chart: <b>badge / colour</b> = ~10-day trend (rising / falling) · <b>number</b> = today's change vs the prior day.`;
+  const maxLen=Math.max(1,...(M.screeners||[]).map(sc=>seriesFor(sc.slug).length));
+  $('#offlbl').textContent = OFFSET===0?'latest':`−${OFFSET} d`;
+  $('#offBack').disabled = OFFSET>=maxLen-1;
+  $('#offFwd').disabled = OFFSET<=0;
+  $('#sub').innerHTML = `<b>${(M.screeners||[]).length}</b> market screeners · daily counts · ${M.updated_at?`updated <b>${M.updated_at}</b>`:'no data yet'} · ~9-month store`;
+
+  let up=0,down=0,flat=0;
+  const cards=(M.screeners||[]).map(sc=>{
+    const full=seriesFor(sc.slug);
+    if(!full.length) return `<div class="card flat${sc.slug==='cp-tsi-mkt-total'?' span2':''}"><div class="chead"><span class="cname">${sc.name}</span></div><div class="empty">No data.</div></div>`;
+    const end=Math.max(0, full.length-1-OFFSET), start=Math.max(0, end-PERIOD+1);
+    const win=full.slice(start, end+1);
+    const vals=win.map(p=>p[1]);
+    const sign=trendSign(vals);
+    if(sign>0)up++; else if(sign<0)down++; else flat++;
+    const latest=vals[vals.length-1], prev=vals.length>1?vals[vals.length-2]:latest;
+    const day=latest-prev;
+    const dcls=day>0?'up':(day<0?'down':'flat'), darr=day>0?'▲':(day<0?'▼':'→');
+    const span=sc.slug==='cp-tsi-mkt-total'?' span2':'';
+    const W=300, h=sc.slug==='cp-tsi-mkt-total'?64:46;
+    let svg;
+    if(CHART==='hist'){
+      const fullVals=full.map(p=>p[1]);
+      const maWin=movavg(fullVals, MA_P).slice(start, end+1);
+      const prev0=start>0?fullVals[start-1]:null;
+      svg=histSVG(vals, maWin, W, h, prev0);
+    }else{
+      svg=sparkSVG(vals, COL[sign], W, h);
+    }
+    return `<div class="card ${CLS[sign]}${span}">
+      <div class="chead">
+        <span class="cname">${sc.name}</span>
+        <span class="cbadge ${CLS[sign]}">${darr==='→'&&sign===0?'→':(sign>0?'▲':sign<0?'▼':'→')} ${WORD[sign]}</span>
+        <span class="cnum"><span class="big">${latest}</span> <span class="dlt ${dcls}">${darr}${day>0?'+':''}${day}</span></span>
+      </div>
+      <div class="spark" data-slug="${sc.slug}" data-dates="${win.map(p=>p[0]).join(',')}" data-vals="${vals.join(',')}">${svg}</div>
+      <div class="crange"><span>${win[0][0]}</span><span>${win.length} d</span><span>${win[win.length-1][0]}</span></div>
+    </div>`;
+  }).join('');
+  $('#grid').innerHTML=cards;
+  $('#summary').innerHTML=`<b class="u">${up} ▲</b> · <b class="d">${down} ▼</b> · <b class="f">${flat} →</b>`;
+  $('#foot').textContent=`Generated ${M.generated_at||''} · counts scraped from Chartink backtest history · run daily after 2pm`;
+  renderMcl();
+}
+
+// McClellan Oscillator (EMA19−EMA39 of ratio-adjusted net advances) — one series, zero-centred:
+// green bars above 0 = expanding breadth (bullish), red below = contracting.
+function renderMcl(){
+  const box=$('#mclwrap'), m=M.mcclellan||{days:[],osc:[]};
+  if(!m.days || m.days.length<2){ box.hidden=true; return; }
+  box.hidden=false;
+  const n=m.days.length, end=Math.max(0,n-1-OFFSET), start=Math.max(0,end-PERIOD+1);
+  const days=m.days.slice(start,end+1), osc=m.osc.slice(start,end+1);
+  const W=920,H=96, ml=4,mr=4,mt=8,mb=6, pw=W-ml-mr, ph=H-mt-mb;
+  const ymax=Math.max(1,...osc.map(Math.abs))*1.12;
+  const y=v=> mt + ph/2 - (v/ymax)*(ph/2);
+  const zero=y(0), slot=pw/osc.length, bw=Math.max(1,slot*0.7);
+  let bars='';
+  for(let i=0;i<osc.length;i++){ const v=osc[i], yy=y(v), xx=ml+i*slot+(slot-bw)/2;
+    bars+=`<rect x="${xx.toFixed(1)}" y="${Math.min(yy,zero).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0.6,Math.abs(yy-zero)).toFixed(1)}" fill="${v>=0?'var(--up)':'var(--down)'}" fill-opacity="0.8"/>`;
+  }
+  const line=osc.map((v,i)=>(i?'L':'M')+(ml+i*slot+slot/2).toFixed(1)+' '+y(v).toFixed(1)).join(' ');
+  const svg=`<svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none">
+    <g>${bars}</g>
+    <line x1="${ml}" y1="${zero.toFixed(1)}" x2="${ml+pw}" y2="${zero.toFixed(1)}" stroke="var(--axis)" stroke-width="1"/>
+    <path d="${line}" fill="none" stroke="var(--ink-2)" stroke-width="1.3" vector-effect="non-scaling-stroke"/></svg>`;
+  const latest=osc[osc.length-1], prev=osc.length>1?osc[osc.length-2]:latest;
+  const sg=latest>0?1:(latest<0?-1:0), rising=latest>=prev, cls=sg>0?'pos':(sg<0?'neg':'flat');
+  const badge=sg>0?`<span class="cbadge up">▲ positive</span>`:(sg<0?`<span class="cbadge down">▼ negative</span>`:`<span class="cbadge flat">→ flat</span>`);
+  box.innerHTML=`<div class="mcl ${cls}">
+    <div class="chead"><span class="cname">McClellan Oscillator</span>${badge}
+      <span class="cnum"><span class="big">${latest.toFixed(0)}</span> <span class="dlt ${rising?'up':'down'}">${rising?'▲':'▼'}</span></span></div>
+    <div class="spark" data-dates="${days.join(',')}" data-vals="${osc.join(',')}">${svg}</div>
+    <div class="crange"><span>${days[0]||''}</span><span>${days.length} d · EMA19−EMA39 of net advances · &gt;0 bullish</span><span>${days[days.length-1]||''}</span></div>
+  </div>`;
+}
+
+/* hover tooltip on sparklines */
+const tt=$('#tt');
+$('#grid').addEventListener('mousemove',e=>{
+  const sp=e.target.closest('.spark'); if(!sp){tt.style.opacity='0';return;}
+  const dates=sp.dataset.dates.split(','), vals=sp.dataset.vals.split(',');
+  const r=sp.getBoundingClientRect(); let i=Math.round((e.clientX-r.left)/r.width*(vals.length-1));
+  i=Math.max(0,Math.min(vals.length-1,i));
+  tt.innerHTML=`<b>${dates[i]}</b> · ${vals[i]} stocks`;
+  tt.style.opacity='1'; const b=tt.getBoundingClientRect();
+  let x=e.clientX+12, y=e.clientY-b.height-8; if(x+b.width>innerWidth-8)x=e.clientX-b.width-12; if(y<8)y=e.clientY+16;
+  tt.style.left=x+'px'; tt.style.top=y+'px';
+});
+$('#grid').addEventListener('mouseleave',()=>tt.style.opacity='0');
+$('#mclwrap').addEventListener('mousemove',e=>{
+  const sp=e.target.closest('.spark'); if(!sp){tt.style.opacity='0';return;}
+  const dates=sp.dataset.dates.split(','), vals=sp.dataset.vals.split(',');
+  const r=sp.getBoundingClientRect(); let i=Math.round((e.clientX-r.left)/r.width*(vals.length-1));
+  i=Math.max(0,Math.min(vals.length-1,i));
+  tt.innerHTML=`<b>${dates[i]}</b> · osc ${vals[i]}`;
+  tt.style.opacity='1'; const b=tt.getBoundingClientRect();
+  let x=e.clientX+12,y=e.clientY-b.height-8; if(x+b.width>innerWidth-8)x=e.clientX-b.width-12; if(y<8)y=e.clientY+16;
+  tt.style.left=x+'px'; tt.style.top=y+'px';
+});
+$('#mclwrap').addEventListener('mouseleave',()=>tt.style.opacity='0');
+
+/* ── Chart lightbox: click any card (or the McClellan) for a large chart + its own
+   window / Line-Bars controls and a hover readout. ────────────────────────────────── */
+const LB={slug:null, period:126, chart:CHART};
+function lbMeta(slug){
+  if(slug==='__mcl__'){ const m=M.mcclellan||{days:[],osc:[]};
+    return {name:'McClellan Oscillator', dates:m.days||[], vals:(m.osc||[]).map(Number), mcl:true, unit:''}; }
+  const sc=(M.screeners||[]).find(s=>s.slug===slug)||{name:slug};
+  const full=seriesFor(slug);
+  return {name:sc.name, dates:full.map(p=>p[0]), vals:full.map(p=>p[1]), mcl:false, unit:' stocks'};
+}
+function drawLB(){
+  const meta=lbMeta(LB.slug), n=meta.dates.length;
+  const per=(LB.period>=999)?n:LB.period, end=n, start=Math.max(0,end-per);
+  const dates=meta.dates.slice(start,end), vals=meta.vals.slice(start,end);
+  const W=980,h=360; let svg='';
+  if(meta.mcl){
+    const ml=6,mr=6,mt=10,mb=10, pw=W-ml-mr, ph=h-mt-mb;
+    const ymax=Math.max(1,...vals.map(v=>Math.abs(v)))*1.1, yy=v=>mt+ph/2-(v/ymax)*(ph/2), zero=yy(0);
+    const slot=pw/vals.length, bw=Math.max(1,slot*0.72); let bars='';
+    for(let i=0;i<vals.length;i++){const v=vals[i],y1=yy(v),x=ml+i*slot+(slot-bw)/2;
+      bars+=`<rect x="${x.toFixed(1)}" y="${Math.min(y1,zero).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(0.6,Math.abs(y1-zero)).toFixed(1)}" fill="${v>=0?'var(--up)':'var(--down)'}" fill-opacity="0.82"/>`;}
+    const path=vals.map((v,i)=>(i?'L':'M')+(ml+i*slot+slot/2).toFixed(1)+' '+yy(v).toFixed(1)).join(' ');
+    svg=`<svg viewBox="0 0 ${W} ${h}" width="100%" height="${h}" preserveAspectRatio="none"><g>${bars}</g>`
+      +`<line x1="${ml}" y1="${zero.toFixed(1)}" x2="${ml+pw}" y2="${zero.toFixed(1)}" stroke="var(--axis)" stroke-width="1"/>`
+      +`<path d="${path}" fill="none" stroke="var(--ink-2)" stroke-width="1.5" vector-effect="non-scaling-stroke"/></svg>`;
+  }else if(LB.chart==='hist'){
+    const maWin=movavg(meta.vals, MA_P).slice(start,end), prev0=start>0?meta.vals[start-1]:null;
+    svg=histSVG(vals, maWin, W, h, prev0);
+  }else{ svg=sparkSVG(vals, COL[trendSign(vals)], W, h); }
+  const latest=vals[vals.length-1], prev=vals.length>1?vals[vals.length-2]:latest, day=+(latest-prev).toFixed(meta.mcl?1:0);
+  const sign=meta.mcl?(latest>0?1:latest<0?-1:0):trendSign(vals);
+  $('#lbName').textContent=meta.name;
+  const bd=$('#lbBadge'); bd.className='lb-badge '+CLS[sign];
+  bd.textContent=meta.mcl?(sign>0?'▲ positive':sign<0?'▼ negative':'→ flat'):(sign>0?'▲ rising':sign<0?'▼ falling':'→ flat');
+  $('#lbVal').innerHTML=`<span class="big">${meta.mcl?latest.toFixed(0):latest}</span> <span class="dlt ${day>0?'up':day<0?'down':'flat'}">${day>0?'▲ +':day<0?'▼ ':'→ '}${day}</span>`;
+  const host=$('#lbChart'), guide=$('#lbGuide');
+  host.innerHTML=svg; host.appendChild(guide);
+  host.dataset.dates=dates.join(','); host.dataset.vals=vals.join(','); host.dataset.unit=meta.unit;
+  const mn=Math.min(...vals), mx=Math.max(...vals);
+  $('#lbRange').innerHTML=`<span>${dates[0]||''}</span><span>${vals.length} d · min ${meta.mcl?mn.toFixed(0):mn} · max ${meta.mcl?mx.toFixed(0):mx}</span><span>${dates[dates.length-1]||''}</span>`;
+  const showType=!meta.mcl; $('#lbTypeSep').style.display=showType?'':'none';
+  document.querySelectorAll('.lbtype').forEach(b=>{b.style.display=showType?'':'none'; b.classList.toggle('on',b.dataset.lbchart===LB.chart);});
+  document.querySelectorAll('[data-lbdays]').forEach(b=>b.classList.toggle('on',+b.dataset.lbdays===LB.period));
+}
+function openLB(slug){ LB.slug=slug; LB.period=(PERIOD>=126?PERIOD:126); LB.chart=CHART; $('#lightbox').hidden=false; drawLB(); }
+function closeLB(){ $('#lightbox').hidden=true; tt.style.opacity='0'; }
+$('#grid').addEventListener('click',e=>{const c=e.target.closest('.spark[data-slug]'); if(c) openLB(c.dataset.slug);});
+$('#mclwrap').addEventListener('click',()=>{ if(((M.mcclellan&&M.mcclellan.days)||[]).length>1) openLB('__mcl__'); });
+document.querySelectorAll('[data-lbdays]').forEach(b=>b.addEventListener('click',()=>{LB.period=+b.dataset.lbdays; drawLB();}));
+document.querySelectorAll('.lbtype').forEach(b=>b.addEventListener('click',()=>{LB.chart=b.dataset.lbchart; drawLB();}));
+$('#lbClose').addEventListener('click',closeLB);
+$('#lightbox').addEventListener('click',e=>{ if(e.target.id==='lightbox') closeLB(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&!$('#lightbox').hidden) closeLB(); });
+$('#lbChart').addEventListener('mousemove',e=>{
+  const host=$('#lbChart'), ds=(host.dataset.dates||'').split(','), vs=(host.dataset.vals||'').split(','); if(vs.length<2){tt.style.opacity='0';return;}
+  const r=host.getBoundingClientRect(); let i=Math.round((e.clientX-r.left)/r.width*(vs.length-1)); i=Math.max(0,Math.min(vs.length-1,i));
+  const g=$('#lbGuide'); g.style.left=((i/(vs.length-1))*r.width).toFixed(1)+'px'; g.style.opacity='1';
+  tt.innerHTML=`<b>${ds[i]}</b> · ${vs[i]}${host.dataset.unit||''}`; tt.style.opacity='1';
+  const b=tt.getBoundingClientRect(); let x=e.clientX+12,y=e.clientY-b.height-8; if(x+b.width>innerWidth-8)x=e.clientX-b.width-12; if(y<8)y=e.clientY+16;
+  tt.style.left=x+'px'; tt.style.top=y+'px';
+});
+$('#lbChart').addEventListener('mouseleave',()=>{tt.style.opacity='0'; $('#lbGuide').style.opacity='0';});
+
+document.querySelectorAll('.preset[data-days]').forEach(b=>b.addEventListener('click',()=>{PERIOD=+b.dataset.days; render();}));
+document.querySelectorAll('.preset[data-chart]').forEach(b=>b.addEventListener('click',()=>{CHART=b.dataset.chart; localStorage.setItem('mkt.chart', CHART); render();}));
+$('#offBack').addEventListener('click',()=>{const maxLen=Math.max(1,...(M.screeners||[]).map(sc=>seriesFor(sc.slug).length)); OFFSET=Math.min(maxLen-1,OFFSET+1); render();});
+$('#offFwd').addEventListener('click',()=>{OFFSET=Math.max(0,OFFSET-1); render();});
+$('#themeBtn').addEventListener('click',()=>{
+  const cur=document.documentElement.getAttribute('data-theme');
+  const dark=matchMedia('(prefers-color-scheme: dark)').matches;
+  document.documentElement.setAttribute('data-theme', cur?(cur==='dark'?'light':'dark'):(dark?'light':'dark'));
+});
+
+/* on-demand refresh → GitHub Actions (hosted site only) */
+(function(){ const rb=document.getElementById('refreshBtn'); if(!rb) return;
+  if(location.protocol==='file:'){ rb.style.display='none'; return; }
+  rb.addEventListener('click', async ()=>{
+    const o=rb.textContent; rb.disabled=true; rb.innerHTML='<span class="spin">↻</span> Queuing…';
+    try{ const r=await fetch('/api/refresh',{method:'POST'}); const j=await r.json().catch(()=>({}));
+      if(r.ok&&j.ok){ rb.innerHTML='<span class="spin">↻</span> Refreshing… (~10 min)'; return; }
+      rb.textContent='⚠ failed'; rb.disabled=false; setTimeout(()=>{rb.textContent=o;},5000);
+    }catch(e){ rb.textContent='⚠ error'; rb.disabled=false; setTimeout(()=>{rb.textContent=o;},5000); }
+  });
+})();
+
+render();
+</script>
+</body>
+</html>

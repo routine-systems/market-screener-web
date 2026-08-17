@@ -1,0 +1,143 @@
+name: refresh
+
+on:
+  schedule:
+    - cron: "7 11 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      expected_session:
+        description: "Expected India session (YYYY-MM-DD); blank disables the exact-date gate"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      TZ: Asia/Kolkata
+      SIGNAL_STATE_ROOT: ${{ github.workspace }}/state
+      SIGNAL_ARTIFACT_ROOT: ${{ github.workspace }}/artifacts
+      MARKET_CLASSIFICATION_PATH: ${{ github.workspace }}/producer/classification.csv
+      CLOUDFLARE_ACCOUNT_ID: 62231b040ed00c96cdcf3a4541eab958
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Check out web renderer
+        uses: actions/checkout@v4
+
+      - name: Check out signal producer
+        uses: actions/checkout@v4
+        with:
+          repository: routine-systems/market-signals
+          ref: main
+          path: producer
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: producer/requirements.txt
+
+      - name: Install acquisition dependencies
+        run: python3 -m pip install -r producer/requirements.txt
+
+      - name: Verify producer contracts
+        working-directory: producer
+        run: >-
+          python3 -m pytest -q -p no:cacheprovider
+          test_chartink_payloads.py test_signals_bundle.py test_weekly_features.py
+
+      - name: Acquire weekly state
+        working-directory: producer
+        run: python3 run.py
+
+      - name: Random request gap
+        run: sleep $(( (RANDOM % 28) + 3 ))
+
+      - name: Acquire daily state
+        working-directory: producer
+        run: python3 daily.py
+
+      - name: Random request gap
+        run: sleep $(( (RANDOM % 28) + 3 ))
+
+      - name: Acquire breadth and sector state
+        working-directory: producer
+        run: python3 market.py
+
+      - name: Build immutable signal bundle
+        working-directory: producer
+        run: python3 signals_bundle.py
+
+      - name: Verify requested session
+        if: ${{ inputs.expected_session != '' }}
+        env:
+          EXPECTED_SESSION: ${{ inputs.expected_session }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          bundle = json.loads(Path("artifacts/signals-bundle.v1.json").read_text())
+          actual = bundle["source_freshness"]["daily"]["as_of"]
+          expected = os.environ["EXPECTED_SESSION"]
+          if actual != expected:
+              raise SystemExit(f"daily session {actual!r} does not match {expected!r}")
+          print(f"daily session verified: {actual}")
+          PY
+
+      - name: Record producer identity
+        id: producer
+        run: echo "sha=$(git -C producer rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload immutable bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: signals-bundle-${{ steps.producer.outputs.sha }}
+          path: artifacts/signals-bundle.v1.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Verify web renderer
+        run: python3 -m unittest discover -s tests -v
+
+      - name: Render five-page site
+        run: ./scripts/build artifacts/signals-bundle.v1.json
+
+      - name: Verify rendered contract
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          required = {
+              "dashboard.html",
+              "daily.html",
+              "market.html",
+              "sectors.html",
+              "recommendations.html",
+              "index.html",
+              "build-manifest.json",
+          }
+          missing = sorted(name for name in required if not (Path("dist") / name).is_file())
+          if missing:
+              raise SystemExit(f"missing rendered files: {missing}")
+          manifest = json.loads(Path("dist/build-manifest.json").read_text())
+          print(json.dumps(manifest, indent=2, sort_keys=True))
+          PY
+
+      - name: Deploy production Pages project
+        run: >-
+          npx --yes wrangler@4.112.0 pages deploy dist
+          --project-name screener
+          --branch main
+          --commit-dirty=true

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+BUNDLE="${1:-$ROOT/artifacts/signals-bundle.v1.json}"
+python3 "$ROOT/render_site.py" --bundle "$BUNDLE" --output "$ROOT/dist"

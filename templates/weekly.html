@@ -1,0 +1,643 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0d0d'/%3E%3Crect x='6.5' y='18' width='4.5' height='8' rx='1.4' fill='%234d93ea'/%3E%3Crect x='13.75' y='12' width='4.5' height='14' rx='1.4' fill='%2316b816'/%3E%3Crect x='21' y='6.5' width='4.5' height='19.5' rx='1.4' fill='%2316b816'/%3E%3C/svg%3E">
+<title>Chartink Weekly Tracker</title>
+<style>
+  :root{
+    color-scheme: light;
+    --plane:#f9f9f7; --surface:#fcfcfb;
+    --ink:#0b0b0b; --ink-2:#52514e; --muted:#66655f;
+    --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
+    --up:#0ca30c; --down:#d03b3b; --vol:#1c5cab; --bar:#2a78d6; --filt:#d98a00;
+    --sol-blue:#1c5cab; --sol-green:#0a7d0a;
+    --up-soft:rgba(12,163,12,0.12); --chip:#eef0ee; --dot-off:#d7d6cf; --hot:#184f95;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:where(:not([data-theme="light"])){
+      color-scheme: dark;
+      --plane:#0d0d0d; --surface:#1a1a19;
+      --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+      --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+      --up:#0ca30c; --down:#e66767; --vol:#4d93ea; --bar:#3987e5; --filt:#f0b83e;
+      --up-soft:rgba(12,163,12,0.16); --chip:#232322; --dot-off:#39383550; --hot:#86b6ef;
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --plane:#0d0d0d; --surface:#1a1a19;
+    --ink:#ffffff; --ink-2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+    --up:#0ca30c; --down:#e66767; --vol:#4d93ea; --bar:#3987e5; --filt:#f0b83e;
+    --up-soft:rgba(12,163,12,0.16); --chip:#232322; --dot-off:#39383550; --hot:#86b6ef;
+  }
+  *{box-sizing:border-box}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .spin{display:inline-block; animation:spin .8s linear infinite}
+  html,body{margin:0}
+  body{background:var(--plane); color:var(--ink);
+    font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; -webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px; margin:0 auto; padding:18px 20px 64px}
+  .nav{display:flex; gap:4px; margin-bottom:16px; border-bottom:1px solid var(--grid)}
+  .nav a{padding:8px 14px; font-size:13px; font-weight:600; color:var(--ink-2); text-decoration:none; border-bottom:2px solid transparent; margin-bottom:-1px}
+  .nav a:hover{color:var(--ink)}
+  .nav a.on{color:var(--ink); border-bottom-color:var(--vol)}
+  .nav .sp{flex:1 1 auto}
+  @media(max-width:640px){
+    .wrap{padding:14px 12px 48px}
+    .nav{flex-wrap:wrap; row-gap:4px}          /* buttons wrap onto their own row */
+    .nav .sp{flex-basis:100%; height:0; margin:0}
+    .nav a{padding:7px 10px; font-size:12.5px}
+    table{font-size:12px}
+  }
+  .nav .themebtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:8px; padding:5px 10px; font-size:12px; cursor:pointer; align-self:center}
+  header.top{display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap; margin-bottom:20px}
+  .title h1{font-size:20px; margin:0 0 3px; letter-spacing:-0.01em}
+  .title .sub{color:var(--ink-2); font-size:13px}
+  .title .sub a{color:var(--vol); text-decoration:underline}
+  .title .purpose{color:var(--ink-2); font-size:12.5px; margin:0 0 4px}
+  .title .sub a:hover{text-decoration:underline}
+  .spacer{flex:1 1 auto}
+  .toolbtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2);
+    border-radius:8px; padding:7px 11px; font-size:13px; cursor:pointer; display:inline-flex; align-items:center; gap:6px}
+  .toolbtn:hover{color:var(--ink)}
+  .toolbtn.on{background:var(--sol-blue); color:#fff; border-color:var(--sol-blue)}
+  .toolbtn.filt.on{background:var(--filt); color:#111; border-color:var(--filt)}
+  .filt-dot{display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--filt); margin-left:6px; vertical-align:middle}
+  .cross-badge{display:inline-block; font-size:9px; font-weight:800; line-height:1; padding:2px 4px; border-radius:4px; border:1px solid var(--vol); color:var(--vol); margin-left:5px; vertical-align:middle; letter-spacing:0.02em}
+  .rot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-left:7px; vertical-align:middle; box-sizing:border-box}
+  .rot.up{background:var(--up)} .rot.down{background:var(--down)} .rot.flat{background:transparent; border:1.5px solid var(--muted)}
+  .secfilter{display:inline-flex; align-items:center; gap:7px; background:var(--sol-blue); color:#fff; border-radius:999px; padding:4px 11px; font-size:12px; font-weight:600; cursor:pointer; border:1px solid var(--sol-blue)}
+  .secfilter .x{opacity:.85; font-weight:700}
+  select{background:var(--plane); color:var(--ink); border:1px solid var(--border); border-radius:8px;
+    padding:6px 8px; font-size:13px; font-variant-numeric:tabular-nums}
+
+  .kpis{display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:22px}
+  @media(max-width:900px){.kpis{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:520px){.kpis{grid-template-columns:repeat(2,1fr)}}
+  .tile{background:var(--surface); border:1px solid var(--border); border-radius:12px;
+    padding:13px 14px; min-height:78px; display:flex; flex-direction:column; justify-content:space-between}
+  .tile .lbl{color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:0.04em}
+  .tile .val{font-size:24px; font-weight:600; letter-spacing:-0.02em; margin-top:6px}
+  .tile .val small{font-size:13px; font-weight:500; color:var(--ink-2)}
+  .up{color:var(--up)} .down{color:var(--down)}
+
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:22px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px}
+  .card h2{font-size:13px; margin:0 0 2px; font-weight:600}
+  .card .hint{color:var(--muted); font-size:11.5px; margin:0 0 12px}
+
+  .chartscroll{overflow-x:auto}
+  .cols{display:flex; align-items:flex-end; gap:6px; height:140px; padding-top:8px; min-width:100%}
+  .cols .col{flex:1 1 16px; min-width:16px; max-width:60px; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:5px; height:100%}
+  .cols .colbar{width:100%; background:var(--bar); border-radius:4px 4px 0 0; min-height:2px}
+  .cols .cnt{font-size:10.5px; color:var(--ink-2); font-variant-numeric:tabular-nums}
+  .cols-x{display:flex; gap:6px; margin-top:6px; min-width:100%}
+  .cols-x span{flex:1 1 16px; min-width:16px; max-width:60px; text-align:center; font-size:10px; color:var(--muted); font-variant-numeric:tabular-nums; white-space:nowrap}
+
+  .chips{display:flex; flex-wrap:wrap; gap:6px; max-height:150px; overflow:auto}
+  .chip{display:inline-flex; align-items:center; gap:5px; background:var(--chip); border:1px solid var(--border);
+    border-radius:999px; padding:3px 9px; font-size:12px; font-weight:600}
+  .chip a{color:var(--vol); text-decoration:underline}
+  .chip .s{font-weight:500; color:var(--ink-2)}
+  .empty{color:var(--muted); font-size:13px; padding:6px 0}
+
+  .tablecard{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:16px}
+  .rangebar{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--grid)}
+  .rangebar .lab{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:0.04em}
+  .rangebar .arrow{color:var(--muted)}
+  .preset{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 9px; font-size:12px; cursor:pointer}
+  .preset:hover{color:var(--ink)}
+  .preset.on{background:var(--sol-blue); color:#fff; border-color:var(--sol-blue)}
+  .offbtn{border:1px solid var(--border); background:var(--surface); color:var(--ink-2); border-radius:7px; padding:5px 10px; font-size:12px; font-weight:700; cursor:pointer}
+  .offbtn:hover:not(:disabled){color:var(--ink); border-color:var(--vol)}
+  .offbtn:disabled{opacity:.3; cursor:default}
+  .offlbl{color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; min-width:46px; text-align:center; white-space:nowrap}
+  .rangenote{color:var(--muted); font-size:12px; font-variant-numeric:tabular-nums}
+  .tbar{display:flex; align-items:center; gap:12px; margin-bottom:12px; flex-wrap:wrap}
+  .tbar input{background:var(--plane); border:1px solid var(--border); color:var(--ink);
+    border-radius:8px; padding:8px 11px; font-size:13px; width:240px; max-width:60vw}
+  .tbar .count{color:var(--muted); font-size:12px}
+  .tablewrap{overflow-x:auto; max-height:70vh; overflow-y:auto}
+  table{width:100%; border-collapse:collapse; font-size:13px}
+  th,td{padding:8px 10px; text-align:right; white-space:nowrap}
+  th.l,td.l{text-align:left}
+  thead th{color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:0.03em;
+    border-bottom:1px solid var(--axis); cursor:pointer; user-select:none; position:sticky; top:0; background:var(--surface); z-index:1}
+  thead th:hover{color:var(--ink-2)}
+  thead th.sorted::after{content:" ▾"; color:var(--ink-2)}
+  thead th.sorted.asc::after{content:" ▴"}
+  tbody tr{border-bottom:1px solid var(--grid)}
+  tbody tr:hover{background:var(--chip)}
+  td.num{font-variant-numeric:tabular-nums}
+  td .stk{color:var(--vol); text-decoration:none; font-weight:600}
+  td .stk:hover{text-decoration:underline}
+  .mc{font-size:11px; color:var(--ink-2)}
+  .appc{display:inline-flex; align-items:center; gap:9px}
+  .appc .frac{font-variant-numeric:tabular-nums; font-weight:700; min-width:36px; display:inline-block}
+  .appc .frac small{font-weight:500; color:var(--muted)}
+  .dots{display:inline-flex; gap:3px}
+  .dot{width:9px; height:9px; border-radius:50%; background:var(--dot-off)}
+  .dot.on{background:var(--vol)}
+  .dot.hot{background:var(--hot)}
+  .minibar{display:inline-block; width:90px; height:8px; background:var(--dot-off); border-radius:4px; overflow:hidden; vertical-align:middle}
+  .minibar>span{display:block; height:100%; background:var(--vol)}
+  .rankn{color:var(--muted); font-variant-numeric:tabular-nums}
+  .badge{font-size:10px; padding:1px 6px; border-radius:999px; background:var(--sol-green); color:#fff; font-weight:700; margin-left:6px}
+
+  #tt{position:fixed; z-index:50; pointer-events:none; background:var(--ink); color:var(--surface);
+      padding:6px 9px; border-radius:7px; font-size:12px; opacity:0; transform:translateY(-4px); transition:opacity .08s; max-width:260px}
+  :root[data-theme="dark"] #tt, :root:where(:not([data-theme="light"])) #tt{color:#111}
+  #pv{position:fixed; z-index:80; display:none; background:var(--surface); color:var(--ink); border:1px solid var(--border);
+      border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,0.28); padding:9px 11px; min-width:186px}
+  #pv.on{display:block}
+  #pv .sym{font-weight:700; font-size:13px; margin-bottom:7px}
+  #pv .lk{display:flex; gap:6px; flex-wrap:wrap}
+  #pv .lk a{color:var(--vol); text-decoration:none; border:1px solid var(--border); border-radius:7px; padding:4px 9px; font-size:12px; font-weight:600}
+  #pv .lk a:hover{background:var(--sol-blue); color:#fff; border-color:var(--sol-blue)}
+  #pv .hint{color:var(--muted); font-size:10.5px; margin-top:7px}
+  #drop{position:fixed; inset:0; z-index:100; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,0.45); backdrop-filter:blur(2px)}
+  #drop.on{display:flex}
+  #drop .msg{background:var(--surface); color:var(--ink); border:2px dashed var(--vol); border-radius:16px; padding:40px 56px; font-size:16px; font-weight:600}
+  footer{color:var(--muted); font-size:11.5px; margin-top:28px; text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="nav" aria-label="Views">
+    <a href="dashboard.html" class="on" aria-current="page">Weekly</a>
+    <a href="daily.html">Daily</a>
+    <a href="market.html">Market</a>
+    <a href="sectors.html">Sectors</a>
+    <a href="recommendations.html">Forward Test</a>
+    <span class="sp"></span>
+    <button class="themebtn" id="linksBtn" title="Refresh only the in-scan ticker links (~1 min) — revives links that expired since the last scrape">⚡ Links</button>
+    <button class="themebtn" id="refreshBtn" title="Re-scrape Chartink and rebuild all pages (~10 min) — reload after">↻ Refresh</button>
+    <button class="themebtn" id="themeBtn">◐ Theme</button>
+  </nav>
+
+  <main>
+  <header class="top">
+    <div class="title">
+      <h1>Weekly potentials</h1>
+      <div class="sub" id="scr-sub"></div>
+    </div>
+    <div class="spacer"></div>
+  </header>
+
+  <section class="kpis" id="kpis"></section>
+
+  <section class="tablecard" style="margin-bottom:22px">
+    <div class="rangebar">
+      <span class="lab">Weeks</span>
+      <select id="fromWk" title="Range start week"></select>
+      <span class="arrow">→</span>
+      <select id="toWk" title="Range end week"></select>
+      <span style="width:4px"></span>
+      <button class="offbtn" id="offBack" title="Shift the window one week older">◀</button>
+      <span class="offlbl" id="offlbl"></span>
+      <button class="offbtn" id="offFwd" title="Shift the window one week newer">▶</button>
+      <span style="width:8px"></span>
+      <button class="preset" data-preset="5">Last 5</button>
+      <button class="preset" data-preset="8">Last 8</button>
+      <button class="preset" data-preset="13">13</button>
+      <button class="preset" data-preset="26">26</button>
+      <button class="preset" data-preset="52">52</button>
+      <button class="preset" data-preset="all">All</button>
+      <div class="spacer"></div>
+      <span class="rangenote" id="rangenote"></span>
+    </div>
+    <div class="tbar">
+      <strong style="font-size:14px">Ranked by appearances</strong>
+      <span class="count" id="rankhint"></span>
+      <div class="spacer"></div>
+      <button class="toolbtn" id="newOnly" title="Show only tickers new in the latest week of the selected range">✦ New only</button>
+      <button class="toolbtn filt" id="filtOnly" title="Show only tickers that also appear in the filtered screener (latest week of range)">◆ In filter</button>
+      <button class="toolbtn" id="crossOnly" title="Also in the daily sheet (for the week[s] in view)" hidden>◲ In daily</button>
+      <button class="toolbtn" id="rotOnly" title="Tag each ticker with its sector's rotation status (from the weekly sector screener)" hidden>◉ Rotation</button>
+      <select id="rotLevel" title="Rotation granularity" hidden><option value="sector">Sector</option><option value="industry">Industry</option><option value="basic">Basic</option></select>
+      <span id="secFilterWrap"></span>
+      <button class="toolbtn" id="previewBtn" title="On hover over a ticker, show quick links to open its chart (Chartink in-scan · TradingView · Yahoo)">⧉ Chart links</button>
+      <input id="search" type="search" placeholder="Search symbol or sector…" autocomplete="off">
+      <button class="toolbtn" id="csvBtn" title="Download ranking as CSV">⭳ CSV</button>
+    </div>
+    <div style="color:var(--muted); font-size:11.5px; margin-bottom:10px">
+      Dots = weeks present (blue), <span style="color:var(--hot)">gold-blue</span> = every week ·
+      <span style="color:var(--filt)">●</span> also in the stricter filter · <span class="cross-badge" style="margin:0">D</span> also in the daily sheet<span id="rotLegend"></span>
+    </div>
+    <div class="tablewrap">
+      <table id="tbl">
+        <thead><tr>
+          <th class="l" data-k="rank">#</th>
+          <th class="l" data-k="symbol">Symbol</th>
+          <th data-k="count" class="sorted l">Appearances in range (oldest→newest)</th>
+          <th class="l" data-k="sector">Sector</th>
+          <th class="l" data-k="marketcap">Cap</th>
+          <th data-k="alltime">All-time</th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="grid">
+    <div class="card">
+      <h2>New this week <span id="new-n" class="rankn"></span></h2>
+      <p class="hint">In the latest week of range, absent from every earlier week in range</p>
+      <div class="chips" id="new-chips"></div>
+    </div>
+    <div class="card">
+      <h2>Dropped this week <span id="drop-n" class="rankn"></span></h2>
+      <p class="hint">Present the previous week, gone from the latest</p>
+      <div class="chips" id="drop-chips"></div>
+    </div>
+  </section>
+
+  <section class="grid">
+    <div class="card">
+      <h2>Tickers per week</h2>
+      <p class="hint" id="wk-hint">Matches per week in range</p>
+      <div class="chartscroll"><div class="cols" id="wk-cols"></div><div class="cols-x" id="wk-x"></div></div>
+    </div>
+    <div class="card">
+      <h2>Appearance frequency</h2>
+      <p class="hint" id="freq-hint">How many tickers show up in k of the range's weeks</p>
+      <div class="chartscroll"><div class="cols" id="freq-cols"></div><div class="cols-x" id="freq-x"></div></div>
+    </div>
+  </section>
+
+  <footer id="foot"></footer>
+  </main>
+</div>
+
+<div id="tt"></div>
+<div id="pv"></div>
+<div id="drop"><div class="msg">Drop a Chartink <b>Backtest</b> CSV to load it</div></div>
+
+<script>
+const HISTORY_B64="__HISTORY_B64__";
+const WINDOW=__WINDOW__;
+
+const $=s=>document.querySelector(s);
+function b64utf8(b){try{return decodeURIComponent(escape(atob(b)));}catch(e){return atob(b);}}
+const inr=n=>n.toLocaleString('en-IN');
+const escH=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const MCRANK={smallcap:1,midcap:2,largecap:3};
+const DOTCAP=14;   // show a dot grid up to this many weeks, else a mini-bar
+
+function stockUrl(sym){
+  if(H && H.scanlink){
+    return `https://chartink.com/stocks-new?from_scan=1&hide_filters=true&scan_link=scanlink:${encodeURIComponent(H.scanlink)}&timeframe=${encodeURIComponent(H.timeframe||'weekly')}&symbol=${encodeURIComponent(sym)}`;
+  }
+  return `https://chartink.com/stocks/${encodeURIComponent(sym)}.html`;
+}
+
+/* sector rotation (from the weekly cp-cmo-wkly screener via sectors_lib) */
+const ROTIDX={sector:0, industry:1, basic:2};
+function groupOf(sym, level){ if(!ROT) return null; const g=ROT.of[sym]; return g?g[ROTIDX[level]]:null; }
+function rotOf(sym){ if(!ROT) return null; const grp=groupOf(sym, ROT_LEVEL); if(grp==null) return null;
+  const st=(ROT.status[ROT_LEVEL]||{})[grp]; return st==null?null:{grp, st}; }
+function rotDot(sym){ if(!ROT_ON||!ROT) return ''; const r=rotOf(sym); if(!r) return '';
+  const cls=r.st>0?'up':(r.st<0?'down':'flat'), word=r.st>0?'rotating in (rising)':(r.st<0?'rotating out (cooling)':'flat');
+  return `<span class="rot ${cls}" title="${escH(r.grp)} — ${word}"></span>`; }
+
+/* Backtest CSV parser (Date,Symbol,Marketcapname,Sector) → weeks (for drag-drop) */
+function parseCSV(t){t=t.replace(/^﻿/,'');const rows=[];let i=0,f='',row=[],q=false;const push=()=>{row.push(f);f='';},endr=()=>{push();rows.push(row);row=[];};
+  while(i<t.length){const c=t[i]; if(q){ if(c==='"'){ if(t[i+1]==='"'){f+='"';i++;} else q=false;} else f+=c;} else { if(c==='"')q=true; else if(c===',')push(); else if(c==='\n')endr(); else if(c==='\r'){} else f+=c;} i++;}
+  if(f.length||row.length)endr(); return rows.filter(r=>r.length>1||(r.length===1&&r[0]!==''));}
+function isoDate(s){const m=String(s).trim().match(/^(\d{2})-(\d{2})-(\d{4})$/); if(m)return `${m[3]}-${m[2]}-${m[1]}`;
+  const m2=String(s).trim().match(/^(\d{4})-(\d{2})-(\d{2})$/); return m2?m2[0]:s.trim();}
+function weeksFromBacktest(t){const rows=parseCSV(t);if(!rows.length)return[];const h=rows[0].map(x=>x.toLowerCase().trim());
+  const idx=(...n)=>{for(const x of n){const j=h.indexOf(x);if(j>=0)return j;}return -1;};
+  const iD=idx('date'),iS=idx('symbol'),iM=idx('marketcapname','marketcap'),iC=idx('sector');
+  if(iD<0||iS<0)return[];
+  const by={};
+  for(let r=1;r<rows.length;r++){const c=rows[r];if(!c||c.length<2)continue;const sym=(c[iS]||'').trim();if(!sym)continue;
+    const wk=isoDate(c[iD]); (by[wk]=by[wk]||[]).push({symbol:sym,sector:iC>=0?(c[iC]||'').trim():'',marketcap:iM>=0?(c[iM]||'').trim():''});}
+  return Object.keys(by).sort().map(wk=>({week:wk,tickers:by[wk]}));}
+
+/* tooltip */
+const tt=$('#tt');
+function showTip(html,x,y){tt.innerHTML=html;tt.style.opacity='1';const b=tt.getBoundingClientRect();let nx=x+12,ny=y-b.height-8;if(nx+b.width>innerWidth-8)nx=x-b.width-12;if(ny<8)ny=y+16;tt.style.left=nx+'px';tt.style.top=ny+'px';}
+function hideTip(){tt.style.opacity='0';}
+
+let H=null, WEEKS=[], ALLTIME=new Map(), FILT=new Map(), CROSS=new Map(), SEL={from:0,to:0};
+function addDays(iso,n){const dt=new Date(iso+'T00:00:00Z');dt.setUTCDate(dt.getUTCDate()+n);return dt.toISOString().slice(0,10);}
+let sortKey='count', sortAsc=false, MODEL=null, newOnly=false, filtOnly=false, crossOnly=false;
+let ROT=null, ROT_ON=false, ROT_LEVEL='sector', SECFILTER=null;
+
+function initSelection(){
+  WEEKS=(H.weeks||[]).slice().sort((a,b)=>a.week<b.week?-1:1);
+  ALLTIME=new Map();
+  WEEKS.forEach(wk=>{const seen=new Set(); wk.tickers.forEach(t=>{ if(seen.has(t.symbol))return; seen.add(t.symbol); ALLTIME.set(t.symbol,(ALLTIME.get(t.symbol)||0)+1); });});
+  FILT=new Map();
+  if(H.filter && H.filter.weeks){ for(const wk in H.filter.weeks) FILT.set(wk, new Set(H.filter.weeks[wk])); }
+  CROSS=new Map(Object.entries((H.cross&&H.cross.weeks)||{}).map(([d,a])=>[d,new Set(a)]));
+  const n=WEEKS.length;
+  SEL.to=Math.max(0,n-1);
+  SEL.from=Math.max(0,n-Math.min(WINDOW,n));
+}
+
+function buildRangeControls(){
+  const opts=WEEKS.map((w,i)=>`<option value="${i}">${w.week}</option>`).join('');
+  const f=$('#fromWk'), t=$('#toWk');
+  f.innerHTML=opts; t.innerHTML=opts; f.value=SEL.from; t.value=SEL.to;
+  f.onchange=()=>{SEL.from=+f.value; if(SEL.from>SEL.to){SEL.to=SEL.from; t.value=SEL.to;} render();};
+  t.onchange=()=>{SEL.to=+t.value; if(SEL.to<SEL.from){SEL.from=SEL.to; f.value=SEL.from;} render();};
+  document.querySelectorAll('.preset').forEach(b=>b.onclick=()=>{
+    const n=WEEKS.length;
+    if(b.dataset.preset==='all'){SEL.from=0;SEL.to=n-1;}
+    else{const k=+b.dataset.preset; SEL.to=n-1; SEL.from=Math.max(0,n-Math.min(k,n));}
+    f.value=SEL.from; t.value=SEL.to; render();
+  });
+  $('#offBack').onclick=()=>shiftWindow(-1);   // older
+  $('#offFwd').onclick=()=>shiftWindow(1);      // newer
+}
+
+function shiftWindow(delta){
+  const n=WEEKS.length, size=SEL.to-SEL.from+1;
+  let from=SEL.from+delta, to=SEL.to+delta;
+  if(from<0){from=0; to=size-1;}
+  if(to>n-1){to=n-1; from=n-size;}
+  SEL.from=Math.max(0,from); SEL.to=Math.min(n-1,to);
+  $('#fromWk').value=SEL.from; $('#toWk').value=SEL.to;
+  render();
+}
+
+function compute(){
+  const weeks=WEEKS.slice(SEL.from, SEL.to+1);
+  const keys=weeks.map(w=>w.week);
+  const nW=weeks.length;
+  const map=new Map();
+  weeks.forEach((wk,wi)=>{ (wk.tickers||[]).forEach(t=>{
+    let e=map.get(t.symbol);
+    if(!e){ e={symbol:t.symbol,present:new Array(nW).fill(false),sector:t.sector,marketcap:t.marketcap}; map.set(t.symbol,e); }
+    e.present[wi]=true; if(t.sector)e.sector=t.sector; if(t.marketcap)e.marketcap=t.marketcap;
+  }); });
+  const rows=[...map.values()].map(e=>({...e, count:e.present.filter(Boolean).length, alltime:ALLTIME.get(e.symbol)||0}));
+  rows.sort((a,b)=> b.count-a.count || b.alltime-a.alltime || a.symbol.localeCompare(b.symbol));
+  rows.forEach((r,i)=>r.rank=i+1);
+  // filtered-subset membership for the latest week of the range → highlight dot
+  const filterSet = FILT.get(keys[nW-1]) || new Set();
+  rows.forEach(r=>{ r.inFilter = filterSet.has(r.symbol); });
+  const crossSet=new Set();
+  if(CROSS.size){ keys.forEach(mon=>{ for(let o=0;o<7;o++){ (CROSS.get(addDays(mon,o))||new Set()).forEach(s=>crossSet.add(s)); } }); }
+  rows.forEach(r=>{ r.inCross=crossSet.has(r.symbol); });
+  // new (in the latest week of range, absent from every earlier week) / dropped (prev→gone)
+  const latest=weeks[nW-1], prev=nW>=2?weeks[nW-2]:null;
+  const latestSet=new Set(latest?latest.tickers.map(t=>t.symbol):[]);
+  const earlierSet=new Set(weeks.slice(0,nW-1).flatMap(w=>w.tickers.map(t=>t.symbol)));
+  const prevSet=new Set(prev?prev.tickers.map(t=>t.symbol):[]);
+  const newSyms=[...latestSet].filter(s=>!earlierSet.has(s));
+  const dropSyms=prev?[...prevSet].filter(s=>!latestSet.has(s)):[];
+  return {weeks,keys,nW,rows,newSyms,dropSyms,newSet:new Set(newSyms),hasPrev:!!prev,filterSet};
+}
+
+function render(){
+  MODEL=compute();
+  const {weeks,keys,nW,rows,newSyms,dropSyms,hasPrev}=MODEL;
+  H.screener=H.screener||'Screener';
+
+  const n=WEEKS.length;
+  document.querySelectorAll('.preset').forEach(b=>{
+    let on=false;
+    if(b.dataset.preset==='all') on=(SEL.from===0&&SEL.to===n-1);
+    else on=(SEL.to===n-1 && SEL.from===Math.max(0,n-Math.min(+b.dataset.preset,n)) && +b.dataset.preset<=n);
+    b.classList.toggle('on',on);
+  });
+  $('#rangenote').textContent=`${nW} week(s) · ${keys[0]||'—'} → ${keys[keys.length-1]||'—'}`;
+  $('#offBack').disabled = SEL.from<=0;
+  $('#offFwd').disabled = SEL.to>=n-1;
+  $('#offlbl').textContent = SEL.to>=n-1 ? 'latest' : `−${n-1-SEL.to} wk`;
+
+  const sub=[];
+  sub.push(`<b>${n}</b> weeks · ranking over <b>${nW}</b>`);
+  if(H.scanlink) sub.push('in-scan links on');
+  if(H.source_url) sub.push(`<a href="${H.source_url}" target="_blank" rel="noopener">source ↗</a>`);
+  $('#scr-sub').innerHTML=sub.join(' · ');
+
+  const persistent=rows.filter(r=>r.count===nW).length;
+
+  const tiles=[
+    ['Weeks of history', String(n)],
+    ['Selected', `${nW}<small> wk</small>`],
+    ['Unique tickers', String(rows.length)],
+    ['Every week', `${persistent}<small> of ${nW}</small>`],
+    ['New latest wk', `<span class="up">${newSyms.length}</span>`],
+    ['Dropped', `<span class="down">${dropSyms.length}</span>`],
+  ];
+  $('#kpis').innerHTML=tiles.map(([l,v])=>`<div class="tile"><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join('');
+
+  // tickers per week — cap to last 30 columns when the range is large
+  const CAP=30, wkShown=weeks.length>CAP?weeks.slice(-CAP):weeks;
+  $('#wk-hint').textContent = weeks.length>CAP?`Matches per week — showing last ${CAP} of ${weeks.length}`:`Matches per week in range`;
+  const wkMax=Math.max(1,...wkShown.map(w=>w.tickers.length));
+  $('#wk-cols').innerHTML=wkShown.map(w=>{const c=w.tickers.length;return `<div class="col" data-tip="wk" data-wk="${w.week}" data-n="${c}">
+    <span class="cnt">${c}</span><span class="colbar" style="height:${(c/wkMax*100).toFixed(1)}%"></span></div>`;}).join('');
+  $('#wk-x').innerHTML=wkShown.map(w=>`<span>${w.week.slice(5)}</span>`).join('');
+
+  // appearance frequency
+  const freq=new Array(nW+1).fill(0); rows.forEach(r=>freq[r.count]++);
+  const fMax=Math.max(1,...freq.slice(1));
+  $('#freq-cols').innerHTML=freq.slice(1).map((c,i)=>{const k=i+1;return `<div class="col" data-tip="freq" data-k="${k}" data-n="${c}">
+    <span class="cnt">${c||''}</span><span class="colbar" style="height:${(c/fMax*100).toFixed(1)}%;${k===nW?'background:var(--hot)':''}"></span></div>`;}).join('');
+  $('#freq-x').innerHTML=freq.slice(1).map((_,i)=>`<span>${i+1}×</span>`).join('');
+  $('#freq-hint').textContent=`Of ${rows.length} tickers over ${nW} week(s) — right-most = every week`;
+
+  const chip=s=>{const e=rows.find(r=>r.symbol===s);const sec=e&&e.sector?`<span class="s">${e.sector}</span>`:'';
+    return `<span class="chip"><a href="${stockUrl(s)}" target="_blank" rel="noopener">${s}</a>${sec}</span>`;};
+  $('#new-n').textContent=newSyms.length?`(${newSyms.length})`:'';
+  $('#drop-n').textContent=dropSyms.length?`(${dropSyms.length})`:'';
+  $('#newOnly').textContent=newSyms.length?`✦ New only (${newSyms.length})`:'✦ New only';
+  const _filtBtn=$('#filtOnly');
+  if(H.filter){ _filtBtn.style.display=''; _filtBtn.textContent=`◆ In filter (${rows.filter(r=>r.inFilter).length})`; }
+  else { _filtBtn.style.display='none'; filtOnly=false; }
+  const _crossBtn=$('#crossOnly');
+  if(H.cross){ _crossBtn.hidden=false; _crossBtn.textContent=`◲ In ${H.cross.name} (${rows.filter(r=>r.inCross).length})`; } else { _crossBtn.hidden=true; crossOnly=false; }
+  const _rotBtn=$('#rotOnly'), _rotLvl=$('#rotLevel');
+  if(ROT){
+    _rotBtn.hidden=false; _rotBtn.classList.toggle('on',ROT_ON);
+    _rotLvl.hidden=!ROT_ON; _rotLvl.value=ROT_LEVEL;
+    $('#rotLegend').innerHTML = ROT_ON
+      ? ` · rotation <span class="rot up"></span> in · <span class="rot down"></span> out · <span class="rot flat"></span> flat`
+      : '';
+  } else { _rotBtn.hidden=true; _rotLvl.hidden=true; $('#rotLegend').innerHTML=''; }
+  $('#secFilterWrap').innerHTML = SECFILTER
+    ? `<span class="secfilter" id="secFilterChip" title="Clear sector filter — showing only ${escH(SECFILTER.group)}">${escH(SECFILTER.group)} <span class="x">✕</span></span>`
+    : '';
+  $('#new-chips').innerHTML=newSyms.length?newSyms.map(chip).join(''):'<div class="empty">None — nothing new.</div>';
+  $('#drop-chips').innerHTML=hasPrev?(dropSyms.length?dropSyms.map(s=>`<span class="chip"><a href="${stockUrl(s)}" target="_blank" rel="noopener">${s}</a></span>`).join(''):'<div class="empty">None — nobody dropped.</div>'):'<div class="empty">Need ≥2 weeks in range.</div>';
+
+  renderTable();
+  $('#foot').innerHTML=`Generated ${H.generated_at||''} · self-contained · sourced from Chartink backtest history · drop a Backtest CSV to reload`;
+}
+
+function renderTable(){
+  const {keys,nW,rows,newSet}=MODEL;
+  const q=$('#search').value.trim().toLowerCase();
+  let list=rows.filter(r=>(!q||r.symbol.toLowerCase().includes(q)||(r.sector||'').toLowerCase().includes(q)) && (!newOnly||newSet.has(r.symbol)) && (!filtOnly||r.inFilter) && (!crossOnly||r.inCross) && (!SECFILTER||groupOf(r.symbol,SECFILTER.level)===SECFILTER.group));
+  list=[...list].sort((a,b)=>{
+    let x,y;
+    if(sortKey==='rank'||sortKey==='count'){x=a.count;y=b.count;}
+    else if(sortKey==='symbol'){x=a.symbol.toLowerCase();y=b.symbol.toLowerCase();}
+    else if(sortKey==='sector'){x=(a.sector||'').toLowerCase();y=(b.sector||'').toLowerCase();}
+    else if(sortKey==='marketcap'){x=MCRANK[(a.marketcap||'').toLowerCase()]||0;y=MCRANK[(b.marketcap||'').toLowerCase()]||0;}
+    else if(sortKey==='alltime'){x=a.alltime;y=b.alltime;}
+    if(typeof x==='string')return sortAsc?(x<y?-1:x>y?1:0):(x>y?-1:x<y?1:0);
+    if(x===y) return b.count-a.count || b.alltime-a.alltime;
+    return sortAsc?x-y:y-x;
+  });
+  $('#rankhint').textContent=`${list.length} of ${rows.length} tickers · ${nW} wk${newOnly?' · new only':''}${filtOnly?' · in filter':''}${crossOnly&&H.cross?' · in '+H.cross.name:''}${SECFILTER?' · '+SECFILTER.group:''}`;
+  const dotgrid=(r)=>{
+    if(nW<=DOTCAP){
+      return '<span class="dots">'+r.present.map((p,i)=>`<span class="dot ${p?(r.count===nW?'hot':'on'):''}" title="${keys[i]}: ${p?'present':'absent'}"></span>`).join('')+'</span>';
+    }
+    return `<span class="minibar" title="${r.count}/${nW}"><span style="width:${(r.count/nW*100).toFixed(1)}%"></span></span>`;
+  };
+  $('#tbody').innerHTML=list.map(r=>{
+    const tipWeeks=nW<=DOTCAP?keys.map((k,i)=>`${k}: ${r.present[i]?'●':'—'}`).join(' · '):`${r.count} of ${nW} weeks`;
+    const badge=r.count===nW&&nW>1?'<span class="badge">every wk</span>':'';
+    return `<tr>
+      <td class="l rankn">${r.rank}</td>
+      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${rotDot(r.symbol)}${r.inFilter?`<span class="filt-dot" title="Also in the stricter filter · ${keys[nW-1]}"></span>`:''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}</td>
+      <td class="l"><span class="appc" data-tip="row" data-w="${tipWeeks.replace(/"/g,'')}"><span class="frac">${r.count}<small>/${nW}</small></span>${dotgrid(r)}${badge}</span></td>
+      <td class="l mc">${r.sector||'—'}</td>
+      <td class="l mc">${r.marketcap||'—'}</td>
+      <td class="num">${r.alltime}<small style="color:var(--muted)">/${WEEKS.length}</small></td>
+    </tr>`;
+  }).join('');
+  document.querySelectorAll('thead th').forEach(th=>{th.classList.toggle('sorted',th.dataset.k===sortKey);th.classList.toggle('asc',th.dataset.k===sortKey&&sortAsc);});
+}
+
+document.querySelectorAll('thead th').forEach(th=>th.addEventListener('click',()=>{
+  const k=th.dataset.k;
+  if(k===sortKey)sortAsc=!sortAsc; else {sortKey=k; sortAsc=(k==='symbol'||k==='sector');}
+  renderTable();
+}));
+$('#search').addEventListener('input',renderTable);
+$('#newOnly').addEventListener('click',()=>{newOnly=!newOnly; $('#newOnly').classList.toggle('on',newOnly); renderTable();});
+$('#filtOnly').addEventListener('click',()=>{filtOnly=!filtOnly; $('#filtOnly').classList.toggle('on',filtOnly); renderTable();});
+$('#crossOnly').addEventListener('click',()=>{crossOnly=!crossOnly; $('#crossOnly').classList.toggle('on',crossOnly); renderTable();});
+$('#rotOnly').addEventListener('click',()=>{ROT_ON=!ROT_ON; render();});
+$('#rotLevel').addEventListener('change',()=>{ROT_LEVEL=$('#rotLevel').value; render();});
+document.addEventListener('click',e=>{ if(e.target.closest('#secFilterChip')){
+  SECFILTER=null; const u=new URL(location.href); u.searchParams.delete('rot_group'); u.searchParams.delete('rot_level');
+  history.replaceState(null,'',u); render(); }});
+
+document.body.addEventListener('mousemove',e=>{
+  const el=e.target.closest('[data-tip]'); if(!el){hideTip();return;}
+  const t=el.dataset.tip; let html='';
+  if(t==='wk')html=`Week of <b>${el.dataset.wk}</b><br><b>${el.dataset.n}</b> tickers`;
+  else if(t==='freq')html=`<b>${el.dataset.n}</b> ticker(s) appeared in<br><b>${el.dataset.k}</b> of ${MODEL.nW} weeks`;
+  else if(t==='row')html=el.dataset.w.split(' · ').join('<br>');
+  else{hideTip();return;}
+  showTip(html,e.clientX,e.clientY);
+});
+
+$('#themeBtn').addEventListener('click',()=>{
+  const cur=document.documentElement.getAttribute('data-theme');
+  const dark=matchMedia('(prefers-color-scheme: dark)').matches;
+  document.documentElement.setAttribute('data-theme', cur?(cur==='dark'?'light':'dark'):(dark?'light':'dark'));
+});
+
+/* on-demand refresh → GitHub Actions (hosted site only) */
+(function(){ const rb=document.getElementById('refreshBtn'); if(!rb) return;
+  if(location.protocol==='file:'){ rb.style.display='none'; return; }
+  rb.addEventListener('click', async ()=>{
+    const o=rb.textContent; rb.disabled=true; rb.innerHTML='<span class="spin">↻</span> Queuing…';
+    try{ const r=await fetch('/api/refresh',{method:'POST'}); const j=await r.json().catch(()=>({}));
+      if(r.ok&&j.ok){ rb.innerHTML='<span class="spin">↻</span> Refreshing… (~10 min)'; return; }
+      rb.textContent='⚠ failed'; rb.disabled=false; setTimeout(()=>{rb.textContent=o;},5000);
+    }catch(e){ rb.textContent='⚠ error'; rb.disabled=false; setTimeout(()=>{rb.textContent=o;},5000); }
+  });
+})();
+
+/* Fast scanlink refresh: pull the freshest hash from KV and patch the in-scan ticker
+   links (reviving any that expired since the last scrape); ⚡ Links triggers a re-extract
+   — no full re-scrape or redeploy. */
+(function(){ const TF='weekly';
+  const patch=(fresh)=>{ if(!fresh||fresh===H.scanlink) return false;
+    const old=H.scanlink; H.scanlink=fresh;   // future renders use the fresh hash too
+    if(old) document.querySelectorAll('a[href*="scan_link=scanlink:"]').forEach(a=>{
+      a.href=a.href.split('scanlink:'+old).join('scanlink:'+fresh); });
+    return true; };
+  const pull=async()=>{ try{ const r=await fetch('/api/scanlink',{cache:'no-store'});
+    if(!r.ok) return null; const j=await r.json(); return j&&j.ok?(j[TF]||null):null; }
+    catch(e){ return null; } };
+  if(location.protocol==='file:'){ const lb=document.getElementById('linksBtn'); if(lb) lb.style.display='none'; return; }
+  pull().then(patch);                                   // hydrate on load
+  const lb=document.getElementById('linksBtn'); if(!lb) return;
+  lb.addEventListener('click', async ()=>{
+    const o=lb.textContent, before=H.scanlink; lb.disabled=true;
+    lb.innerHTML='<span class="spin">⚡</span> Refreshing links…';
+    try{ const r=await fetch('/api/scanlink',{method:'POST'}); const j=await r.json().catch(()=>({}));
+      if(!(r.ok&&j.ok)){ lb.textContent='⚠ failed'; lb.disabled=false; setTimeout(()=>{lb.textContent=o;},5000); return; }
+      let tries=0; const iv=setInterval(async()=>{ tries++;
+        const fresh=await pull();
+        if(fresh&&fresh!==before){ clearInterval(iv); patch(fresh);
+          lb.disabled=false; lb.textContent='✔ Links refreshed'; setTimeout(()=>{lb.textContent=o;},4000); }
+        else if(tries>=15){ clearInterval(iv); lb.disabled=false; lb.textContent=o; } }, 8000);
+    }catch(e){ lb.textContent='⚠ error'; lb.disabled=false; setTimeout(()=>{lb.textContent=o;},5000); }
+  });
+})();
+
+$('#csvBtn').addEventListener('click',()=>{
+  const {keys,nW,rows}=MODEL;
+  const head=['Rank','Symbol','InRange','WeeksInRange','AllTime','TotalWeeks','Sector','Marketcap',...keys];
+  const esc=s=>`"${String(s).replace(/"/g,'""')}"`;
+  const body=rows.map(r=>[r.rank,esc(r.symbol),r.count,nW,r.alltime,WEEKS.length,esc(r.sector),esc(r.marketcap),...r.present.map(p=>p?1:0)].join(',')).join('\n');
+  const blob=new Blob([head.join(',')+'\n'+body],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(H.screener||'screener')+'_ranked.csv';a.click();
+});
+
+const drop=$('#drop');
+['dragenter','dragover'].forEach(ev=>document.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('on');}));
+document.addEventListener('dragleave',e=>{if(!e.relatedTarget)drop.classList.remove('on');});
+document.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('on');
+  const f=e.dataTransfer.files[0]; if(!f)return; const rd=new FileReader();
+  rd.onload=()=>{const wks=weeksFromBacktest(rd.result); if(!wks.length){alert('Could not parse a Backtest CSV (need Date, Symbol columns).');return;}
+    H.weeks=wks; initSelection(); buildRangeControls(); render();};
+  rd.readAsText(f);});
+
+/* hover "chart links" popover — toggle-gated, off by default */
+const pv=$('#pv'); let preview=localStorage.getItem('wk.preview')==='1', pvSym=null, pvTimer=null;
+function pvLinks(sym){
+  const s=encodeURIComponent(sym);
+  return `<div class="sym">${escH(sym)}</div><div class="lk">`
+    +`<a href="${stockUrl(sym)}" target="_blank" rel="noopener">Chartink ↗</a>`
+    +`<a href="https://www.tradingview.com/chart/?symbol=NSE%3A${s}" target="_blank" rel="noopener">TradingView ↗</a>`
+    +`<a href="https://finance.yahoo.com/quote/${s}.NS" target="_blank" rel="noopener">Yahoo ↗</a>`
+    +`</div><div class="hint">Chartink opens the in-scan chart (scan highlights)</div>`;
+}
+function showPv(a,sym){ pvSym=sym; pv.innerHTML=pvLinks(sym); pv.classList.add('on');
+  const r=a.getBoundingClientRect(), b=pv.getBoundingClientRect();
+  let x=r.left, y=r.bottom+6;
+  if(x+b.width>innerWidth-8) x=innerWidth-8-b.width;
+  if(y+b.height>innerHeight-8) y=r.top-b.height-6;
+  pv.style.left=Math.max(8,x)+'px'; pv.style.top=Math.max(8,y)+'px';
+}
+function hidePv(){ pv.classList.remove('on'); pvSym=null; }
+$('#previewBtn').addEventListener('click',()=>{ preview=!preview; $('#previewBtn').classList.toggle('on',preview); localStorage.setItem('wk.preview',preview?'1':'0'); if(!preview)hidePv(); });
+$('#tbody').addEventListener('mouseover',e=>{ if(!preview)return; const a=e.target.closest('a.stk'); if(!a)return; const sym=a.textContent.trim(); clearTimeout(pvTimer); if(sym!==pvSym) showPv(a,sym); });
+$('#tbody').addEventListener('mouseout',e=>{ if(!preview)return; const a=e.target.closest('a.stk'); if(!a)return; if(e.relatedTarget&&pv.contains(e.relatedTarget))return; pvTimer=setTimeout(hidePv,220); });
+pv.addEventListener('mouseenter',()=>clearTimeout(pvTimer));
+pv.addEventListener('mouseleave',()=>{ pvTimer=setTimeout(hidePv,180); });
+$('#previewBtn').classList.toggle('on',preview);
+
+/* boot */
+H=JSON.parse(b64utf8(HISTORY_B64));
+ROT = H.rotation || null;
+ROT_ON = !!ROT;                                  // rotation dots on by default when data present
+(function initSecFilter(){                       // deep-link from the Sectors page (W/D buttons)
+  const p=new URLSearchParams(location.search), grp=p.get('rot_group'), lvl=p.get('rot_level');
+  if(grp && ROT){ SECFILTER={level:(ROTIDX[lvl]!=null?lvl:'sector'), group:grp}; ROT_ON=true; ROT_LEVEL=SECFILTER.level; }
+})();
+initSelection();
+buildRangeControls();
+render();
+</script>
+</body>
+</html>

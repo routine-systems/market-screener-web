@@ -1,0 +1,42 @@
+{
+  "schema_version": "1.0",
+  "producer_commit": "fixture-commit",
+  "generated_at_utc": "2026-08-11T12:00:00Z",
+  "data_cutoff": {"IN": "2026-08-11", "US": "2026-08-10"},
+  "markets": ["IN", "US"],
+  "timeframes": ["daily", "weekly"],
+  "pages": {
+    "weekly": {
+      "default_window": 8,
+      "payload": {
+        "screener": "fixture-weekly",
+        "source_url": "https://example.test/weekly",
+        "scanlink": "fixture",
+        "timeframe": "weekly",
+        "weeks": [{"week": "2026-08-07", "tickers": [{"symbol": "TEST", "sector": "Test", "marketcap": "Small"}]}]
+      }
+    },
+    "daily": {
+      "payload": {
+        "screener": "fixture-daily",
+        "source_url": "https://example.test/daily",
+        "scanlink": "fixture",
+        "timeframe": "daily",
+        "weeks": [{"week": "2026-08-11", "tickers": [{"symbol": "TEST", "sector": "Test", "marketcap": "Small"}]}],
+        "signals": []
+      }
+    },
+    "market": {
+      "payload": {"screeners": [], "counts": {}, "cap_days": 274, "mcclellan": []}
+    },
+    "sectors": {
+      "payload": {"weeks": [], "counts": {"sector": {}, "industry": {}, "basic": {}}, "totals": [], "parents": {}, "cap_weeks": 40}
+    },
+    "recommendations": {
+      "payload": {"summary": {"presented": 0, "near_misses": 0, "tracked": 0, "opportunity_misses": 0}, "rows": []}
+    }
+  },
+  "source_freshness": {"fixture": {"status": "current", "as_of": "2026-08-11"}},
+  "event_gate_status": {"earnings": "fixture"},
+  "artifacts": []
+}
