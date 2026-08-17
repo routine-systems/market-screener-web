@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TSHA + HBCS Shortlist</title>
+<style>
+:root{color-scheme:dark;--bg:#0d0f12;--panel:#15191f;--line:#2a3039;--muted:#8f9aaa;--text:#edf1f7;--blue:#58a6ff;--green:#3ddc84;--gold:#e4b650;--red:#ff7b72}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+nav{height:48px;display:flex;align-items:center;gap:20px;padding:0 24px;border-bottom:1px solid var(--line);background:#111419;position:sticky;top:0;z-index:4}
+nav a{color:var(--muted);text-decoration:none}nav a.on{color:var(--text)}
+main{max-width:1500px;margin:auto;padding:28px 24px 60px}.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:30px;margin:4px 0 6px}.sub{color:var(--muted);max-width:920px}.summary{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:12px;margin:24px 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px}.card strong{font-size:24px;display:block}.card span{color:var(--muted)}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0}.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}.seg button{border:0;border-right:1px solid var(--line);border-radius:0}.seg button:last-child{border-right:0}
+button,input,select{background:#171c22;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:inherit}button{cursor:pointer}button.on{background:#213043;color:#fff;border-color:#385b7f}input{min-width:210px}
+.status{margin:18px 0;padding:12px 14px;border:1px solid var(--line);border-radius:10px;color:var(--muted);background:var(--panel)}.status.error{color:var(--red)}
+.table-wrap{border:1px solid var(--line);border-radius:12px;overflow:auto;background:var(--panel)}table{border-collapse:collapse;width:100%;min-width:1120px}th,td{padding:10px 11px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}th{position:sticky;top:0;background:#181d24;color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
+tr:hover td{background:#192029}.symbol{font-weight:700;color:var(--text);text-decoration:none}.market{font-size:11px;color:var(--muted)}.pill{display:inline-block;padding:2px 7px;border-radius:999px;background:#1b2733;color:var(--blue);font-size:11px}.bull{color:var(--green)}.components{color:var(--gold)}.empty{padding:45px;text-align:center;color:var(--muted)}
+.foot{color:var(--muted);font-size:12px;margin-top:12px}@media(max-width:760px){main{padding:20px 12px}.summary{grid-template-columns:repeat(2,1fr)}nav{padding:0 12px;gap:12px;overflow:auto}}
+</style>
+</head>
+<body>
+<nav>
+  <a href="dashboard.html">Weekly</a>
+  <a href="daily.html">Daily</a>
+  <a href="market.html">Market</a>
+  <a href="sectors.html">Sectors</a>
+  <a href="tsha_hbcs.html" class="on" aria-current="page">TSHA + HBCS</a>
+  <a href="recommendations.html">Forward Test</a>
+</nav>
+<main>
+  <div class="eyebrow">Locally computed database screener</div>
+  <h1>Twin Smoothed HA + HBCS</h1>
+  <div class="sub">Completed-bar confluence: EMA(8) fast candle bullish, EMA(20) slow candle bullish, and a fresh HBCS bullish union. This page reads one stored batch and never starts a scan.</div>
+  <div class="status" id="status">Loading the latest stored snapshot…</div>
+  <section class="summary" id="summary"></section>
+  <div class="controls">
+    <div class="seg" id="markets"><button data-v="all" class="on">All markets</button><button data-v="IN">India</button><button data-v="US">US</button></div>
+    <div class="seg" id="timeframes"><button data-v="all" class="on">All timeframes</button><button data-v="daily">Daily</button><button data-v="weekly">Weekly</button></div>
+    <input id="search" type="search" placeholder="Search symbol or name">
+    <select id="liquidity"><option value="0">All liquidity</option><option value="1000000">Turnover ≥ 1m</option><option value="5000000">Turnover ≥ 5m</option><option value="10000000">Turnover ≥ 10m</option></select>
+    <button id="download" disabled>Download CSV</button>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr>
+      <th data-k="symbol">Symbol</th><th data-k="name">Name</th><th data-k="signal_date">Date</th><th data-k="timeframe">Bucket</th>
+      <th data-k="hbcs_bull_component_count">HBCS count</th><th data-k="hbcs_components">Fresh components</th>
+      <th data-k="fast_body_pct">Fast body</th><th data-k="slow_body_pct">Slow body</th><th data-k="close">Close</th><th data-k="median_dollar_turnover_20">Median turnover</th><th data-k="sector">Sector</th>
+    </tr></thead>
+    <tbody id="rows"><tr><td colspan="11"><div class="empty">Loading snapshot…</div></td></tr></tbody>
+  </table></div>
+  <div class="foot" id="foot"></div>
+</main>
+<script>
+let DATA=null;
+const state={market:'all',timeframe:'all',query:'',liquidity:0,sort:'hbcs_bull_component_count',desc:true};
+const $=s=>document.querySelector(s);
+const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num=(v,d=2)=>v==null||!Number.isFinite(Number(v))?'—':Number(v).toLocaleString(undefined,{maximumFractionDigits:d});
+function chartUrl(r){const aliases={'NYSE American':'AMEX','NYSE Arca':'AMEX','Cboe':'AMEX'};const exchange=aliases[r.exchange]||r.exchange||'';return `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(`${exchange}:${r.symbol}`)}`}
+function unpack(snapshot){
+  if(!snapshot||snapshot.schema_version!=='tsha-hbcs.snapshot.v1'||!Array.isArray(snapshot.columns))throw new Error('Unsupported snapshot');
+  const rows=[];
+  for(const market of ['IN','US'])for(const timeframe of ['daily','weekly']){
+    const bucket=snapshot.markets?.[market]?.timeframes?.[timeframe];
+    if(!bucket||!Array.isArray(bucket.rows))throw new Error(`Missing ${market} ${timeframe} bucket`);
+    for(const values of bucket.rows){if(!Array.isArray(values)||values.length!==snapshot.columns.length)throw new Error('Invalid row shape');const row={};snapshot.columns.forEach((key,index)=>{row[key]=values[index]});rows.push(row)}
+  }
+  return {rows,snapshot};
+}
+function filtered(){
+  if(!DATA)return [];
+  const q=state.query.toLowerCase();
+  return DATA.rows.filter(r=>(state.market==='all'||r.market===state.market)&&(state.timeframe==='all'||r.timeframe===state.timeframe)&&(!q||`${r.symbol} ${r.name}`.toLowerCase().includes(q))&&Number(r.median_dollar_turnover_20||0)>=state.liquidity)
+    .sort((a,b)=>{let x=a[state.sort],y=b[state.sort];if(typeof x==='string'||typeof y==='string'){x=String(x??'');y=String(y??'');return state.desc?y.localeCompare(x):x.localeCompare(y)}x=Number(x??-Infinity);y=Number(y??-Infinity);return state.desc?y-x:x-y});
+}
+function summaries(){
+  const cards=[['IN','daily','India Daily'],['IN','weekly','India Weekly'],['US','daily','US Daily'],['US','weekly','US Weekly']];
+  $('#summary').innerHTML=cards.map(([m,t,label])=>{const bucket=DATA.snapshot.markets[m].timeframes[t];return `<div class="card"><strong>${num(bucket.shortlist_size,0)}</strong><span>${label} · ${esc(bucket.signal_date)}</span></div>`}).join('');
+}
+function render(){
+  const rows=filtered(),shown=rows.slice(0,250);
+  $('#rows').innerHTML=shown.length?shown.map(r=>`<tr>
+    <td><a class="symbol" target="_blank" rel="noopener" href="${chartUrl(r)}">${esc(r.symbol)}</a><div class="market">${esc(r.exchange||r.market)} · ${esc(r.asset_type)}</div></td>
+    <td>${esc(r.name||r.symbol)}</td><td>${esc(r.signal_date)}</td><td><span class="pill">${r.market==='IN'?'India':'US'} ${esc(r.timeframe)}</span></td>
+    <td class="bull">${num(r.hbcs_bull_component_count,0)}</td><td class="components">${esc(r.hbcs_components||'Union transition')}</td>
+    <td class="bull">${num(r.fast_body_pct)}%</td><td class="bull">${num(r.slow_body_pct)}%</td><td>${num(r.close)}</td><td>${num(r.median_dollar_turnover_20,0)}</td><td>${esc(r.sector||'—')}</td>
+  </tr>`).join(''):`<tr><td colspan="11"><div class="empty">No rows match these filters.</div></td></tr>`;
+  const cap=rows.length>shown.length?'first ':'';
+  $('#foot').textContent=`Showing ${cap}${shown.length} of ${rows.length} matching rows · snapshot ${DATA.snapshot.generated_at_utc}`;
+}
+function bindSeg(id,key){document.querySelectorAll(`#${id} button`).forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll(`#${id} button`).forEach(x=>x.classList.remove('on'));b.classList.add('on');state[key]=b.dataset.v;render()}))}
+bindSeg('markets','market');bindSeg('timeframes','timeframe');
+$('#search').addEventListener('input',e=>{state.query=e.target.value;render()});
+$('#liquidity').addEventListener('change',e=>{state.liquidity=Number(e.target.value);render()});
+document.querySelectorAll('th[data-k]').forEach(th=>th.addEventListener('click',()=>{if(state.sort===th.dataset.k)state.desc=!state.desc;else{state.sort=th.dataset.k;state.desc=true}render()}));
+$('#download').addEventListener('click',()=>{if(!DATA)return;const rows=filtered(),keys=DATA.snapshot.columns;const q=v=>{let text=String(v??'');if(typeof v==='string'&&/^[=+\-@]/.test(text))text=`'${text}`;return `"${text.replaceAll('"','""')}"`};const csv=[keys.join(','),...rows.map(r=>keys.map(k=>q(r[k])).join(','))].join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='tsha_hbcs_shortlist.csv';a.click();URL.revokeObjectURL(a.href)});
+async function load(){
+  try{
+    const response=await fetch('/api/tsha-hbcs',{headers:{accept:'application/json'}});
+    const payload=await response.json().catch(()=>({}));
+    if(!response.ok||payload.schema_version!=='tsha-hbcs.api.v1'||!payload.snapshot)throw new Error(payload.error||`HTTP ${response.status}`);
+    DATA=unpack(payload.snapshot);summaries();render();$('#download').disabled=false;
+    const inDate=DATA.snapshot.markets.IN.data_session,usDate=DATA.snapshot.markets.US.data_session;
+    $('#status').textContent=`Stored snapshot · India ${inDate} · US ${usDate} · ${DATA.rows.length.toLocaleString()} rows`;
+  }catch(error){$('#status').classList.add('error');$('#status').textContent=`Snapshot unavailable: ${error.message}`;$('#rows').innerHTML='<tr><td colspan="11"><div class="empty">No stored data is available.</div></td></tr>'}
+}
+load();
+</script>
+</body>
+</html>

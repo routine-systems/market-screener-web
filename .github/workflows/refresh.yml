@@ -110,7 +110,7 @@ jobs:
       - name: Verify web renderer
         run: python3 -m unittest discover -s tests -v
 
-      - name: Render five-page site
+      - name: Render six-page site
         run: ./scripts/build artifacts/signals-bundle.v1.json
 
       - name: Verify rendered contract
@@ -125,6 +125,7 @@ jobs:
               "market.html",
               "sectors.html",
               "recommendations.html",
+              "tsha_hbcs.html",
               "index.html",
               "build-manifest.json",
           }

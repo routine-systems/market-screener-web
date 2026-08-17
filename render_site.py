@@ -17,7 +17,6 @@ ROOT = Path(__file__).resolve().parent
 DEFAULT_BUNDLE = ROOT / "artifacts" / "signals-bundle.v1.json"
 DEFAULT_OUTPUT = ROOT / "dist"
 TEMPLATES = ROOT / "templates"
-FUNCTIONS = ROOT / "functions"
 REQUIRED_FIELDS = {
     "schema_version",
     "producer_commit",
@@ -41,6 +40,7 @@ PAGE_SPECS = {
         "__RECOMMENDATIONS_B64__",
     ),
 }
+STATIC_PAGE_SPECS = {"tsha_hbcs.html": "tsha_hbcs.html"}
 PLACEHOLDER = re.compile(r"__[A-Z0-9_]+__")
 
 
@@ -182,9 +182,17 @@ def render_site(bundle_path: Path, output: Path = DEFAULT_OUTPUT) -> dict:
         html = _render_template(TEMPLATES / template_name, token, payload, window)
         (temp / output_name).write_text(html, encoding="utf-8")
 
+    for template_name, output_name in STATIC_PAGE_SPECS.items():
+        html = (TEMPLATES / template_name).read_text(encoding="utf-8")
+        leftovers = sorted(set(PLACEHOLDER.findall(html)))
+        if leftovers:
+            raise BundleError(
+                f"template {template_name} has unresolved placeholders: "
+                f"{', '.join(leftovers)}"
+            )
+        (temp / output_name).write_text(html, encoding="utf-8")
+
     (temp / "index.html").write_text(_index_document(), encoding="utf-8")
-    if FUNCTIONS.exists():
-        shutil.copytree(FUNCTIONS, temp / "functions")
 
     rendered_files = sorted(
         path.relative_to(temp).as_posix() for path in temp.rglob("*") if path.is_file()

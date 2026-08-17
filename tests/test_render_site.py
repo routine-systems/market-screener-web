@@ -15,7 +15,7 @@ class RenderSiteTests(unittest.TestCase):
     def load_fixture(self):
         return json.loads(FIXTURE.read_text())
 
-    def test_valid_fixture_renders_five_pages_and_manifest(self):
+    def test_valid_fixture_renders_six_pages_and_manifest(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "dist"
             manifest = render_site.render_site(FIXTURE, output)
@@ -25,11 +25,9 @@ class RenderSiteTests(unittest.TestCase):
                 "market.html",
                 "sectors.html",
                 "recommendations.html",
+                "tsha_hbcs.html",
                 "index.html",
                 "build-manifest.json",
-                "functions/_middleware.js",
-                "functions/api/refresh.js",
-                "functions/api/scanlink.js",
             }
             actual = {
                 path.relative_to(output).as_posix()
@@ -40,6 +38,22 @@ class RenderSiteTests(unittest.TestCase):
             self.assertEqual("fixture-commit", manifest["producer_commit"])
             self.assertIn("const WINDOW=8;", (output / "dashboard.html").read_text())
             self.assertNotIn("__HISTORY_B64__", (output / "dashboard.html").read_text())
+            self.assertIn("fetch('/api/tsha-hbcs'", (output / "tsha_hbcs.html").read_text())
+            self.assertFalse((output / "functions").exists())
+
+    def test_all_six_pages_link_to_tsha_hbcs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "dist"
+            render_site.render_site(FIXTURE, output)
+            for name in (
+                "dashboard.html",
+                "daily.html",
+                "market.html",
+                "sectors.html",
+                "recommendations.html",
+                "tsha_hbcs.html",
+            ):
+                self.assertIn('href="tsha_hbcs.html"', (output / name).read_text())
 
     def test_rejects_unsupported_major_version(self):
         bundle = self.load_fixture()
