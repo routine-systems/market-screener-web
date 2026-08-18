@@ -10,6 +10,9 @@ The TSHA-HBCS page is independent of the Chartink bundle. It reads one latest-on
 snapshot from the existing `SCANLINKS` KV binding through `GET /api/tsha-hbcs`.
 The browser cannot trigger a scan or a write. The local market process replaces
 the single snapshot after the India evening run and the US morning run.
+Each market/timeframe bucket carries eight completed-period membership bits for
+the HT appearance dots. The page retains company names for search and CSV export,
+but omits the Name column from the compact table.
 
 Production runs from the public `.github/workflows/refresh.yml` orchestrator. It checks out the
 public `routine-systems/market-signals` producer at `main`, creates a fresh bundle, verifies its expected

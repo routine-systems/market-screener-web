@@ -1,5 +1,6 @@
 import copy
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -66,9 +67,43 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn('class="tablecard"', page)
             self.assertIn('class="tablewrap"', page)
             self.assertIn('id="themeBtn"', page)
+            self.assertIn("Appearances (oldest→newest)", page)
+            self.assertIn("function appearanceCell(r)", page)
+            self.assertIn('class="dots"', page)
+            self.assertNotIn('data-k="name">Name</th>', page)
+            self.assertNotIn("${esc(r.name||r.symbol)}</td>", page)
             self.assertNotIn("Locally computed database screener", page)
             self.assertNotIn("Twin Smoothed HA + HBCS", page)
             self.assertNotIn("Completed-bar confluence", page)
+
+    def test_ht_appearance_dots_preserve_period_order(self):
+        page = (ROOT / "templates" / "tsha_hbcs.html").read_text()
+        start = page.index("function appearanceCell(r){")
+        end = page.index("\nfunction render(){", start)
+        function_source = page[start:end]
+        script = f"""
+const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}}[c]));
+{function_source}
+const mixed=appearanceCell({{appearance_periods:['2026-08-12','2026-08-13','2026-08-14'],appearance_bits:'101',appearance_count:2}});
+const every=appearanceCell({{appearance_periods:['2026-08-12','2026-08-13','2026-08-14'],appearance_bits:'111',appearance_count:3}});
+const missing=appearanceCell({{appearance_periods:[],appearance_bits:'',appearance_count:0}});
+console.log(JSON.stringify({{mixed,every,missing}}));
+"""
+        completed = subprocess.run(
+            ["node", "--input-type=module", "--eval", script],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        rendered = json.loads(completed.stdout)
+        self.assertIn("2<small>/3</small>", rendered["mixed"])
+        self.assertEqual(3, rendered["mixed"].count('class="dot '))
+        self.assertLess(
+            rendered["mixed"].index("2026-08-12"),
+            rendered["mixed"].index("2026-08-14"),
+        )
+        self.assertEqual(3, rendered["every"].count('class="dot hot"'))
+        self.assertIn("—", rendered["missing"])
 
     def test_rejects_unsupported_major_version(self):
         bundle = self.load_fixture()
