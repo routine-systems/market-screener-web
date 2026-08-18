@@ -73,6 +73,7 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn("Appearances (oldest→newest)", page)
             self.assertIn("function appearanceCell(r)", page)
             self.assertIn('class="dots"', page)
+            self.assertIn('id="tt" role="tooltip"', page)
             self.assertIn("Union potentials", page)
             self.assertIn("Latest period · ", page)
             self.assertIn("New in latest", page)
@@ -95,8 +96,9 @@ const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({{'&':'&amp;','<':'&lt;','>':
 {function_source}
 const mixed=appearanceCell({{appearance_periods:['2026-08-12','2026-08-13','2026-08-14'],appearance_bits:'101',appearance_count:2}});
 const every=appearanceCell({{appearance_periods:['2026-08-12','2026-08-13','2026-08-14'],appearance_bits:'111',appearance_count:3}});
+const malicious=appearanceCell({{appearance_periods:['<img src=x onerror=alert(1)>'],appearance_bits:'1',appearance_count:1}});
 const missing=appearanceCell({{appearance_periods:[],appearance_bits:'',appearance_count:0}});
-console.log(JSON.stringify({{mixed,every,missing}}));
+console.log(JSON.stringify({{mixed,every,malicious,missing}}));
 """
         completed = subprocess.run(
             ["node", "--input-type=module", "--eval", script],
@@ -107,12 +109,28 @@ console.log(JSON.stringify({{mixed,every,missing}}));
         rendered = json.loads(completed.stdout)
         self.assertIn("2<small>/3</small>", rendered["mixed"])
         self.assertEqual(3, rendered["mixed"].count('class="dot '))
+        self.assertIn('data-tip="row"', rendered["mixed"])
+        self.assertIn("2026-08-12: ●", rendered["mixed"])
+        self.assertIn("2026-08-13: —", rendered["mixed"])
         self.assertLess(
             rendered["mixed"].index("2026-08-12"),
             rendered["mixed"].index("2026-08-14"),
         )
         self.assertEqual(3, rendered["every"].count('class="dot hot"'))
+        self.assertIn("&lt;img src=x onerror=alert(1)&gt;", rendered["malicious"])
+        self.assertNotIn("<img", rendered["malicious"])
         self.assertIn("—", rendered["missing"])
+
+    def test_ht_appearance_hover_uses_weekly_tooltip_contract(self):
+        page = (ROOT / "templates" / "tsha_hbcs.html").read_text()
+        self.assertIn("#tt{position:fixed", page)
+        self.assertIn("function showTip(text,x,y)", page)
+        self.assertIn("tt.textContent=text", page)
+        self.assertNotIn("tt.innerHTML=", page)
+        self.assertIn("function hideTip()", page)
+        self.assertIn("document.body.addEventListener('mousemove'", page)
+        self.assertIn("target.dataset.w.split(' · ').join('\\n')", page)
+        self.assertIn("document.body.addEventListener('mouseleave',hideTip)", page)
 
     def test_ht_history_missing_falls_back_and_range_unions_periods(self):
         page = (ROOT / "templates" / "tsha_hbcs.html").read_text()
