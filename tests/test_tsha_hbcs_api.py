@@ -36,17 +36,146 @@ def valid_snapshot():
     }
 
 
+def history_fixture():
+    return {
+        "schema_version": "ht-history.v1",
+        "instrument_columns": ["symbol", "exchange", "asset_type", "sector"],
+        "instruments": [["ABC", "NSE", "equity", "Industrials"]],
+        "row_columns": [
+            "instrument_index",
+            "hbcs_bull_component_count",
+            "hbcs_components",
+            "fast_body_pct",
+            "slow_body_pct",
+            "close",
+            "median_dollar_turnover_20",
+        ],
+        "periods": [
+            {
+                "date": "2026-08-18",
+                "source": "stored",
+                "rows": [[0, 2, "HMM, CTS", 0.7, 0.5, 101.5, 2_000_000]],
+            }
+        ],
+    }
+
+
 def run_probe(mode: str) -> dict:
     source_url = "data:text/javascript;base64," + base64.b64encode(
         API.read_bytes()
     ).decode("ascii")
-    snapshot = json.dumps(valid_snapshot())
+    snapshot_value = valid_snapshot()
+    history_modes = {
+        "history",
+        "malformed_history",
+        "current_history",
+        "empty_history",
+        "max_history",
+        "oversized_history",
+        "stale_history",
+        "invalid_date_history",
+        "duplicate_instrument_history",
+        "nonfinite_number_history",
+        "invalid_components_history",
+        "missing_instruments_history",
+        "missing_rows_history",
+        "wrong_instrument_columns_history",
+        "wrong_row_columns_history",
+        "wrong_history_version",
+    }
+    if mode in history_modes:
+        snapshot_value["markets"]["IN"]["timeframes"]["daily"]["history"] = (
+            history_fixture()
+        )
+    if mode == "malformed_history":
+        snapshot_value["markets"]["IN"]["timeframes"]["daily"]["history"]["periods"][0][
+            "rows"
+        ][0][0] = 9
+    if mode == "current_history":
+        snapshot_value["markets"]["IN"]["timeframes"]["daily"]["history"]["periods"][0][
+            "source"
+        ] = "current"
+    if mode == "empty_history":
+        snapshot_value["markets"]["IN"]["timeframes"]["daily"]["history"][
+            "periods"
+        ] = []
+    if mode == "oversized_history":
+        history = snapshot_value["markets"]["IN"]["timeframes"]["daily"]["history"]
+        latest = history["periods"][0]
+        history["periods"] = [
+            {"date": f"2026-08-{day:02d}", "source": "replay", "rows": []}
+            for day in range(5, 18)
+        ] + [latest]
+    if mode == "max_history":
+        history = snapshot_value["markets"]["IN"]["timeframes"]["daily"]["history"]
+        latest = history["periods"][0]
+        history["periods"] = [
+            {"date": f"2026-08-{day:02d}", "source": "replay", "rows": []}
+            for day in range(6, 18)
+        ] + [latest]
+    if mode == "stale_history":
+        snapshot_value["markets"]["IN"]["timeframes"]["daily"]["history"]["periods"][0][
+            "date"
+        ] = "2026-08-17"
+    if mode == "invalid_date_history":
+        bucket = snapshot_value["markets"]["IN"]["timeframes"]["daily"]
+        bucket["signal_date"] = "2026-02-30"
+        bucket["history"]["periods"][0]["date"] = "2026-02-30"
+    if mode == "duplicate_instrument_history":
+        snapshot_value["markets"]["IN"]["timeframes"]["daily"]["history"][
+            "instruments"
+        ].append(["ABC", "NSE", "equity", "Industrials"])
+    if mode == "nonfinite_number_history":
+        snapshot_value["markets"]["IN"]["timeframes"]["daily"]["history"]["periods"][0][
+            "rows"
+        ][0][5] = None
+    if mode == "invalid_components_history":
+        snapshot_value["markets"]["IN"]["timeframes"]["daily"]["history"]["periods"][0][
+            "rows"
+        ][0][2] = "HMM, UNKNOWN"
+    if mode == "missing_instruments_history":
+        snapshot_value["markets"]["IN"]["timeframes"]["daily"]["history"][
+            "instruments"
+        ] = {}
+    if mode == "missing_rows_history":
+        snapshot_value["markets"]["IN"]["timeframes"]["daily"]["history"]["periods"][0][
+            "rows"
+        ] = {}
+    if mode == "wrong_instrument_columns_history":
+        snapshot_value["markets"]["IN"]["timeframes"]["daily"]["history"][
+            "instrument_columns"
+        ][0] = "ticker"
+    if mode == "wrong_row_columns_history":
+        snapshot_value["markets"]["IN"]["timeframes"]["daily"]["history"][
+            "row_columns"
+        ].pop()
+    if mode == "wrong_history_version":
+        snapshot_value["markets"]["IN"]["timeframes"]["daily"]["history"][
+            "schema_version"
+        ] = "ht-history.v2"
+    snapshot = json.dumps(snapshot_value)
     script = f"""
 const api = await import({source_url!r});
 let reads = 0;
 const stores = {{
   missing: {{async getWithMetadata(){{reads += 1; return {{value:null,metadata:null}};}}}},
   valid: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:{{write_count:2}}}};}}}},
+  history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:{{write_count:2}}}};}}}},
+  malformed_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
+  current_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
+  empty_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
+  max_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
+  oversized_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
+  stale_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
+  invalid_date_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
+  duplicate_instrument_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
+  nonfinite_number_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
+  invalid_components_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
+  missing_instruments_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
+  missing_rows_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
+  wrong_instrument_columns_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
+  wrong_row_columns_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
+  wrong_history_version: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
   corrupt: {{async getWithMetadata(){{reads += 1; return {{value:{{schema_version:'old'}},metadata:null}};}}}},
   throws: {{async getWithMetadata(){{reads += 1; throw new Error('fixture')}}}},
 }};
@@ -71,7 +200,7 @@ console.log(JSON.stringify({{
 
 
 class TshaHbcsApiTests(unittest.TestCase):
-    def test_valid_snapshot_uses_one_kv_read(self):
+    def test_snapshot_without_history_remains_valid_fallback(self):
         result = run_probe("valid")
         self.assertEqual(result["status"], 200)
         self.assertEqual(result["reads"], 1)
@@ -79,6 +208,80 @@ class TshaHbcsApiTests(unittest.TestCase):
         self.assertEqual(result["body"]["publication"]["write_count"], 2)
         self.assertEqual(result["cache"], "private, max-age=300")
         self.assertIsNone(result["cors"])
+        self.assertNotIn(
+            "history",
+            result["body"]["snapshot"]["markets"]["IN"]["timeframes"]["daily"],
+        )
+
+    def test_valid_optional_history_is_returned(self):
+        result = run_probe("history")
+        self.assertEqual(result["status"], 200)
+        history = result["body"]["snapshot"]["markets"]["IN"]["timeframes"]["daily"][
+            "history"
+        ]
+        self.assertEqual(history["schema_version"], "ht-history.v1")
+        self.assertEqual(history["periods"][0]["source"], "stored")
+
+    def test_api_defers_deep_history_record_validation(self):
+        for mode in (
+            "malformed_history",
+            "duplicate_instrument_history",
+            "nonfinite_number_history",
+            "invalid_components_history",
+        ):
+            with self.subTest(mode=mode):
+                result = run_probe(mode)
+                self.assertEqual(result["status"], 200)
+
+    def test_history_rejects_current_source(self):
+        result = run_probe("current_history")
+        self.assertEqual(result["status"], 500)
+        self.assertEqual(result["body"]["error"], "snapshot invalid")
+
+    def test_history_period_count_is_nonzero_and_capped_at_thirteen(self):
+        accepted = run_probe("max_history")
+        self.assertEqual(accepted["status"], 200)
+        self.assertEqual(
+            len(
+                accepted["body"]["snapshot"]["markets"]["IN"]["timeframes"]["daily"][
+                    "history"
+                ]["periods"]
+            ),
+            13,
+        )
+        for mode in ("empty_history", "oversized_history"):
+            with self.subTest(mode=mode):
+                result = run_probe(mode)
+                self.assertEqual(result["status"], 500)
+                self.assertEqual(result["body"]["error"], "snapshot invalid")
+
+    def test_history_rejects_last_date_before_bucket_signal_date(self):
+        result = run_probe("stale_history")
+        self.assertEqual(result["status"], 500)
+        self.assertEqual(result["body"]["error"], "snapshot invalid")
+
+    def test_history_rejects_nonexistent_calendar_date(self):
+        result = run_probe("invalid_date_history")
+        self.assertEqual(result["status"], 500)
+        self.assertEqual(result["body"]["error"], "snapshot invalid")
+
+    def test_history_requires_instrument_and_period_row_arrays(self):
+        for mode in ("missing_instruments_history", "missing_rows_history"):
+            with self.subTest(mode=mode):
+                result = run_probe(mode)
+                self.assertEqual(result["status"], 500)
+                self.assertEqual(result["body"]["error"], "snapshot invalid")
+
+    def test_history_requires_version_and_exact_column_arrays(self):
+        for mode in (
+            "wrong_history_version",
+            "wrong_instrument_columns_history",
+            "wrong_row_columns_history",
+        ):
+            with self.subTest(mode=mode):
+                result = run_probe(mode)
+                self.assertEqual(result["status"], 500)
+                self.assertEqual(result["body"]["error"], "snapshot invalid")
 
     def test_missing_snapshot_returns_503(self):
         result = run_probe("missing")

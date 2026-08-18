@@ -6,13 +6,13 @@ This repository accepts one immutable `signals-bundle.v1.json` artifact. It does
 Chartink or open local market databases. The renderer validates the bundle's major schema version
 before building the weekly, daily, market, sector, recommendation, and TSHA-HBCS pages.
 
-The TSHA-HBCS page is independent of the Chartink bundle. It reads one latest-only
-snapshot from the existing `SCANLINKS` KV binding through `GET /api/tsha-hbcs`.
-The browser cannot trigger a scan or a write. The local market process replaces
-the single snapshot after the India evening run and the US morning run.
-Each market/timeframe bucket carries eight completed-period membership bits for
-the HT appearance dots. The page retains company names for search and CSV export,
-but omits the Name column from the compact table.
+The HT page is independent of the Chartink bundle. It reads one rolling snapshot
+from the existing `SCANLINKS` KV binding through `GET /api/tsha-hbcs`. The browser
+cannot trigger a scan or a write. The local market process replaces the single
+snapshot after the India evening run and the US morning run. Each market/timeframe
+bucket carries up to 13 completed periods. Exact market and timeframe selections
+can step backward or select 1, 3, 5, 8, or 13 periods. Replayed periods are labeled
+separately from stored historical outputs. The compact table omits the Name column.
 
 Production runs from the public `.github/workflows/refresh.yml` orchestrator. It checks out the
 public `routine-systems/market-signals` producer at `main`, creates a fresh bundle, verifies its expected
