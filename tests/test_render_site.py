@@ -1,3 +1,4 @@
+import base64
 import copy
 import json
 import re
@@ -16,6 +17,14 @@ FIXTURE = ROOT / "tests" / "fixtures" / "signals-bundle.v1.json"
 class RenderSiteTests(unittest.TestCase):
     def load_fixture(self):
         return json.loads(FIXTURE.read_text())
+
+    def decode_rendered_payload(self, page):
+        match = re.search(
+            r'(?:const (?:HISTORY|MARKET|SECTOR)_B64=|b64utf8\()"([^"]+)"',
+            page,
+        )
+        self.assertIsNotNone(match)
+        return json.loads(base64.b64decode(match.group(1)))
 
     def test_valid_fixture_renders_six_pages_and_manifest(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -40,10 +49,30 @@ class RenderSiteTests(unittest.TestCase):
             self.assertEqual("fixture-commit", manifest["producer_commit"])
             self.assertIn("const WINDOW=8;", (output / "dashboard.html").read_text())
             self.assertNotIn("__HISTORY_B64__", (output / "dashboard.html").read_text())
+            for name in (
+                "dashboard.html",
+                "daily.html",
+                "market.html",
+                "sectors.html",
+                "recommendations.html",
+            ):
+                payload = self.decode_rendered_payload((output / name).read_text())
+                self.assertEqual("11 Aug 2026, 17:30 IST", payload["last_updated_ist"])
             self.assertIn(
                 "fetch('/api/tsha-hbcs'", (output / "tsha_hbcs.html").read_text()
             )
             self.assertFalse((output / "functions").exists())
+
+    def test_build_requires_an_explicit_immutable_bundle(self):
+        completed = subprocess.run(
+            [ROOT / "scripts" / "build"],
+            cwd=ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(64, completed.returncode)
+        self.assertIn("immutable-signals-bundle.v1.json", completed.stderr)
 
     def test_all_six_pages_link_to_tsha_hbcs(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -80,11 +109,98 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn("Every period · ", page)
             self.assertIn("India Daily", page)
             self.assertIn("US Weekly", page)
+            self.assertIn('id="updated">Last updated —', page)
+            self.assertIn("function formatIst(value)", page)
+            self.assertIn("India data through", page)
+            self.assertIn("US data through", page)
             self.assertNotIn('data-k="name">Name</th>', page)
             self.assertNotIn("${esc(r.name||r.symbol)}</td>", page)
             self.assertNotIn("Locally computed database screener", page)
             self.assertNotIn("Twin Smoothed HA + HBCS", page)
             self.assertNotIn("Completed-bar confluence", page)
+
+    def test_render_injects_page_freshness_and_ist_timestamp(self):
+        bundle = self.load_fixture()
+        bundle["source_freshness"] = {
+            "daily": {"as_of": "2026-08-11"},
+            "market": {"as_of": "2026-08-11"},
+            "sectors": {"as_of": "2026-08-10"},
+            "weekly": {"as_of": "2026-08-10"},
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "bundle.json"
+            output = Path(directory) / "dist"
+            source.write_text(json.dumps(bundle))
+            render_site.render_site(source, output)
+            expectations = {
+                "dashboard.html": ("2026-08-10", "Week of"),
+                "daily.html": ("2026-08-11", "Data through"),
+                "market.html": ("2026-08-11", "Data through"),
+                "sectors.html": ("2026-08-10", "Week of"),
+                "recommendations.html": ("2026-08-10", "Source data through"),
+            }
+            for name, (as_of, label) in expectations.items():
+                page = (output / name).read_text()
+                payload = self.decode_rendered_payload(page)
+                self.assertEqual("11 Aug 2026, 17:30 IST", payload["last_updated_ist"])
+                self.assertEqual(as_of, payload["data_as_of"])
+                self.assertIn(label, page)
+
+    def test_format_ist_handles_midnight_rollover(self):
+        self.assertEqual(
+            "01 Jan 2027, 05:00 IST",
+            render_site._format_ist("2026-12-31T23:30:00Z"),
+        )
+
+    def test_generated_timestamp_requires_timezone(self):
+        bundle = self.load_fixture()
+        bundle["generated_at_utc"] = "2026-08-11T12:00:00"
+        with self.assertRaisesRegex(
+            render_site.BundleError, "must include a timezone offset"
+        ):
+            render_site.validate_bundle(bundle)
+
+    def test_ht_format_ist_rejects_missing_timezone(self):
+        page = (ROOT / "templates" / "tsha_hbcs.html").read_text()
+        start = page.index("function formatIst(")
+        end = page.index("\nfunction showTip(", start)
+        function_source = page[start:end]
+        script = f"""
+{function_source}
+console.log(JSON.stringify({{
+  valid:formatIst('2026-08-18T16:07:23Z'),
+  missing:formatIst(null),
+  naive:formatIst('2026-08-18T16:07:23'),
+}}));
+"""
+        completed = subprocess.run(
+            ["node", "--input-type=module", "--eval", script],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        result = json.loads(completed.stdout)
+        self.assertEqual("18 Aug 2026, 21:37 IST", result["valid"])
+        self.assertEqual("—", result["missing"])
+        self.assertEqual("—", result["naive"])
+
+    def test_market_freshness_fields_are_html_escaped(self):
+        page = (ROOT / "templates" / "market.html").read_text()
+        self.assertIn("esc(M.last_updated_ist||'—')", page)
+        self.assertIn("esc(M.data_as_of)", page)
+        helper_start = page.index("const esc=")
+        helper_end = page.index("\n", helper_start)
+        script = f"""
+{page[helper_start:helper_end]}
+console.log(esc('<img src=x onerror=alert(1)>'));
+"""
+        completed = subprocess.run(
+            ["node", "--input-type=module", "--eval", script],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual("&lt;img src=x onerror=alert(1)&gt;", completed.stdout.strip())
 
     def test_ht_appearance_dots_preserve_period_order(self):
         page = (ROOT / "templates" / "tsha_hbcs.html").read_text()

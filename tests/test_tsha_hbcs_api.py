@@ -15,6 +15,7 @@ def valid_snapshot():
 
     return {
         "schema_version": "tsha-hbcs.snapshot.v1",
+        "generated_at_utc": "2026-08-18T16:07:23.826157+00:00",
         "snapshot_sha256": "0" * 64,
         "columns": ["market"],
         "markets": {
@@ -153,6 +154,12 @@ def run_probe(mode: str) -> dict:
         snapshot_value["markets"]["IN"]["timeframes"]["daily"]["history"][
             "schema_version"
         ] = "ht-history.v2"
+    if mode == "missing_timestamp":
+        snapshot_value.pop("generated_at_utc")
+    if mode == "naive_timestamp":
+        snapshot_value["generated_at_utc"] = "2026-08-18T16:07:23"
+    if mode == "invalid_timestamp":
+        snapshot_value["generated_at_utc"] = "not-a-timestamp"
     snapshot = json.dumps(snapshot_value)
     script = f"""
 const api = await import({source_url!r});
@@ -176,6 +183,9 @@ const stores = {{
   wrong_instrument_columns_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
   wrong_row_columns_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
   wrong_history_version: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
+  missing_timestamp: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
+  naive_timestamp: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
+  invalid_timestamp: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
   corrupt: {{async getWithMetadata(){{reads += 1; return {{value:{{schema_version:'old'}},metadata:null}};}}}},
   throws: {{async getWithMetadata(){{reads += 1; throw new Error('fixture')}}}},
 }};
@@ -294,6 +304,13 @@ class TshaHbcsApiTests(unittest.TestCase):
         self.assertEqual(result["status"], 500)
         self.assertEqual(result["reads"], 1)
         self.assertEqual(result["cache"], "no-store")
+
+    def test_snapshot_requires_timezone_aware_generation_timestamp(self):
+        for mode in ("missing_timestamp", "naive_timestamp", "invalid_timestamp"):
+            with self.subTest(mode=mode):
+                result = run_probe(mode)
+                self.assertEqual(result["status"], 500)
+                self.assertEqual(result["body"]["error"], "snapshot invalid")
 
     def test_missing_binding_returns_500_without_read(self):
         result = run_probe("unbound")

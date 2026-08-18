@@ -2,5 +2,9 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-BUNDLE="${1:-$ROOT/artifacts/signals-bundle.v1.json}"
+if [[ $# -ne 1 ]]; then
+  echo "usage: $0 /path/to/immutable-signals-bundle.v1.json" >&2
+  exit 64
+fi
+BUNDLE="$1"
 python3 "$ROOT/render_site.py" --bundle "$BUNDLE" --output "$ROOT/dist"

@@ -198,6 +198,7 @@
 <script>
 const MARKET_B64="__MARKET_B64__";
 const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function b64utf8(b){try{return decodeURIComponent(escape(atob(b)));}catch(e){return atob(b);}}
 const M=JSON.parse(b64utf8(MARKET_B64));
 let PERIOD=63, OFFSET=0;   // default 3M (trading days); OFFSET = days back from latest
@@ -272,7 +273,7 @@ function render(){
   $('#offlbl').textContent = OFFSET===0?'latest':`−${OFFSET} d`;
   $('#offBack').disabled = OFFSET>=maxLen-1;
   $('#offFwd').disabled = OFFSET<=0;
-  $('#sub').innerHTML = `<b>${(M.screeners||[]).length}</b> market screeners · daily counts · ${M.updated_at?`updated <b>${M.updated_at}</b>`:'no data yet'} · ~9-month store`;
+  $('#sub').innerHTML = `<b>${(M.screeners||[]).length}</b> market screeners · daily counts · ~9-month store · Last updated <b>${esc(M.last_updated_ist||'—')}</b>${M.data_as_of?` · Data through <b>${esc(M.data_as_of)}</b>`:''}`;
 
   let up=0,down=0,flat=0;
   const cards=(M.screeners||[]).map(sc=>{
@@ -309,7 +310,7 @@ function render(){
   }).join('');
   $('#grid').innerHTML=cards;
   $('#summary').innerHTML=`<b class="u">${up} ▲</b> · <b class="d">${down} ▼</b> · <b class="f">${flat} →</b>`;
-  $('#foot').textContent=`Generated ${M.generated_at||''} · counts scraped from Chartink backtest history · run daily after 2pm`;
+  $('#foot').textContent=`Counts scraped from Chartink backtest history · run daily after 2pm`;
   renderMcl();
 }
 

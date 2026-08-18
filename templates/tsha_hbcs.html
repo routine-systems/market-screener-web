@@ -30,7 +30,7 @@ input,select{background:var(--plane);border:1px solid var(--border);color:var(--
   <button class="themebtn" id="themeBtn">◐ Theme</button>
 </nav>
 <main>
-  <header class="top"><div class="title"><h1>HT potentials</h1><div class="sub" id="status">Loading latest snapshot…</div></div></header>
+  <header class="top"><div class="title"><h1>HT potentials</h1><div class="sub" id="status">Loading latest snapshot…</div><div class="sub" id="updated">Last updated —</div></div></header>
   <section class="kpis" id="summary"></section>
   <section class="tablecard">
   <div class="rangebar disabled" id="historyRange" aria-disabled="true">
@@ -79,6 +79,7 @@ const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=(v,d=2)=>v==null||!Number.isFinite(Number(v))?'—':Number(v).toLocaleString(undefined,{maximumFractionDigits:d});
 const tt=$('#tt');
+function formatIst(value){if(typeof value!=='string'||!/(?:Z|[+-]\d\d:\d\d)$/.test(value))return '—';const date=new Date(value);if(Number.isNaN(date.getTime()))return '—';const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(date).filter(part=>part.type!=='literal').map(part=>[part.type,part.value]));return `${parts.day} ${parts.month} ${parts.year}, ${parts.hour}:${parts.minute} IST`}
 function showTip(text,x,y){tt.textContent=text;tt.style.opacity='1';tt.setAttribute('aria-hidden','false');const box=tt.getBoundingClientRect();let left=x+12,top=y-box.height-8;if(left+box.width>innerWidth-8)left=x-box.width-12;if(top<8)top=y+16;tt.style.left=left+'px';tt.style.top=top+'px'}
 function hideTip(){tt.style.opacity='0';tt.setAttribute('aria-hidden','true')}
 function chartUrl(r){const aliases={'NYSE American':'AMEX','NYSE Arca':'AMEX','Cboe':'AMEX'};const exchange=aliases[r.exchange]||r.exchange||'';return `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(`${exchange}:${r.symbol}`)}`}
@@ -168,7 +169,7 @@ function render(resetRange=false){
     <td class="bull num">${num(r.fast_body_pct)}%</td><td class="bull num">${num(r.slow_body_pct)}%</td><td class="num">${num(r.close)}</td><td class="num">${num(r.median_dollar_turnover_20,0)}</td><td>${esc(r.sector||'—')}</td>
   </tr>`).join(''):`<tr><td colspan="11"><div class="empty">No rows match these filters.</div></td></tr>`;
   const cap=rows.length>shown.length?'first ':'';
-  $('#foot').textContent=`Showing ${cap}${shown.length} of ${rows.length} matching rows · snapshot ${DATA.snapshot.generated_at_utc}`;
+  $('#foot').textContent=`Showing ${cap}${shown.length} of ${rows.length} matching rows`;
 }
 function bindSeg(id,key){document.querySelectorAll(`#${id} button`).forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll(`#${id} button`).forEach(x=>x.classList.remove('on'));b.classList.add('on');state[key]=b.dataset.v;render(true)}))}
 bindSeg('markets','market');bindSeg('timeframes','timeframe');
@@ -190,6 +191,7 @@ async function load(){
     DATA=unpack(payload.snapshot);render();$('#download').disabled=false;
     const inDate=DATA.snapshot.markets.IN.data_session,usDate=DATA.snapshot.markets.US.data_session;
     $('#status').textContent=`India ${inDate} · US ${usDate} · ${DATA.rows.length.toLocaleString()} potentials`;
+    $('#updated').textContent=`Last updated ${formatIst(DATA.snapshot.generated_at_utc)} · India data through ${inDate} · US data through ${usDate}`;
   }catch(error){$('#status').classList.add('error');$('#status').textContent=`Snapshot unavailable: ${error.message}`;$('#rows').innerHTML='<tr><td colspan="11"><div class="empty">No stored data is available.</div></td></tr>'}
 }
 $('#themeBtn').addEventListener('click',()=>{const cur=document.documentElement.getAttribute('data-theme');const dark=matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.setAttribute('data-theme',cur?(cur==='dark'?'light':'dark'):(dark?'light':'dark'))});

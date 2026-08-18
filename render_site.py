@@ -11,6 +11,7 @@ import re
 import shutil
 from datetime import datetime
 from pathlib import Path, PurePosixPath
+from zoneinfo import ZoneInfo
 
 
 ROOT = Path(__file__).resolve().parent
@@ -42,6 +43,7 @@ PAGE_SPECS = {
 }
 STATIC_PAGE_SPECS = {"tsha_hbcs.html": "tsha_hbcs.html"}
 PLACEHOLDER = re.compile(r"__[A-Z0-9_]+__")
+IST = ZoneInfo("Asia/Kolkata")
 
 
 class BundleError(ValueError):
@@ -61,10 +63,31 @@ def _parse_timestamp(value: object, field: str) -> str:
         raise BundleError(f"{field} must be a non-empty ISO-8601 string")
     candidate = value.replace("Z", "+00:00")
     try:
-        datetime.fromisoformat(candidate)
+        parsed = datetime.fromisoformat(candidate)
     except ValueError as exc:
         raise BundleError(f"{field} is not ISO-8601: {value}") from exc
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise BundleError(f"{field} must include a timezone offset")
     return value
+
+
+def _format_ist(value: str) -> str:
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return parsed.astimezone(IST).strftime("%d %b %Y, %H:%M IST")
+
+
+def _page_data_as_of(bundle: dict, page_name: str) -> str:
+    freshness = bundle["source_freshness"].get(page_name, {})
+    if isinstance(freshness, dict) and isinstance(freshness.get("as_of"), str):
+        return freshness["as_of"]
+    if page_name == "recommendations":
+        cutoffs = [
+            value
+            for value in bundle["data_cutoff"].values()
+            if isinstance(value, str) and value
+        ]
+        return min(cutoffs, default="")
+    return ""
 
 
 def _validate_artifact(item: object, index: int) -> None:
@@ -81,7 +104,9 @@ def _validate_artifact(item: object, index: int) -> None:
     if pure.is_absolute() or ".." in pure.parts:
         raise BundleError(f"artifacts[{index}].path must remain bundle-relative")
     if not isinstance(item["row_count"], int) or item["row_count"] < 0:
-        raise BundleError(f"artifacts[{index}].row_count must be a non-negative integer")
+        raise BundleError(
+            f"artifacts[{index}].row_count must be a non-negative integer"
+        )
     checksum = item["sha256"]
     if not isinstance(checksum, str) or not re.fullmatch(r"[0-9a-f]{64}", checksum):
         raise BundleError(f"artifacts[{index}].sha256 must be lowercase SHA-256")
@@ -143,7 +168,9 @@ def load_bundle(path: Path) -> dict:
     return validate_bundle(bundle)
 
 
-def _render_template(template_path: Path, token: str, payload: dict, window: int) -> str:
+def _render_template(
+    template_path: Path, token: str, payload: dict, window: int
+) -> str:
     source = template_path.read_text(encoding="utf-8")
     encoded = base64.b64encode(
         json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
@@ -179,6 +206,8 @@ def render_site(bundle_path: Path, output: Path = DEFAULT_OUTPUT) -> dict:
     for page_name, (template_name, output_name, token) in PAGE_SPECS.items():
         payload = dict(bundle["pages"][page_name]["payload"])
         payload.setdefault("generated_at", generated)
+        payload["last_updated_ist"] = _format_ist(generated)
+        payload["data_as_of"] = _page_data_as_of(bundle, page_name)
         html = _render_template(TEMPLATES / template_name, token, payload, window)
         (temp / output_name).write_text(html, encoding="utf-8")
 

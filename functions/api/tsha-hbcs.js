@@ -38,6 +38,13 @@ function validIsoDate(value) {
   return Number.isFinite(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value;
 }
 
+function validTimestamp(value) {
+  if (typeof value !== "string" || !/(?:Z|[+-]\d\d:\d\d)$/.test(value)) {
+    return false;
+  }
+  return Number.isFinite(new Date(value).valueOf());
+}
+
 function validHistory(value, signalDate) {
   if (
     !value ||
@@ -87,6 +94,7 @@ function validSnapshot(value) {
     !value ||
     typeof value !== "object" ||
     value.schema_version !== SNAPSHOT_VERSION ||
+    !validTimestamp(value.generated_at_utc) ||
     typeof value.snapshot_sha256 !== "string" ||
     !/^[a-f0-9]{64}$/.test(value.snapshot_sha256) ||
     !Array.isArray(value.columns) ||

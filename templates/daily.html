@@ -294,7 +294,7 @@ function render(){
 
   const all3=rows.filter(r=>r.score===3).length, pb=rows.filter(r=>r.sig.pb).length, mq=rows.filter(r=>r.sig.mq).length;
   const fil=rows.filter(r=>r.inFil).length, nw=rows.filter(r=>r.isNew).length;
-  $('#sub').innerHTML=`<b>${rows.length}</b> potentials · ${nD===1?win[0]:`${win[0]} → ${win[nD-1]}`}`;
+  $('#sub').innerHTML=`<b>${rows.length}</b> potentials · ${nD===1?win[0]:`${win[0]} → ${win[nD-1]}`} · Last updated <b>${escH(H.last_updated_ist||'—')}</b>${H.data_as_of?` · Data through <b>${escH(H.data_as_of)}</b>`:''}`;
 
   const tiles=[['Potentials',String(rows.length)],['All three',`<span class="g3">${all3}</span>`],['+ PB',String(pb)],['+ MQ',String(mq)],['In filter',String(fil)],['New',`<span class="up">${nw}</span>`]];
   $('#kpis').innerHTML=tiles.map(([l,v])=>`<div class="tile"><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join('');
@@ -312,7 +312,7 @@ function render(){
     ? `<span class="secfilter" id="secFilterChip" title="Clear sector filter — showing only ${escH(SECFILTER.group)}">${escH(SECFILTER.group)} <span class="x">✕</span></span>`
     : '';
   renderTable();
-  $('#foot').innerHTML=`Generated ${H.generated_at||''} · self-contained · runs 2–3×/day · all three in the window = strongest candidate`;
+  $('#foot').innerHTML=`Self-contained · runs 2–3×/day · all three in the window = strongest candidate`;
 }
 
 function renderTable(){

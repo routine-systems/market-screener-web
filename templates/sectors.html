@@ -258,8 +258,9 @@ function render(){
   const showWithin = isQuad && LEVEL!=='sector';
   $('#within').hidden = !showWithin; $('#within').value = WITHIN;
   $('#sub').innerHTML = `<b>${Object.keys(groups).length}</b> ${esc(lvlName.toLowerCase())} groups · weekly · `
-    + `<a href="${esc(M.url)}" target="_blank" rel="noopener">source ↗</a> · `
-    + (M.updated_at?`updated <b>${esc(M.updated_at)}</b>`:'no data');
+    + `<a href="${esc(M.url)}" target="_blank" rel="noopener">source ↗</a>`
+    + ` · Last updated <b>${esc(M.last_updated_ist||'—')}</b>`
+    + (M.data_as_of?` · Week of <b>${esc(M.data_as_of)}</b>`:'');
   $('#legend').innerHTML = isQuad
     ? `Quadrant of sector <b>movement</b> over the window — <b>x</b> = current participation (avg stocks in the screener), `
       + `<b>y</b> = momentum (stocks added per week). Above the mid-line = <b style="color:var(--up)">adding</b>, below = `
@@ -287,7 +288,7 @@ function render(){
   if(isQuad){ $('#grid').hidden=true; $('#quad').hidden=false; renderQuad(rows, lvlName); }
   else { $('#quad').hidden=true; $('#grid').hidden=false; renderGrid(rows, winWeeks, start, end, lvlName); }
 
-  $('#foot').textContent=`Generated ${M.generated_at||''} · ${rows.length} groups shown (≥${MIN_STOCKS} stocks)`
+  $('#foot').textContent=`${rows.length} groups shown (≥${MIN_STOCKS} stocks)`
     + (cov.total?` · ${cov.mapped}/${cov.total} symbols classified from data.csv`:'')+` · weekly, run daily after 2pm`;
 }
 

@@ -19,6 +19,10 @@ public `routine-systems/market-signals` producer at `main`, creates a fresh bund
 session when requested, renders the six pages, and deploys that same build to the existing
 Cloudflare Pages project.
 
+Production UI changes must use `refresh.yml`. A direct deployment of a local `dist/` can replace
+fresh signals with an older ignored bundle. The local build command therefore requires an explicit
+immutable bundle path and does not select `artifacts/signals-bundle.v1.json` by default.
+
 The root Pages middleware rejects every hostname except `screener.chiragpatnaik.com`. Cloudflare
 Access protects that custom hostname. Immutable `pages.dev` deployment aliases cannot reach the
 static pages or dispatch Functions.

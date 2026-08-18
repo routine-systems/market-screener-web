@@ -418,6 +418,8 @@ function render(){
   sub.push(`<b>${n}</b> weeks · ranking over <b>${nW}</b>`);
   if(H.scanlink) sub.push('in-scan links on');
   if(H.source_url) sub.push(`<a href="${H.source_url}" target="_blank" rel="noopener">source ↗</a>`);
+  sub.push(`Last updated <b>${escH(H.last_updated_ist||'—')}</b>`);
+  if(H.data_as_of) sub.push(`Week of <b>${escH(H.data_as_of)}</b>`);
   $('#scr-sub').innerHTML=sub.join(' · ');
 
   const persistent=rows.filter(r=>r.count===nW).length;
@@ -473,7 +475,7 @@ function render(){
   $('#drop-chips').innerHTML=hasPrev?(dropSyms.length?dropSyms.map(s=>`<span class="chip"><a href="${stockUrl(s)}" target="_blank" rel="noopener">${s}</a></span>`).join(''):'<div class="empty">None — nobody dropped.</div>'):'<div class="empty">Need ≥2 weeks in range.</div>';
 
   renderTable();
-  $('#foot').innerHTML=`Generated ${H.generated_at||''} · self-contained · sourced from Chartink backtest history · drop a Backtest CSV to reload`;
+  $('#foot').innerHTML=`Self-contained · sourced from Chartink backtest history · drop a Backtest CSV to reload`;
 }
 
 function renderTable(){
