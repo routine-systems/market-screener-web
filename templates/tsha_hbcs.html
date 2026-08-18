@@ -3,55 +3,55 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TSHA + HBCS Shortlist</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0d0d'/%3E%3Crect x='6.5' y='18' width='4.5' height='8' rx='1.4' fill='%234d93ea'/%3E%3Crect x='13.75' y='12' width='4.5' height='14' rx='1.4' fill='%2316b816'/%3E%3Crect x='21' y='6.5' width='4.5' height='19.5' rx='1.4' fill='%2316b816'/%3E%3C/svg%3E">
+<title>HT Potentials</title>
 <style>
-:root{color-scheme:dark;--bg:#0d0f12;--panel:#15191f;--line:#2a3039;--muted:#8f9aaa;--text:#edf1f7;--blue:#58a6ff;--green:#3ddc84;--gold:#e4b650;--red:#ff7b72}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
-nav{height:48px;display:flex;align-items:center;gap:20px;padding:0 24px;border-bottom:1px solid var(--line);background:#111419;position:sticky;top:0;z-index:4}
-nav a{color:var(--muted);text-decoration:none}nav a.on{color:var(--text)}
-main{max-width:1500px;margin:auto;padding:28px 24px 60px}.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-h1{font-size:30px;margin:4px 0 6px}.sub{color:var(--muted);max-width:920px}.summary{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:12px;margin:24px 0}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:15px}.card strong{font-size:24px;display:block}.card span{color:var(--muted)}
-.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0}.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}.seg button{border:0;border-right:1px solid var(--line);border-radius:0}.seg button:last-child{border-right:0}
-button,input,select{background:#171c22;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:9px 11px;font:inherit}button{cursor:pointer}button.on{background:#213043;color:#fff;border-color:#385b7f}input{min-width:210px}
-.status{margin:18px 0;padding:12px 14px;border:1px solid var(--line);border-radius:10px;color:var(--muted);background:var(--panel)}.status.error{color:var(--red)}
-.table-wrap{border:1px solid var(--line);border-radius:12px;overflow:auto;background:var(--panel)}table{border-collapse:collapse;width:100%;min-width:1120px}th,td{padding:10px 11px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}th{position:sticky;top:0;background:#181d24;color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer}th:first-child,td:first-child,th:nth-child(2),td:nth-child(2){text-align:left}
-tr:hover td{background:#192029}.symbol{font-weight:700;color:var(--text);text-decoration:none}.market{font-size:11px;color:var(--muted)}.pill{display:inline-block;padding:2px 7px;border-radius:999px;background:#1b2733;color:var(--blue);font-size:11px}.bull{color:var(--green)}.components{color:var(--gold)}.empty{padding:45px;text-align:center;color:var(--muted)}
-.foot{color:var(--muted);font-size:12px;margin-top:12px}@media(max-width:760px){main{padding:20px 12px}.summary{grid-template-columns:repeat(2,1fr)}nav{padding:0 12px;gap:12px;overflow:auto}}
+:root{color-scheme:light;--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--muted:#66655f;--grid:#e1e0d9;--axis:#c3c2b7;--border:rgba(11,11,11,.10);--up:#0ca30c;--vol:#1c5cab;--filt:#d98a00;--sol-blue:#1c5cab;--chip:#eef0ee;--red:#b3271f}
+@media(prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){color-scheme:dark;--plane:#0d0d0d;--surface:#1a1a19;--ink:#fff;--ink-2:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;--border:rgba(255,255,255,.10);--up:#16b816;--vol:#4d93ea;--filt:#f0b83e;--chip:#232322;--red:#e66767}}
+:root[data-theme="dark"]{color-scheme:dark;--plane:#0d0d0d;--surface:#1a1a19;--ink:#fff;--ink-2:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;--border:rgba(255,255,255,.10);--up:#16b816;--vol:#4d93ea;--filt:#f0b83e;--chip:#232322;--red:#e66767}
+*{box-sizing:border-box}html,body{margin:0}body{background:var(--plane);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 64px}.nav{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--grid)}.nav a{padding:8px 14px;font-size:13px;font-weight:600;color:var(--ink-2);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px}.nav a:hover{color:var(--ink)}.nav a.on{color:var(--ink);border-bottom-color:var(--vol)}.nav .sp{flex:1 1 auto}.nav .themebtn{border:1px solid var(--border);background:var(--surface);color:var(--ink-2);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;align-self:center}
+header.top{margin-bottom:18px}.title h1{font-size:20px;margin:0 0 3px;letter-spacing:-.01em}.title .sub{color:var(--ink-2);font-size:13px}.title .sub.error{color:var(--red)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}.tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 13px;min-height:74px;display:flex;flex-direction:column;justify-content:space-between}.tile .lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}.tile .val{font-size:23px;font-weight:600;letter-spacing:-.02em;margin-top:5px}
+.tablecard{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px}.tbar{display:flex;align-items:center;gap:9px;margin-bottom:12px;flex-wrap:wrap}.tbar .count{color:var(--muted);font-size:12px}.spacer{flex:1 1 auto}.filterset{display:flex;gap:5px;flex-wrap:wrap}.toolbtn{border:1px solid var(--border);background:var(--surface);color:var(--ink-2);border-radius:8px;padding:6px 10px;font-size:12.5px;cursor:pointer}.toolbtn:hover{color:var(--ink)}.toolbtn.on{background:var(--sol-blue);color:#fff;border-color:var(--sol-blue)}
+input,select{background:var(--plane);border:1px solid var(--border);color:var(--ink);border-radius:8px;padding:7px 10px;font-size:13px}input{width:190px;max-width:52vw}select{font-variant-numeric:tabular-nums}.tablewrap{overflow-x:auto;max-height:72vh;overflow-y:auto}table{width:100%;min-width:1060px;border-collapse:collapse;font-size:13px}th,td{padding:8px 10px;text-align:right;white-space:nowrap}th.l,td.l{text-align:left}thead th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--axis);cursor:pointer;user-select:none;position:sticky;top:0;background:var(--surface);z-index:1}thead th:hover{color:var(--ink-2)}thead th.sorted::after{content:" ▾";color:var(--ink-2)}thead th.sorted.asc::after{content:" ▴"}tbody tr{border-bottom:1px solid var(--grid)}tbody tr:hover{background:var(--chip)}td.num{font-variant-numeric:tabular-nums}.symbol{font-weight:600;color:var(--vol);text-decoration:none}.symbol:hover{text-decoration:underline}.market{font-size:11px;color:var(--ink-2)}.pill{display:inline-block;padding:2px 7px;border-radius:999px;background:var(--chip);color:var(--ink-2);font-size:10.5px;font-weight:700}.bull{color:var(--up)}.components{color:var(--filt)}.empty{padding:36px;text-align:center;color:var(--muted)}footer{color:var(--muted);font-size:11.5px;margin-top:24px;text-align:center}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:640px){.wrap{padding:14px 12px 48px}.nav{flex-wrap:wrap;row-gap:4px}.nav .sp{flex-basis:100%;height:0;margin:0}.nav a{padding:7px 10px;font-size:12.5px}.kpis{grid-template-columns:repeat(2,1fr)}table{font-size:12px}}
 </style>
 </head>
-<body>
-<nav>
+<body><div class="wrap">
+<nav class="nav" aria-label="Views">
   <a href="dashboard.html">Weekly</a>
   <a href="daily.html">Daily</a>
   <a href="market.html">Market</a>
   <a href="sectors.html">Sectors</a>
-  <a href="tsha_hbcs.html" class="on" aria-current="page">TSHA + HBCS</a>
+  <a href="tsha_hbcs.html" class="on" aria-current="page">HT</a>
   <a href="recommendations.html">Forward Test</a>
+  <span class="sp"></span>
+  <button class="themebtn" id="themeBtn">◐ Theme</button>
 </nav>
 <main>
-  <div class="eyebrow">Locally computed database screener</div>
-  <h1>Twin Smoothed HA + HBCS</h1>
-  <div class="sub">Completed-bar confluence: EMA(8) fast candle bullish, EMA(20) slow candle bullish, and a fresh HBCS bullish union. This page reads one stored batch and never starts a scan.</div>
-  <div class="status" id="status">Loading the latest stored snapshot…</div>
-  <section class="summary" id="summary"></section>
-  <div class="controls">
-    <div class="seg" id="markets"><button data-v="all" class="on">All markets</button><button data-v="IN">India</button><button data-v="US">US</button></div>
-    <div class="seg" id="timeframes"><button data-v="all" class="on">All timeframes</button><button data-v="daily">Daily</button><button data-v="weekly">Weekly</button></div>
-    <input id="search" type="search" placeholder="Search symbol or name">
+  <header class="top"><div class="title"><h1>HT potentials</h1><div class="sub" id="status">Loading latest snapshot…</div></div></header>
+  <section class="kpis" id="summary"></section>
+  <section class="tablecard">
+  <div class="tbar">
+    <span class="count" id="rankhint">Loading rows…</span><div class="spacer"></div>
+    <div class="filterset" id="markets"><button class="toolbtn on" data-v="all">All markets</button><button class="toolbtn" data-v="IN">India</button><button class="toolbtn" data-v="US">US</button></div>
+    <div class="filterset" id="timeframes"><button class="toolbtn on" data-v="all">All timeframes</button><button class="toolbtn" data-v="daily">Daily</button><button class="toolbtn" data-v="weekly">Weekly</button></div>
+    <input id="search" type="search" placeholder="Search symbol / name…" autocomplete="off">
     <select id="liquidity"><option value="0">All liquidity</option><option value="1000000">Turnover ≥ 1m</option><option value="5000000">Turnover ≥ 5m</option><option value="10000000">Turnover ≥ 10m</option></select>
-    <button id="download" disabled>Download CSV</button>
+    <button class="toolbtn" id="download" disabled>⭳ CSV</button>
   </div>
-  <div class="table-wrap"><table>
+  <div class="tablewrap"><table id="tbl">
     <thead><tr>
-      <th data-k="symbol">Symbol</th><th data-k="name">Name</th><th data-k="signal_date">Date</th><th data-k="timeframe">Bucket</th>
+      <th class="l" data-k="symbol">Symbol</th><th class="l" data-k="name">Name</th><th data-k="signal_date">Date</th><th data-k="timeframe">Bucket</th>
       <th data-k="hbcs_bull_component_count">HBCS count</th><th data-k="hbcs_components">Fresh components</th>
       <th data-k="fast_body_pct">Fast body</th><th data-k="slow_body_pct">Slow body</th><th data-k="close">Close</th><th data-k="median_dollar_turnover_20">Median turnover</th><th data-k="sector">Sector</th>
     </tr></thead>
     <tbody id="rows"><tr><td colspan="11"><div class="empty">Loading snapshot…</div></td></tr></tbody>
-  </table></div>
-  <div class="foot" id="foot"></div>
+  </table></div></section>
+  <footer id="foot"></footer>
 </main>
+</div>
 <script>
 let DATA=null;
 const state={market:'all',timeframe:'all',query:'',liquidity:0,sort:'hbcs_bull_component_count',desc:true};
@@ -77,15 +77,16 @@ function filtered(){
 }
 function summaries(){
   const cards=[['IN','daily','India Daily'],['IN','weekly','India Weekly'],['US','daily','US Daily'],['US','weekly','US Weekly']];
-  $('#summary').innerHTML=cards.map(([m,t,label])=>{const bucket=DATA.snapshot.markets[m].timeframes[t];return `<div class="card"><strong>${num(bucket.shortlist_size,0)}</strong><span>${label} · ${esc(bucket.signal_date)}</span></div>`}).join('');
+  $('#summary').innerHTML=cards.map(([m,t,label])=>{const bucket=DATA.snapshot.markets[m].timeframes[t];return `<div class="tile"><span class="lbl">${label} · ${esc(bucket.signal_date)}</span><span class="val">${num(bucket.shortlist_size,0)}</span></div>`}).join('');
 }
 function render(){
   const rows=filtered(),shown=rows.slice(0,250);
+  $('#rankhint').textContent=`${rows.length.toLocaleString()} matching potentials`;
   $('#rows').innerHTML=shown.length?shown.map(r=>`<tr>
-    <td><a class="symbol" target="_blank" rel="noopener" href="${chartUrl(r)}">${esc(r.symbol)}</a><div class="market">${esc(r.exchange||r.market)} · ${esc(r.asset_type)}</div></td>
-    <td>${esc(r.name||r.symbol)}</td><td>${esc(r.signal_date)}</td><td><span class="pill">${r.market==='IN'?'India':'US'} ${esc(r.timeframe)}</span></td>
-    <td class="bull">${num(r.hbcs_bull_component_count,0)}</td><td class="components">${esc(r.hbcs_components||'Union transition')}</td>
-    <td class="bull">${num(r.fast_body_pct)}%</td><td class="bull">${num(r.slow_body_pct)}%</td><td>${num(r.close)}</td><td>${num(r.median_dollar_turnover_20,0)}</td><td>${esc(r.sector||'—')}</td>
+    <td class="l"><a class="symbol" target="_blank" rel="noopener" href="${chartUrl(r)}">${esc(r.symbol)}</a><div class="market">${esc(r.exchange||r.market)} · ${esc(r.asset_type)}</div></td>
+    <td class="l">${esc(r.name||r.symbol)}</td><td>${esc(r.signal_date)}</td><td><span class="pill">${r.market==='IN'?'India':'US'} ${esc(r.timeframe)}</span></td>
+    <td class="bull num">${num(r.hbcs_bull_component_count,0)}</td><td class="components">${esc(r.hbcs_components||'Union transition')}</td>
+    <td class="bull num">${num(r.fast_body_pct)}%</td><td class="bull num">${num(r.slow_body_pct)}%</td><td class="num">${num(r.close)}</td><td class="num">${num(r.median_dollar_turnover_20,0)}</td><td>${esc(r.sector||'—')}</td>
   </tr>`).join(''):`<tr><td colspan="11"><div class="empty">No rows match these filters.</div></td></tr>`;
   const cap=rows.length>shown.length?'first ':'';
   $('#foot').textContent=`Showing ${cap}${shown.length} of ${rows.length} matching rows · snapshot ${DATA.snapshot.generated_at_utc}`;
@@ -94,7 +95,7 @@ function bindSeg(id,key){document.querySelectorAll(`#${id} button`).forEach(b=>b
 bindSeg('markets','market');bindSeg('timeframes','timeframe');
 $('#search').addEventListener('input',e=>{state.query=e.target.value;render()});
 $('#liquidity').addEventListener('change',e=>{state.liquidity=Number(e.target.value);render()});
-document.querySelectorAll('th[data-k]').forEach(th=>th.addEventListener('click',()=>{if(state.sort===th.dataset.k)state.desc=!state.desc;else{state.sort=th.dataset.k;state.desc=true}render()}));
+document.querySelectorAll('th[data-k]').forEach(th=>th.addEventListener('click',()=>{if(state.sort===th.dataset.k)state.desc=!state.desc;else{state.sort=th.dataset.k;state.desc=true}document.querySelectorAll('th[data-k]').forEach(item=>item.classList.toggle('sorted',item===th));th.classList.toggle('asc',!state.desc);render()}));
 $('#download').addEventListener('click',()=>{if(!DATA)return;const rows=filtered(),keys=DATA.snapshot.columns;const q=v=>{let text=String(v??'');if(typeof v==='string'&&/^[=+\-@]/.test(text))text=`'${text}`;return `"${text.replaceAll('"','""')}"`};const csv=[keys.join(','),...rows.map(r=>keys.map(k=>q(r[k])).join(','))].join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='tsha_hbcs_shortlist.csv';a.click();URL.revokeObjectURL(a.href)});
 async function load(){
   try{
@@ -103,9 +104,10 @@ async function load(){
     if(!response.ok||payload.schema_version!=='tsha-hbcs.api.v1'||!payload.snapshot)throw new Error(payload.error||`HTTP ${response.status}`);
     DATA=unpack(payload.snapshot);summaries();render();$('#download').disabled=false;
     const inDate=DATA.snapshot.markets.IN.data_session,usDate=DATA.snapshot.markets.US.data_session;
-    $('#status').textContent=`Stored snapshot · India ${inDate} · US ${usDate} · ${DATA.rows.length.toLocaleString()} rows`;
+    $('#status').textContent=`India ${inDate} · US ${usDate} · ${DATA.rows.length.toLocaleString()} potentials`;
   }catch(error){$('#status').classList.add('error');$('#status').textContent=`Snapshot unavailable: ${error.message}`;$('#rows').innerHTML='<tr><td colspan="11"><div class="empty">No stored data is available.</div></td></tr>'}
 }
+$('#themeBtn').addEventListener('click',()=>{const cur=document.documentElement.getAttribute('data-theme');const dark=matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.setAttribute('data-theme',cur?(cur==='dark'?'light':'dark'):(dark?'light':'dark'))});
 load();
 </script>
 </body>

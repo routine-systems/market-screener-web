@@ -53,7 +53,22 @@ class RenderSiteTests(unittest.TestCase):
                 "recommendations.html",
                 "tsha_hbcs.html",
             ):
-                self.assertIn('href="tsha_hbcs.html"', (output / name).read_text())
+                page = (output / name).read_text()
+                self.assertIn('href="tsha_hbcs.html"', page)
+                self.assertIn(">HT</a>", page)
+
+    def test_ht_uses_shared_screener_shell_without_explainer(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "dist"
+            render_site.render_site(FIXTURE, output)
+            page = (output / "tsha_hbcs.html").read_text()
+            self.assertIn("<h1>HT potentials</h1>", page)
+            self.assertIn('class="tablecard"', page)
+            self.assertIn('class="tablewrap"', page)
+            self.assertIn('id="themeBtn"', page)
+            self.assertNotIn("Locally computed database screener", page)
+            self.assertNotIn("Twin Smoothed HA + HBCS", page)
+            self.assertNotIn("Completed-bar confluence", page)
 
     def test_rejects_unsupported_major_version(self):
         bundle = self.load_fixture()
