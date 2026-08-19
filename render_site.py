@@ -41,6 +41,11 @@ PAGE_SPECS = {
         "__RECOMMENDATIONS_B64__",
     ),
 }
+TREND_BOUNCE_TEMPLATE = "us_trend_bounce.html"
+TREND_BOUNCE_PAGES = {
+    "weekly": "us-weekly.html",
+    "daily": "us-daily.html",
+}
 PLACEHOLDER = re.compile(r"__[A-Z0-9_]+__")
 
 
@@ -87,6 +92,28 @@ def _validate_artifact(item: object, index: int) -> None:
         raise BundleError(f"artifacts[{index}].sha256 must be lowercase SHA-256")
 
 
+def _validate_linked_payload(page_name: str, payload: dict) -> None:
+    cross = payload.get("cross")
+    if not isinstance(cross, dict) or not isinstance(cross.get("weeks"), dict):
+        raise BundleError(
+            f"pages.{page_name}.payload.cross requires a weeks object"
+        )
+    rotation = payload.get("rotation")
+    if not isinstance(rotation, dict):
+        raise BundleError(f"pages.{page_name}.payload.rotation must be an object")
+    for field in ("levels", "status", "of"):
+        if field not in rotation:
+            raise BundleError(
+                f"pages.{page_name}.payload.rotation misses {field}"
+            )
+    if not isinstance(rotation["levels"], list):
+        raise BundleError(f"pages.{page_name}.payload.rotation.levels must be an array")
+    if not isinstance(rotation["status"], dict):
+        raise BundleError(f"pages.{page_name}.payload.rotation.status must be an object")
+    if not isinstance(rotation["of"], dict):
+        raise BundleError(f"pages.{page_name}.payload.rotation.of must be an object")
+
+
 def validate_bundle(bundle: object) -> dict:
     if not isinstance(bundle, dict):
         raise BundleError("bundle root must be an object")
@@ -121,6 +148,8 @@ def validate_bundle(bundle: object) -> dict:
         page = pages[page_name]
         if not isinstance(page, dict) or not isinstance(page.get("payload"), dict):
             raise BundleError(f"pages.{page_name}.payload must be an object")
+    for page_name in ("weekly", "daily"):
+        _validate_linked_payload(page_name, pages[page_name]["payload"])
     weekly_window = pages["weekly"].get("default_window", 8)
     if not isinstance(weekly_window, int) or weekly_window < 1:
         raise BundleError("pages.weekly.default_window must be a positive integer")
@@ -169,6 +198,12 @@ def _index_document() -> str:
 
 def render_site(bundle_path: Path, output: Path = DEFAULT_OUTPUT) -> dict:
     bundle = load_bundle(bundle_path)
+    ht_page = TEMPLATES / "tsha_hbcs.html"
+    if not ht_page.is_file():
+        raise BundleError(f"HT template not found: {ht_page}")
+    trend_bounce_template = TEMPLATES / TREND_BOUNCE_TEMPLATE
+    if not trend_bounce_template.is_file():
+        raise BundleError(f"US Trend Bounce template not found: {trend_bounce_template}")
     temp = output.parent / f".{output.name}.tmp"
     if temp.exists():
         shutil.rmtree(temp)
@@ -183,6 +218,17 @@ def render_site(bundle_path: Path, output: Path = DEFAULT_OUTPUT) -> dict:
         (temp / output_name).write_text(html, encoding="utf-8")
 
     (temp / "index.html").write_text(_index_document(), encoding="utf-8")
+    shutil.copy2(ht_page, temp / "tsha_hbcs.html")
+    trend_source = trend_bounce_template.read_text(encoding="utf-8")
+    for timeframe, output_name in TREND_BOUNCE_PAGES.items():
+        rendered = trend_source.replace("__TIMEFRAME__", timeframe)
+        leftovers = sorted(set(PLACEHOLDER.findall(rendered)))
+        if leftovers:
+            raise BundleError(
+                f"template {TREND_BOUNCE_TEMPLATE} has unresolved placeholders: "
+                f"{', '.join(leftovers)}"
+            )
+        (temp / output_name).write_text(rendered, encoding="utf-8")
     if FUNCTIONS.exists():
         shutil.copytree(FUNCTIONS, temp / "functions")
 
