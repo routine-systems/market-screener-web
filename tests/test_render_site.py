@@ -69,7 +69,7 @@ class RenderSiteTests(unittest.TestCase):
                 ("us-daily.html", "US"),
             ):
                 rendered = (output / page).read_text()
-                self.assertIn('src="market-events.js"', rendered)
+                self.assertIn('src="market-events.js?v=2"', rendered)
                 self.assertIn(f"MarketEvents.load('{market}'", rendered)
                 self.assertIn("MarketEvents.dot(", rendered)
             us_weekly = (output / "us-weekly.html").read_text()
@@ -78,6 +78,20 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn("return `${on?'●':'○'} ${periodLabel(period.week)}`", us_weekly)
             self.assertNotIn("?'present':'absent'", us_weekly)
             self.assertIn("const weekStart=date=>", us_weekly)
+            for page in ("us-weekly.html", "us-daily.html"):
+                rendered = (output / page).read_text()
+                self.assertIn('id="congressOnly"', rendered)
+                self.assertIn("state.congress", rendered)
+                self.assertIn("row.hasCongressHistory", rendered)
+                self.assertIn("'hasCongressHistory'", rendered)
+                self.assertIn("EVENTS_READY", rendered)
+            ht_page = (output / "tsha_hbcs.html").read_text()
+            self.assertIn('src="market-events.js?v=2"', ht_page)
+            self.assertIn('id="eventOnly"', ht_page)
+            self.assertIn("MarketEvents.load(market", ht_page)
+            self.assertIn("MarketEvents.record(r.symbol,r.market)", ht_page)
+            self.assertIn("MarketEvents.dot(r.symbol,r.market)", ht_page)
+            self.assertNotIn("?'present':'absent'", ht_page)
             for page in (
                 "dashboard.html",
                 "daily.html",

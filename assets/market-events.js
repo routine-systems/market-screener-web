@@ -2,11 +2,10 @@
   "use strict";
 
   const state = {
-    market: null,
-    snapshot: null,
-    columns: new Map(),
+    datasets: new Map(),
+    defaultMarket: null,
     card: null,
-    pinnedSymbol: null,
+    pinnedKey: null,
     closeTimer: null,
   };
 
@@ -59,13 +58,13 @@
     };
     const scheduleClose = () => {
       cancelClose();
-      if (state.pinnedSymbol) return;
+      if (state.pinnedKey) return;
       state.closeTimer = window.setTimeout(hide, 180);
     };
 
     document.addEventListener("pointerover", (event) => {
       const dot = event.target.closest?.("[data-event-symbol]");
-      if (!dot || state.pinnedSymbol) return;
+      if (!dot || state.pinnedKey) return;
       cancelClose();
       show(dot, false);
     });
@@ -76,7 +75,7 @@
     });
     document.addEventListener("focusin", (event) => {
       const dot = event.target.closest?.("[data-event-symbol]");
-      if (dot && !state.pinnedSymbol) show(dot, false);
+      if (dot && !state.pinnedKey) show(dot, false);
     });
     document.addEventListener("focusout", (event) => {
       if (event.target.closest?.("[data-event-symbol]")) scheduleClose();
@@ -87,45 +86,58 @@
         event.preventDefault();
         event.stopPropagation();
         const symbol = dot.dataset.eventSymbol;
-        if (state.pinnedSymbol === symbol) {
-          state.pinnedSymbol = null;
+        const market = dot.dataset.eventMarket || state.defaultMarket;
+        const key = `${market}:${symbol}`;
+        if (state.pinnedKey === key) {
+          state.pinnedKey = null;
           hide();
         } else {
-          state.pinnedSymbol = symbol;
+          state.pinnedKey = key;
           show(dot, true);
         }
         return;
       }
       if (!state.card.contains(event.target)) {
-        state.pinnedSymbol = null;
+        state.pinnedKey = null;
         hide();
       }
     });
     document.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
-      state.pinnedSymbol = null;
+      state.pinnedKey = null;
       hide();
     });
     state.card.addEventListener("pointerenter", cancelClose);
     state.card.addEventListener("pointerleave", scheduleClose);
   }
 
-  function record(symbol) {
-    return state.snapshot?.records?.[String(symbol).trim().toUpperCase()] || null;
+  function normalizedMarket(market) {
+    const normalized = String(market || "").toUpperCase();
+    return new Set(["IN", "US"]).has(normalized) ? normalized : null;
   }
 
-  function dot(symbol) {
+  function dataset(market) {
+    const normalized = normalizedMarket(market) || state.defaultMarket;
+    return normalized ? state.datasets.get(normalized) || null : null;
+  }
+
+  function record(symbol, market) {
+    return dataset(market)?.snapshot?.records?.[String(symbol).trim().toUpperCase()] || null;
+  }
+
+  function dot(symbol, market) {
     const normalized = String(symbol).trim().toUpperCase();
-    const entry = record(normalized);
+    const eventMarket = normalizedMarket(market) || state.defaultMarket;
+    const entry = record(normalized, eventMarket);
     if (!entry) return "";
-    const kind = state.market === "IN" ? "bulk deal" : "political transaction";
+    const kind = eventMarket === "IN" ? "bulk deal" : "political transaction";
     const count = Number(entry.count) || 0;
     const label = `${normalized}: ${count} ${kind}${count === 1 ? "" : "s"} in complete history`;
-    return `<button type="button" class="event-dot" data-event-symbol="${escapeHtml(normalized)}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"></button>`;
+    return `<button type="button" class="event-dot" data-event-market="${eventMarket}" data-event-symbol="${escapeHtml(normalized)}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"></button>`;
   }
 
-  function field(row, name) {
-    const index = state.columns.get(name);
+  function field(row, name, market) {
+    const index = dataset(market)?.columns.get(name);
     return index === undefined ? null : row[index];
   }
 
@@ -135,22 +147,22 @@
     return number.toLocaleString("en-IN", { maximumFractionDigits: digits });
   }
 
-  function formatMoney(value) {
+  function formatMoney(value, market) {
     const number = formatNumber(value, 2);
     if (number === null) return null;
-    return `${state.market === "IN" ? "₹" : "$"}${number}`;
+    return `${market === "IN" ? "₹" : "$"}${number}`;
   }
 
-  function eventHtml(row) {
-    const actor = field(row, "actor") || "Actor not stated";
-    const side = field(row, "side");
-    const eventDate = field(row, "event_date") || "Date not stated";
-    const reportedAt = field(row, "reported_at");
-    const shares = formatNumber(field(row, "shares"), 4);
-    const value = formatMoney(field(row, "value"));
-    const price = formatMoney(field(row, "price"));
-    const source = field(row, "source") || "Source not stated";
-    const sourceUrl = safeUrl(field(row, "url"));
+  function eventHtml(row, market) {
+    const actor = field(row, "actor", market) || "Actor not stated";
+    const side = field(row, "side", market);
+    const eventDate = field(row, "event_date", market) || "Date not stated";
+    const reportedAt = field(row, "reported_at", market);
+    const shares = formatNumber(field(row, "shares", market), 4);
+    const value = formatMoney(field(row, "value", market), market);
+    const price = formatMoney(field(row, "price", market), market);
+    const source = field(row, "source", market) || "Source not stated";
+    const sourceUrl = safeUrl(field(row, "url", market));
     const amount = [
       shares === null ? null : `${shares} shares`,
       value === null ? null : `${value} value`,
@@ -163,14 +175,14 @@
     return `<div class="event-card-row"><div class="event-card-title">${escapeHtml(actor)}${side ? `<span class="event-card-side">${escapeHtml(side)}</span>` : ""}</div><div class="event-card-when">Transaction ${escapeHtml(eventDate)}${reportDate}</div><div class="event-card-amount">${amount.length ? amount.join(" · ") : "amount not stated in source"}</div><div class="event-card-source">${sourceMarkup}</div></div>`;
   }
 
-  function cardHtml(symbol, entry, pinned) {
+  function cardHtml(symbol, entry, pinned, market) {
     const count = Number(entry.count) || 0;
     const events = Array.isArray(entry.events) ? entry.events : [];
-    const kind = state.market === "IN" ? "bulk deals" : "political transactions";
+    const kind = market === "IN" ? "bulk deals" : "political transactions";
     const span = entry.first_date && entry.last_date
       ? `${entry.first_date} → ${entry.last_date}`
       : "stored history";
-    const detail = events.map(eventHtml).join("");
+    const detail = events.map((event) => eventHtml(event, market)).join("");
     const truncated = count > events.length
       ? `Showing latest ${events.length} of ${count} events.`
       : `Showing all ${count} stored event${count === 1 ? "" : "s"}.`;
@@ -179,9 +191,10 @@
 
   function show(dotElement, pinned) {
     const symbol = dotElement.dataset.eventSymbol;
-    const entry = record(symbol);
+    const market = dotElement.dataset.eventMarket || state.defaultMarket;
+    const entry = record(symbol, market);
     if (!entry) return;
-    state.card.innerHTML = cardHtml(symbol, entry, pinned);
+    state.card.innerHTML = cardHtml(symbol, entry, pinned, market);
     state.card.hidden = false;
     const anchor = dotElement.getBoundingClientRect();
     const box = state.card.getBoundingClientRect();
@@ -201,8 +214,8 @@
 
   async function load(market, onReady) {
     install();
-    const normalized = String(market).toUpperCase();
-    if (!new Set(["IN", "US"]).has(normalized) || location.protocol === "file:") return null;
+    const normalized = normalizedMarket(market);
+    if (!normalized || location.protocol === "file:") return null;
     try {
       const response = await fetch(`/api/market-events?market=${normalized}`, {
         headers: { accept: "application/json" },
@@ -220,9 +233,11 @@
       ) {
         throw new Error(payload.error || `HTTP ${response.status}`);
       }
-      state.market = normalized;
-      state.snapshot = snapshot;
-      state.columns = new Map(snapshot.event_columns.map((name, index) => [name, index]));
+      state.defaultMarket = normalized;
+      state.datasets.set(normalized, {
+        snapshot,
+        columns: new Map(snapshot.event_columns.map((name, index) => [name, index])),
+      });
       if (typeof onReady === "function") onReady(snapshot);
       return snapshot;
     } catch (error) {
