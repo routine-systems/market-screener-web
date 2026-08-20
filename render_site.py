@@ -18,6 +18,7 @@ DEFAULT_BUNDLE = ROOT / "artifacts" / "signals-bundle.v1.json"
 DEFAULT_OUTPUT = ROOT / "dist"
 TEMPLATES = ROOT / "templates"
 FUNCTIONS = ROOT / "functions"
+ASSETS = ROOT / "assets"
 REQUIRED_FIELDS = {
     "schema_version",
     "producer_commit",
@@ -231,6 +232,10 @@ def render_site(bundle_path: Path, output: Path = DEFAULT_OUTPUT) -> dict:
         (temp / output_name).write_text(rendered, encoding="utf-8")
     if FUNCTIONS.exists():
         shutil.copytree(FUNCTIONS, temp / "functions")
+    if ASSETS.exists():
+        for asset in ASSETS.iterdir():
+            if asset.is_file():
+                shutil.copy2(asset, temp / asset.name)
 
     rendered_files = sorted(
         path.relative_to(temp).as_posix() for path in temp.rglob("*") if path.is_file()

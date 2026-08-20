@@ -32,6 +32,8 @@ class RenderSiteTests(unittest.TestCase):
                 "us-daily.html",
                 "index.html",
                 "build-manifest.json",
+                "market-events.js",
+                "functions/api/market-events.js",
                 "functions/api/refresh.js",
                 "functions/api/scanlink.js",
                 "functions/api/tsha-hbcs.js",
@@ -60,6 +62,16 @@ class RenderSiteTests(unittest.TestCase):
                 "const TIMEFRAME='daily';",
                 (output / "us-daily.html").read_text(),
             )
+            for page, market in (
+                ("dashboard.html", "IN"),
+                ("daily.html", "IN"),
+                ("us-weekly.html", "US"),
+                ("us-daily.html", "US"),
+            ):
+                rendered = (output / page).read_text()
+                self.assertIn('src="market-events.js"', rendered)
+                self.assertIn(f"MarketEvents.load('{market}'", rendered)
+                self.assertIn("MarketEvents.dot(", rendered)
             us_weekly = (output / "us-weekly.html").read_text()
             self.assertIn('id="tt" role="tooltip"', us_weekly)
             self.assertIn('class="dots" data-tip=', us_weekly)

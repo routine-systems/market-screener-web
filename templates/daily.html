@@ -205,6 +205,7 @@
 <div id="tt"></div>
 <div id="pv"></div>
 
+<script src="market-events.js"></script>
 <script>
 const HISTORY_B64="__HISTORY_B64__";
 const WINDOW=5;                     // default window (trading days)
@@ -336,7 +337,7 @@ function renderTable(){
     const tipDays=MODEL.win.map((d,i)=>`${d}: ${r.present[i]?'●':'—'}`).join(' · ');
     return `<tr>
       <td class="l rankn">${r.rank}</td>
-      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${rotDot(r.symbol)}${r.inFil?'<span class="filt-dot" title="also in the stricter filter"></span>':''}${r.isNew?' <span class="up" title="new on latest day">✦</span>':''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}</td>
+      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${rotDot(r.symbol)}${r.inFil?'<span class="filt-dot" title="also in the stricter filter"></span>':''}${r.isNew?' <span class="up" title="new on latest day">✦</span>':''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}${MarketEvents.dot(r.symbol)}</td>
       <td class="l"><span class="xtab">${xc}<span class="xscore s${r.score}">${r.score}/3</span></span></td>
       <td class="l"><span class="appc" data-tip="row" data-w="${tipDays.replace(/"/g,'')}"><span class="frac">${r.consist}<small>/${nD}</small></span>${grid}</span></td>
       <td class="l mc">${r.sector||'—'}</td>
@@ -438,6 +439,7 @@ $('#previewBtn').classList.toggle('on',preview);
 buildControls();
 buildLegend();
 render();
+MarketEvents.load('IN',()=>renderTable());
 </script>
 </body>
 </html>
