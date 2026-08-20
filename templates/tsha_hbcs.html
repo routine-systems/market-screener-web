@@ -52,7 +52,6 @@ __DASHBOARD_NAV__
     <button class="preset" data-periods="8" disabled>8</button>
     <button class="preset" data-periods="13" disabled>13</button>
     <div class="spacer"></div>
-    <span class="history-callout" id="historyPrompt">Choose India or US, then choose Daily or Weekly to unlock period history.</span>
     <span class="rangenote" id="rangeNote"></span>
   </div>
   <div class="count" id="rankhint" role="status">Loading rows…</div>
@@ -144,7 +143,7 @@ function appearanceCell(r){
 function sourceSummary(periods){const counts={stored:0,replay:0};periods.forEach(period=>{if(period.source in counts)counts[period.source]+=1});return ['stored','replay'].filter(source=>counts[source]).map(source=>`${source} ${counts[source]}`).join(' · ')}
 function syncRangeControls(reset=false){
   const history=selectedHistory(),active=Boolean(history),controls=$('#historyRange').querySelectorAll('select,button');
-  $('#historyRange').classList.toggle('disabled',!active);$('#historyRange').setAttribute('aria-disabled',String(!active));controls.forEach(control=>{control.disabled=!active});$('#historyPrompt').hidden=active;
+  $('#historyRange').classList.toggle('disabled',!active);$('#historyRange').setAttribute('aria-disabled',String(!active));controls.forEach(control=>{control.disabled=!active});
   if(!active){state.rangeKey=null;$('#fromPeriod').innerHTML='';$('#toPeriod').innerHTML='';$('#rangeOffset').textContent='';$('#rangeLabel').textContent='Periods';$('#rangeNote').textContent=singleSelection()?'History unavailable for this selection':'';document.querySelectorAll('#historyRange .preset').forEach(button=>{button.classList.remove('on');button.textContent=button.dataset.periods+'P'});return null}
   const key=`${state.market}:${state.timeframe}`,n=history.periods.length;
   if(reset||state.rangeKey!==key){state.rangeKey=key;state.to=n-1;state.from=Math.max(0,n-Math.min(8,n))}

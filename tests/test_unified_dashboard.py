@@ -100,6 +100,16 @@ class RenderSiteTests(unittest.TestCase):
                 self.assertIn("row.hasCongressHistory", rendered)
                 self.assertIn("'hasCongressHistory'", rendered)
                 self.assertIn("EVENTS_READY", rendered)
+                self.assertIn(
+                    '<th class="l ticker-col" data-sort="symbol">Ticker</th>', rendered
+                )
+                self.assertIn(
+                    '<div class="market">${esc(row.exchange||\'US\')} · '
+                    "${esc(row.asset_type||'stock')}</div>",
+                    rendered,
+                )
+                self.assertNotIn('<div class="name">', rendered)
+                self.assertNotIn('data-sort="exchange"', rendered)
             ht_page = (output / "tsha_hbcs.html").read_text()
             self.assertIn('src="market-events.js?v=2"', ht_page)
             self.assertIn('id="eventOnly"', ht_page)
@@ -107,6 +117,8 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn("MarketEvents.record(r.symbol,r.market)", ht_page)
             self.assertIn("MarketEvents.dot(r.symbol,r.market)", ht_page)
             self.assertNotIn("?'present':'absent'", ht_page)
+            self.assertNotIn('id="historyPrompt"', ht_page)
+            self.assertNotIn("unlock period history", ht_page)
             for page in (
                 "dashboard.html",
                 "daily.html",

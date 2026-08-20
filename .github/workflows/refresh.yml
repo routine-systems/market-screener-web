@@ -108,33 +108,15 @@ jobs:
           retention-days: 30
 
       - name: Verify web renderer
-        run: python3 -m unittest discover -s tests -v
+        run: |
+          python3 -m unittest discover -s tests -v
+          python3 -m unittest -v test_verify_dashboard_deploy.py
 
-      - name: Render six-page site
+      - name: Render eight-page site
         run: ./scripts/build artifacts/signals-bundle.v1.json
 
-      - name: Verify rendered contract
-        run: |
-          python3 - <<'PY'
-          import json
-          from pathlib import Path
-
-          required = {
-              "dashboard.html",
-              "daily.html",
-              "market.html",
-              "sectors.html",
-              "recommendations.html",
-              "tsha_hbcs.html",
-              "index.html",
-              "build-manifest.json",
-          }
-          missing = sorted(name for name in required if not (Path("dist") / name).is_file())
-          if missing:
-              raise SystemExit(f"missing rendered files: {missing}")
-          manifest = json.loads(Path("dist/build-manifest.json").read_text())
-          print(json.dumps(manifest, indent=2, sort_keys=True))
-          PY
+      - name: Verify eight-tab deployment contract
+        run: python3 verify_dashboard_deploy.py dist
 
       - name: Deploy production Pages project
         run: >-
