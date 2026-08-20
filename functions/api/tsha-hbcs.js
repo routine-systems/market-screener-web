@@ -120,7 +120,7 @@ function validSnapshot(value) {
   return true;
 }
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ env, request }) {
   if (!env.SCANLINKS) {
     return json({ schema_version: "tsha-hbcs.api.v1", error: "snapshot store unavailable" }, 500);
   }
@@ -134,6 +134,22 @@ export async function onRequestGet({ env }) {
     }
     if (!validSnapshot(stored.value)) {
       return json({ schema_version: "tsha-hbcs.api.v1", error: "snapshot invalid" }, 500);
+    }
+    const metaOnly = request?.url
+      ? new URL(request.url).searchParams.get("meta") === "1"
+      : false;
+    if (metaOnly) {
+      return json({
+        schema_version: "tsha-hbcs.api.v1",
+        snapshot: {
+          generated_at_utc: stored.value.generated_at_utc,
+          data_cutoff: {
+            IN: stored.value.markets.IN.data_session,
+            US: stored.value.markets.US.data_session,
+          },
+        },
+        publication: stored.metadata ?? {},
+      });
     }
     return json({
       schema_version: "tsha-hbcs.api.v1",

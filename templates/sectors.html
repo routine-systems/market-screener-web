@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0d0d'/%3E%3Crect x='6.5' y='18' width='4.5' height='8' rx='1.4' fill='%234d93ea'/%3E%3Crect x='13.75' y='12' width='4.5' height='14' rx='1.4' fill='%2316b816'/%3E%3Crect x='21' y='6.5' width='4.5' height='19.5' rx='1.4' fill='%2316b816'/%3E%3C/svg%3E">
-<title>Sector Rotation</title>
+<title>India Sector Rotation</title>
 <style>
   :root{
     color-scheme: light;
@@ -116,24 +116,16 @@
 </head>
 <body>
 <div class="wrap">
-  <nav class="nav" aria-label="Views">
-    <a href="dashboard.html">Weekly</a>
-    <a href="daily.html">Daily</a>
-    <a href="market.html">Market</a>
-    <a href="sectors.html" class="on" aria-current="page">Sectors</a>
-    <a href="tsha_hbcs.html">HT</a>
-    <a href="recommendations.html">Forward Test</a>
-    <span class="sp"></span>
-    <button class="themebtn" id="refreshBtn" title="Re-scrape Chartink and rebuild all pages (~3–4 min) — reload after">↻ Refresh</button>
-    <button class="themebtn" id="themeBtn">◐ Theme</button>
-  </nav>
+  __DASHBOARD_NAV__
 
-  <main>
+  <main id="main-content" tabindex="-1">
   <header class="top">
-    <h1>Sector rotation</h1>
+    <div><h1>India Sector Rotation</h1><p class="purpose">Weekly participation and momentum across India sectors, industries, and basic industries.</p></div>
     <div class="spacer"></div>
+    <div class="page-actions" aria-label="India data actions"><button id="refreshBtn" type="button" title="Re-scrape Chartink and rebuild all pages (~3–4 min) — reload after">↻ Refresh</button></div>
   </header>
   <div class="sub" id="sub"></div>
+  __DASHBOARD_FRESHNESS__
 
   <div class="presets">
     <span class="lab">Layout</span>
@@ -146,11 +138,11 @@
     <button class="preset" data-level="basic">Basic</button>
     <span style="width:12px"></span>
     <span class="lab">Weeks</span>
-    <button class="preset" data-days="5">5</button>
-    <button class="preset" data-days="8">8</button>
-    <button class="preset" data-days="13">13</button>
-    <button class="preset" data-days="26">26</button>
-    <button class="preset" data-days="52">52</button>
+    <button class="preset" data-days="5">5W</button>
+    <button class="preset" data-days="8">8W</button>
+    <button class="preset" data-days="13">13W</button>
+    <button class="preset" data-days="26">26W</button>
+    <button class="preset" data-days="52">52W</button>
     <button class="preset" data-days="999">All</button>
     <span style="width:6px"></span>
     <button class="offbtn" id="offBack" title="Shift the window one week older">◀</button>
@@ -160,7 +152,7 @@
     <span id="viewGrp"><span class="lab">View</span>
       <button class="preset" data-chart="line">Line</button>
       <button class="preset" data-chart="hist">Bars</button></span>
-    <select id="within" class="within" hidden title="Focus the quadrant on one sector's sub-groups"></select>
+    <select id="within" class="within" hidden title="Focus the quadrant on one sector's sub-groups" aria-label="Focus quadrant within sector"></select>
     <span class="summary" id="summary"></span>
   </div>
   <div class="legend" id="legend"></div>
@@ -170,7 +162,7 @@
   <footer id="foot"></footer>
   </main>
 </div>
-<div id="tt"></div>
+<div id="tt" role="tooltip" aria-hidden="true"></div>
 
 <script>
 const SECTOR_B64="__SECTOR_B64__";
@@ -258,9 +250,8 @@ function render(){
   const showWithin = isQuad && LEVEL!=='sector';
   $('#within').hidden = !showWithin; $('#within').value = WITHIN;
   $('#sub').innerHTML = `<b>${Object.keys(groups).length}</b> ${esc(lvlName.toLowerCase())} groups · weekly · `
-    + `<a href="${esc(M.url)}" target="_blank" rel="noopener">source ↗</a>`
-    + ` · Last updated <b>${esc(M.last_updated_ist||'—')}</b>`
-    + (M.data_as_of?` · Week of <b>${esc(M.data_as_of)}</b>`:'');
+    + `<a href="${esc(M.url)}" target="_blank" rel="noopener">source ↗</a> · `
+    + (M.updated_at?`updated <b>${esc(M.updated_at)}</b>`:'no data');
   $('#legend').innerHTML = isQuad
     ? `Quadrant of sector <b>movement</b> over the window — <b>x</b> = current participation (avg stocks in the screener), `
       + `<b>y</b> = momentum (stocks added per week). Above the mid-line = <b style="color:var(--up)">adding</b>, below = `
@@ -288,7 +279,7 @@ function render(){
   if(isQuad){ $('#grid').hidden=true; $('#quad').hidden=false; renderQuad(rows, lvlName); }
   else { $('#quad').hidden=true; $('#grid').hidden=false; renderGrid(rows, winWeeks, start, end, lvlName); }
 
-  $('#foot').textContent=`${rows.length} groups shown (≥${MIN_STOCKS} stocks)`
+  $('#foot').textContent=`Generated ${M.generated_at||''} · ${rows.length} groups shown (≥${MIN_STOCKS} stocks)`
     + (cov.total?` · ${cov.mapped}/${cov.total} symbols classified from data.csv`:'')+` · weekly, run daily after 2pm`;
 }
 
@@ -417,12 +408,6 @@ document.querySelectorAll('.preset[data-layout]').forEach(b=>b.addEventListener(
 $('#within').addEventListener('change',()=>{WITHIN=$('#within').value; render();});
 $('#offBack').addEventListener('click',()=>{OFFSET=Math.min((M.weeks||[]).length-1,OFFSET+1); render();});
 $('#offFwd').addEventListener('click',()=>{OFFSET=Math.max(0,OFFSET-1); render();});
-$('#themeBtn').addEventListener('click',()=>{
-  const cur=document.documentElement.getAttribute('data-theme');
-  const dark=matchMedia('(prefers-color-scheme: dark)').matches;
-  document.documentElement.setAttribute('data-theme', cur?(cur==='dark'?'light':'dark'):(dark?'light':'dark'));
-});
-
 /* on-demand refresh → GitHub Actions (hosted site only) */
 (function(){ const rb=document.getElementById('refreshBtn'); if(!rb) return;
   if(location.protocol==='file:'){ rb.style.display='none'; return; }

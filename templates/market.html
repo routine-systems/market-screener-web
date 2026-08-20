@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0d0d'/%3E%3Crect x='6.5' y='18' width='4.5' height='8' rx='1.4' fill='%234d93ea'/%3E%3Crect x='13.75' y='12' width='4.5' height='14' rx='1.4' fill='%2316b816'/%3E%3Crect x='21' y='6.5' width='4.5' height='19.5' rx='1.4' fill='%2316b816'/%3E%3C/svg%3E">
-<title>Market Breadth</title>
+<title>India Market Breadth</title>
 <style>
   :root{
     color-scheme: light;
@@ -128,24 +128,16 @@
 </head>
 <body>
 <div class="wrap">
-  <nav class="nav" aria-label="Views">
-    <a href="dashboard.html">Weekly</a>
-    <a href="daily.html">Daily</a>
-    <a href="market.html" class="on" aria-current="page">Market</a>
-    <a href="sectors.html">Sectors</a>
-    <a href="tsha_hbcs.html">HT</a>
-    <a href="recommendations.html">Forward Test</a>
-    <span class="sp"></span>
-    <button class="themebtn" id="refreshBtn" title="Re-scrape Chartink and rebuild all pages (~3–4 min) — reload after">↻ Refresh</button>
-    <button class="themebtn" id="themeBtn">◐ Theme</button>
-  </nav>
+  __DASHBOARD_NAV__
 
-  <main>
+  <main id="main-content" tabindex="-1">
   <header class="top">
-    <h1>Market breadth</h1>
+    <div><h1>India Market Breadth</h1><p class="purpose">Daily participation and momentum across the India market screens.</p></div>
     <div class="spacer"></div>
+    <div class="page-actions" aria-label="India data actions"><button id="refreshBtn" type="button" title="Re-scrape Chartink and rebuild all pages (~3–4 min) — reload after">↻ Refresh</button></div>
   </header>
   <div class="sub" id="sub"></div>
+  __DASHBOARD_FRESHNESS__
 
   <div class="presets">
     <span class="lab">Window</span>
@@ -166,11 +158,11 @@
   <div class="legend" id="legend"></div>
 
   <section class="mclwrap" id="mclwrap" hidden></section>
-  <section class="grid" id="grid"></section>
+  <section class="grid" id="grid"><div class="empty" role="status">Loading market breadth…</div></section>
   <footer id="foot"></footer>
   </main>
 </div>
-<div id="tt"></div>
+<div id="tt" role="tooltip" aria-hidden="true"></div>
 
 <div id="lightbox" class="lb" hidden>
   <div class="lb-card" role="dialog" aria-modal="true" aria-label="Chart detail">
@@ -198,7 +190,6 @@
 <script>
 const MARKET_B64="__MARKET_B64__";
 const $=s=>document.querySelector(s);
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function b64utf8(b){try{return decodeURIComponent(escape(atob(b)));}catch(e){return atob(b);}}
 const M=JSON.parse(b64utf8(MARKET_B64));
 let PERIOD=63, OFFSET=0;   // default 3M (trading days); OFFSET = days back from latest
@@ -273,7 +264,7 @@ function render(){
   $('#offlbl').textContent = OFFSET===0?'latest':`−${OFFSET} d`;
   $('#offBack').disabled = OFFSET>=maxLen-1;
   $('#offFwd').disabled = OFFSET<=0;
-  $('#sub').innerHTML = `<b>${(M.screeners||[]).length}</b> market screeners · daily counts · ~9-month store · Last updated <b>${esc(M.last_updated_ist||'—')}</b>${M.data_as_of?` · Data through <b>${esc(M.data_as_of)}</b>`:''}`;
+  $('#sub').innerHTML = `<b>${(M.screeners||[]).length}</b> market screeners · daily counts · ${M.updated_at?`updated <b>${M.updated_at}</b>`:'no data yet'} · ~9-month store`;
 
   let up=0,down=0,flat=0;
   const cards=(M.screeners||[]).map(sc=>{
@@ -310,7 +301,7 @@ function render(){
   }).join('');
   $('#grid').innerHTML=cards;
   $('#summary').innerHTML=`<b class="u">${up} ▲</b> · <b class="d">${down} ▼</b> · <b class="f">${flat} →</b>`;
-  $('#foot').textContent=`Counts scraped from Chartink backtest history · run daily after 2pm`;
+  $('#foot').textContent=`Generated ${M.generated_at||''} · counts scraped from Chartink backtest history · run daily after 2pm`;
   renderMcl();
 }
 
@@ -438,12 +429,6 @@ document.querySelectorAll('.preset[data-days]').forEach(b=>b.addEventListener('c
 document.querySelectorAll('.preset[data-chart]').forEach(b=>b.addEventListener('click',()=>{CHART=b.dataset.chart; localStorage.setItem('mkt.chart', CHART); render();}));
 $('#offBack').addEventListener('click',()=>{const maxLen=Math.max(1,...(M.screeners||[]).map(sc=>seriesFor(sc.slug).length)); OFFSET=Math.min(maxLen-1,OFFSET+1); render();});
 $('#offFwd').addEventListener('click',()=>{OFFSET=Math.max(0,OFFSET-1); render();});
-$('#themeBtn').addEventListener('click',()=>{
-  const cur=document.documentElement.getAttribute('data-theme');
-  const dark=matchMedia('(prefers-color-scheme: dark)').matches;
-  document.documentElement.setAttribute('data-theme', cur?(cur==='dark'?'light':'dark'):(dark?'light':'dark'));
-});
-
 /* on-demand refresh → GitHub Actions (hosted site only) */
 (function(){ const rb=document.getElementById('refreshBtn'); if(!rb) return;
   if(location.protocol==='file:'){ rb.style.display='none'; return; }

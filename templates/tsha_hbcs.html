@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0d0d'/%3E%3Crect x='6.5' y='18' width='4.5' height='8' rx='1.4' fill='%234d93ea'/%3E%3Crect x='13.75' y='12' width='4.5' height='14' rx='1.4' fill='%2316b816'/%3E%3Crect x='21' y='6.5' width='4.5' height='19.5' rx='1.4' fill='%2316b816'/%3E%3C/svg%3E">
-<title>HT Potentials</title>
+<title>HT Confirmations</title>
 <style>
 :root{color-scheme:light;--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--muted:#66655f;--grid:#e1e0d9;--axis:#c3c2b7;--border:rgba(11,11,11,.10);--up:#0ca30c;--vol:#1c5cab;--filt:#d98a00;--sol-blue:#1c5cab;--chip:#eef0ee;--red:#b3271f;--dot-off:#d7d6cf;--hot:#184f95}
 @media(prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){color-scheme:dark;--plane:#0d0d0d;--surface:#1a1a19;--ink:#fff;--ink-2:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;--border:rgba(255,255,255,.10);--up:#16b816;--vol:#4d93ea;--filt:#f0b83e;--chip:#232322;--red:#e66767;--dot-off:#39383550;--hot:#86b6ef}}
@@ -13,31 +13,34 @@
 .wrap{max-width:1180px;margin:0 auto;padding:18px 20px 64px}.nav{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--grid)}.nav a{padding:8px 14px;font-size:13px;font-weight:600;color:var(--ink-2);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px}.nav a:hover{color:var(--ink)}.nav a.on{color:var(--ink);border-bottom-color:var(--vol)}.nav .sp{flex:1 1 auto}.nav .themebtn{border:1px solid var(--border);background:var(--surface);color:var(--ink-2);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;align-self:center}
 header.top{margin-bottom:18px}.title h1{font-size:20px;margin:0 0 3px;letter-spacing:-.01em}.title .sub{color:var(--ink-2);font-size:13px}.title .sub.error{color:var(--red)}
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}.tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 13px;min-height:74px;display:flex;flex-direction:column;justify-content:space-between}.tile .lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}.tile .val{font-size:23px;font-weight:600;letter-spacing:-.02em;margin-top:5px}
-.tablecard{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px}.rangebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--grid)}.rangebar .lab{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}.rangebar .arrow{color:var(--muted)}.rangebar.disabled{opacity:.58}.preset,.offbtn{border:1px solid var(--border);background:var(--surface);color:var(--ink-2);border-radius:7px;padding:5px 9px;font-size:12px;cursor:pointer}.preset:hover:not(:disabled),.offbtn:hover:not(:disabled){color:var(--ink);border-color:var(--vol)}.preset.on{background:var(--sol-blue);color:#fff;border-color:var(--sol-blue)}.preset:disabled,.offbtn:disabled{opacity:.45;cursor:default}.offbtn{font-weight:700;padding:5px 10px}.offlbl{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums;min-width:44px;text-align:center;white-space:nowrap}.rangenote{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}.tbar{display:flex;align-items:center;gap:9px;margin-bottom:12px;flex-wrap:wrap}.tbar .count{color:var(--muted);font-size:12px}.spacer{flex:1 1 auto}.filterset{display:flex;gap:5px;flex-wrap:wrap}.toolbtn{border:1px solid var(--border);background:var(--surface);color:var(--ink-2);border-radius:8px;padding:6px 10px;font-size:12.5px;cursor:pointer}.toolbtn:hover{color:var(--ink)}.toolbtn.on{background:var(--sol-blue);color:#fff;border-color:var(--sol-blue)}
+.tablecard{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px}.rangebar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--grid)}.rangebar .lab{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}.rangebar .arrow{color:var(--muted)}.rangebar.disabled .lab,.rangebar.disabled select,.rangebar.disabled button,.rangebar.disabled .arrow,.rangebar.disabled .offlbl{opacity:.58}.preset,.offbtn{border:1px solid var(--border);background:var(--surface);color:var(--ink-2);border-radius:7px;padding:5px 9px;font-size:12px;cursor:pointer}.preset:hover:not(:disabled),.offbtn:hover:not(:disabled){color:var(--ink);border-color:var(--vol)}.preset.on{background:var(--sol-blue);color:#fff;border-color:var(--sol-blue)}.preset:disabled,.offbtn:disabled{opacity:.45;cursor:default}.offbtn{font-weight:700;padding:5px 10px}.offlbl{color:var(--muted);font-size:11px;font-variant-numeric:tabular-nums;min-width:44px;text-align:center;white-space:nowrap}.rangenote{color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}.tbar{display:flex;align-items:center;gap:9px;margin-bottom:12px;flex-wrap:wrap}.tbar .count,.tablecard>.count{color:var(--muted);font-size:12px}.tablecard>.count{display:block;margin:0 0 10px}.spacer{flex:1 1 auto}.filterset{display:flex;gap:5px;flex-wrap:wrap}.toolbtn{border:1px solid var(--border);background:var(--surface);color:var(--ink-2);border-radius:8px;padding:6px 10px;font-size:12.5px;cursor:pointer}.toolbtn:hover{color:var(--ink)}.toolbtn.on{background:var(--sol-blue);color:#fff;border-color:var(--sol-blue)}.event-filter.on{background:var(--ink);color:var(--surface);border-color:var(--ink)}
 input,select{background:var(--plane);border:1px solid var(--border);color:var(--ink);border-radius:8px;padding:7px 10px;font-size:13px}input{width:190px;max-width:52vw}select{font-variant-numeric:tabular-nums}.tablewrap{overflow-x:auto;max-height:72vh;overflow-y:auto}table{width:100%;min-width:960px;border-collapse:collapse;font-size:13px}th,td{padding:8px 10px;text-align:right;white-space:nowrap}th.l,td.l{text-align:left}thead th{color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.03em;border-bottom:1px solid var(--axis);cursor:pointer;user-select:none;position:sticky;top:0;background:var(--surface);z-index:1}thead th:hover{color:var(--ink-2)}thead th.sorted::after{content:" ▾";color:var(--ink-2)}thead th.sorted.asc::after{content:" ▴"}tbody tr{border-bottom:1px solid var(--grid)}tbody tr:hover{background:var(--chip)}td.num{font-variant-numeric:tabular-nums}.symbol{font-weight:600;color:var(--vol);text-decoration:none}.symbol:hover{text-decoration:underline}.market{font-size:11px;color:var(--ink-2)}.pill{display:inline-block;padding:2px 7px;border-radius:999px;background:var(--chip);color:var(--ink-2);font-size:10.5px;font-weight:700}.appc{display:inline-flex;align-items:center;gap:9px}.appc .frac{font-variant-numeric:tabular-nums;font-weight:700;min-width:30px;display:inline-block}.appc .frac small{font-weight:500;color:var(--muted)}.dots{display:inline-flex;gap:3px}.dot{width:9px;height:9px;border-radius:50%;background:var(--dot-off)}.dot.on{background:var(--vol)}.dot.hot{background:var(--hot)}.bull{color:var(--up)}.components{color:var(--filt)}.empty{padding:36px;text-align:center;color:var(--muted)}footer{color:var(--muted);font-size:11.5px;margin-top:24px;text-align:center}#tt{position:fixed;z-index:50;pointer-events:none;background:var(--ink);color:var(--surface);padding:6px 9px;border-radius:7px;font-size:12px;white-space:pre-line;opacity:0;transform:translateY(-4px);transition:opacity .08s;max-width:260px}:root[data-theme="dark"] #tt,:root:where(:not([data-theme="light"])) #tt{color:#111}
 @media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}@media(max-width:640px){.wrap{padding:14px 12px 48px}.nav{flex-wrap:wrap;row-gap:4px}.nav .sp{flex-basis:100%;height:0;margin:0}.nav a{padding:7px 10px;font-size:12.5px}.kpis{grid-template-columns:repeat(2,1fr)}table{font-size:12px}}
 </style>
 </head>
 <body><div class="wrap">
-<nav class="nav" aria-label="Views">
-  <a href="dashboard.html">Weekly</a>
-  <a href="daily.html">Daily</a>
-  <a href="market.html">Market</a>
-  <a href="sectors.html">Sectors</a>
-  <a href="tsha_hbcs.html" class="on" aria-current="page">HT</a>
-  <a href="recommendations.html">Forward Test</a>
-  <span class="sp"></span>
-  <button class="themebtn" id="themeBtn">◐ Theme</button>
-</nav>
-<main>
-  <header class="top"><div class="title"><h1>HT potentials</h1><div class="sub" id="status">Loading latest snapshot…</div><div class="sub" id="updated">Last updated —</div></div></header>
+__DASHBOARD_NAV__
+<main id="main-content" tabindex="-1">
+  <header class="top"><div class="title"><h1>HT Confirmations</h1><p class="purpose">HT combines Twin Heikin-Ashi with fresh bullish HBCS components as a confirmation watchlist.</p><div class="sub" id="status">Loading latest snapshot…</div><div class="sub" id="updated">Last updated —</div></div></header>
+  __DASHBOARD_FRESHNESS__
   <section class="kpis" id="summary"></section>
   <section class="tablecard">
+  <div class="ht-steps" aria-label="History selection steps">
+    <span class="ht-step">1. Choose market</span><span class="ht-step">2. Choose timeframe</span><span class="ht-step">3. Review history</span>
+  </div>
+  <div class="tbar">
+    <div class="filterset" id="markets" role="group" aria-label="Market"><button class="toolbtn on" data-v="all">All markets</button><button class="toolbtn" data-v="IN">India</button><button class="toolbtn" data-v="US">US</button></div>
+    <div class="filterset" id="timeframes" role="group" aria-label="Timeframe"><button class="toolbtn on" data-v="all">All timeframes</button><button class="toolbtn" data-v="daily">Daily</button><button class="toolbtn" data-v="weekly">Weekly</button></div>
+    <button class="toolbtn event-filter" id="eventOnly" title="Only tickers with stored transaction history" hidden>● Transaction history</button>
+    <input id="search" type="search" placeholder="Search symbol / sector…" autocomplete="off" aria-label="Search symbols and sectors">
+    <select id="liquidity" aria-label="Minimum median turnover"><option value="0">All liquidity</option><option value="1000000">Turnover ≥ 1m</option><option value="5000000">Turnover ≥ 5m</option><option value="10000000">Turnover ≥ 10m</option></select>
+    <button class="toolbtn" id="download" disabled>⭳ CSV</button>
+  </div>
   <div class="rangebar disabled" id="historyRange" aria-disabled="true">
     <span class="lab" id="rangeLabel">Periods</span>
-    <select id="fromPeriod" title="Range start" disabled></select>
+    <select id="fromPeriod" title="Range start" aria-label="Range start period" disabled></select>
     <span class="arrow">→</span>
-    <select id="toPeriod" title="Range end" disabled></select>
+    <select id="toPeriod" title="Range end" aria-label="Range end period" disabled></select>
     <span style="width:4px"></span>
     <button class="offbtn" id="rangeBack" title="Shift the window one period older" disabled>◀</button>
     <span class="offlbl" id="rangeOffset"></span>
@@ -49,16 +52,10 @@ input,select{background:var(--plane);border:1px solid var(--border);color:var(--
     <button class="preset" data-periods="8" disabled>8</button>
     <button class="preset" data-periods="13" disabled>13</button>
     <div class="spacer"></div>
-    <span class="rangenote" id="rangeNote">Select one market + timeframe</span>
+    <span class="history-callout" id="historyPrompt">Choose India or US, then choose Daily or Weekly to unlock period history.</span>
+    <span class="rangenote" id="rangeNote"></span>
   </div>
-  <div class="tbar">
-    <span class="count" id="rankhint">Loading rows…</span><div class="spacer"></div>
-    <div class="filterset" id="markets"><button class="toolbtn on" data-v="all">All markets</button><button class="toolbtn" data-v="IN">India</button><button class="toolbtn" data-v="US">US</button></div>
-    <div class="filterset" id="timeframes"><button class="toolbtn on" data-v="all">All timeframes</button><button class="toolbtn" data-v="daily">Daily</button><button class="toolbtn" data-v="weekly">Weekly</button></div>
-    <input id="search" type="search" placeholder="Search symbol / sector…" autocomplete="off">
-    <select id="liquidity"><option value="0">All liquidity</option><option value="1000000">Turnover ≥ 1m</option><option value="5000000">Turnover ≥ 5m</option><option value="10000000">Turnover ≥ 10m</option></select>
-    <button class="toolbtn" id="download" disabled>⭳ CSV</button>
-  </div>
+  <div class="count" id="rankhint" role="status">Loading rows…</div>
   <div class="tablewrap"><table id="tbl">
     <thead><tr>
       <th class="l" data-k="symbol">Symbol</th><th data-k="signal_date">Date</th><th data-k="timeframe">Bucket</th><th class="l" data-k="appearance_count">Appearances (oldest→newest)</th>
@@ -71,14 +68,16 @@ input,select{background:var(--plane);border:1px solid var(--border);color:var(--
 </main>
 </div>
 <div id="tt" role="tooltip" aria-hidden="true"></div>
+<script src="market-events.js?v=2"></script>
 <script>
-let DATA=null;
-const state={market:'all',timeframe:'all',query:'',liquidity:0,sort:'hbcs_bull_component_count',desc:true,rangeKey:null,from:0,to:0};
+let DATA=null,EVENTS_READY=new Set();
+const state={market:'all',timeframe:'all',events:false,query:'',liquidity:0,sort:'hbcs_bull_component_count',desc:true,rangeKey:null,from:0,to:0};
 const HISTORY_EXPORT_COLUMNS=['market','timeframe','signal_date','instrument_index','symbol','exchange','asset_type','sector','hbcs_bull_component_count','hbcs_components','fast_body_pct','slow_body_pct','close','median_dollar_turnover_20','appearance_count','appearance_periods','appearance_bits'];
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=(v,d=2)=>v==null||!Number.isFinite(Number(v))?'—':Number(v).toLocaleString(undefined,{maximumFractionDigits:d});
 const tt=$('#tt');
+const periodLabel=date=>new Intl.DateTimeFormat('en-GB',{timeZone:'UTC',day:'2-digit',month:'short',year:'numeric'}).format(new Date(`${date}T00:00:00Z`));
 function formatIst(value){if(typeof value!=='string'||!/(?:Z|[+-]\d\d:\d\d)$/.test(value))return '—';const date=new Date(value);if(Number.isNaN(date.getTime()))return '—';const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(date).filter(part=>part.type!=='literal').map(part=>[part.type,part.value]));return `${parts.day} ${parts.month} ${parts.year}, ${parts.hour}:${parts.minute} IST`}
 function showTip(text,x,y){tt.textContent=text;tt.style.opacity='1';tt.setAttribute('aria-hidden','false');const box=tt.getBoundingClientRect();let left=x+12,top=y-box.height-8;if(left+box.width>innerWidth-8)left=x-box.width-12;if(top<8)top=y+16;tt.style.left=left+'px';tt.style.top=top+'px'}
 function hideTip(){tt.style.opacity='0';tt.setAttribute('aria-hidden','true')}
@@ -120,7 +119,8 @@ function selectedRows(){if(!DATA)return [];return rowsForView(DATA.rows,selected
 function filtered(sourceRows=selectedRows()){
   if(!DATA)return [];
   const q=state.query.toLowerCase();
-  return sourceRows.filter(r=>(state.market==='all'||r.market===state.market)&&(state.timeframe==='all'||r.timeframe===state.timeframe)&&(!q||`${r.symbol} ${r.sector||''}`.toLowerCase().includes(q))&&Number(r.median_dollar_turnover_20||0)>=state.liquidity)
+  return sourceRows.filter(r=>(state.market==='all'||r.market===state.market)&&(state.timeframe==='all'||r.timeframe===state.timeframe)&&(!state.events||!!MarketEvents.record(r.symbol,r.market))&&(!q||`${r.symbol} ${r.sector||''}`.toLowerCase().includes(q))&&Number(r.median_dollar_turnover_20||0)>=state.liquidity)
+    .map(r=>({...r,hasTransactionHistory:!!MarketEvents.record(r.symbol,r.market)}))
     .sort((a,b)=>{let x=a[state.sort],y=b[state.sort];if(typeof x==='string'||typeof y==='string'){x=String(x??'');y=String(y??'');return state.desc?y.localeCompare(x):x.localeCompare(y)}x=Number(x??-Infinity);y=Number(y??-Infinity);return state.desc?y-x:x-y});
 }
 function summaries(){
@@ -137,33 +137,40 @@ function appearanceCell(r){
   const periods=Array.isArray(r.appearance_periods)?r.appearance_periods:[],bits=String(r.appearance_bits||'');
   if(!periods.length||bits.length!==periods.length||!/^[01]+$/.test(bits))return '<span class="market">—</span>';
   const count=r.appearance_count,n=periods.length,hot=count===n&&n>1;
-  const dots=[...bits].map((bit,index)=>`<span class="dot ${bit==='1'?(hot?'hot':'on'):''}" title="${esc(periods[index])}: ${bit==='1'?'present':'absent'}"></span>`).join('');
-  const tip=periods.map((period,index)=>`${period}: ${bits[index]==='1'?'●':'—'}`).join(' · ');
+  const dots=[...bits].map((bit,index)=>{const glyph=bit==='1'?'●':'○',label=`${glyph} ${periodLabel(periods[index])}`;return `<span class="dot ${bit==='1'?(hot?'hot':'on'):''}" title="${esc(label)}"></span>`}).join('');
+  const tip=periods.map((period,index)=>`${bits[index]==='1'?'●':'○'} ${periodLabel(period)}`).join(' · ');
   return `<span class="appc" role="img" aria-label="${esc(tip)}" data-tip="row" data-w="${esc(tip)}"><span class="frac">${count}<small>/${n}</small></span><span class="dots">${dots}</span></span>`;
 }
 function sourceSummary(periods){const counts={stored:0,replay:0};periods.forEach(period=>{if(period.source in counts)counts[period.source]+=1});return ['stored','replay'].filter(source=>counts[source]).map(source=>`${source} ${counts[source]}`).join(' · ')}
 function syncRangeControls(reset=false){
   const history=selectedHistory(),active=Boolean(history),controls=$('#historyRange').querySelectorAll('select,button');
-  $('#historyRange').classList.toggle('disabled',!active);$('#historyRange').setAttribute('aria-disabled',String(!active));controls.forEach(control=>{control.disabled=!active});
-  if(!active){state.rangeKey=null;$('#fromPeriod').innerHTML='';$('#toPeriod').innerHTML='';$('#rangeOffset').textContent='';$('#rangeNote').textContent=singleSelection()?'Latest only':'Select one market + timeframe';document.querySelectorAll('#historyRange .preset').forEach(button=>button.classList.remove('on'));return null}
+  $('#historyRange').classList.toggle('disabled',!active);$('#historyRange').setAttribute('aria-disabled',String(!active));controls.forEach(control=>{control.disabled=!active});$('#historyPrompt').hidden=active;
+  if(!active){state.rangeKey=null;$('#fromPeriod').innerHTML='';$('#toPeriod').innerHTML='';$('#rangeOffset').textContent='';$('#rangeLabel').textContent='Periods';$('#rangeNote').textContent=singleSelection()?'History unavailable for this selection':'';document.querySelectorAll('#historyRange .preset').forEach(button=>{button.classList.remove('on');button.textContent=button.dataset.periods+'P'});return null}
   const key=`${state.market}:${state.timeframe}`,n=history.periods.length;
-  if(reset||state.rangeKey!==key){state.rangeKey=key;state.to=n-1;state.from=Math.max(0,n-Math.min(5,n))}
+  if(reset||state.rangeKey!==key){state.rangeKey=key;state.to=n-1;state.from=Math.max(0,n-Math.min(8,n))}
   const options=history.periods.map((period,index)=>`<option value="${index}">${period.date}</option>`).join('');
   const from=$('#fromPeriod'),to=$('#toPeriod');if(from.options.length!==n||from.dataset.key!==key){from.innerHTML=options;to.innerHTML=options;from.dataset.key=key;to.dataset.key=key}from.value=state.from;to.value=state.to;
   const selected=history.periods.slice(state.from,state.to+1),size=selected.length,unit=state.timeframe==='daily'?(size===1?'day':'days'):(size===1?'week':'weeks');
-  $('#rangeLabel').textContent=state.timeframe==='daily'?'Days':'Weeks';$('#rangeBack').disabled=state.from<=0;$('#rangeFwd').disabled=state.to>=n-1;$('#rangeOffset').textContent=state.to>=n-1?'latest':`−${n-1-state.to}`;
-  document.querySelectorAll('#historyRange .preset').forEach(button=>{const wanted=Number(button.dataset.periods);button.classList.toggle('on',wanted<=n&&state.to===n-1&&size===wanted)});
+  const suffix=state.timeframe==='daily'?'D':'W';$('#rangeLabel').textContent=state.timeframe==='daily'?'Days':'Weeks';$('#rangeBack').disabled=state.from<=0;$('#rangeFwd').disabled=state.to>=n-1;$('#rangeOffset').textContent=state.to>=n-1?'latest':`−${n-1-state.to}`;
+  document.querySelectorAll('#historyRange .preset').forEach(button=>{const wanted=Number(button.dataset.periods);button.textContent=`${wanted}${suffix}`;button.classList.toggle('on',wanted<=n&&state.to===n-1&&size===wanted)});
   $('#rangeNote').textContent=`${size} ${unit} · ${selected[0].date} → ${selected[selected.length-1].date} · ${sourceSummary(selected)}`;
   return history;
 }
 function shiftRange(delta){const history=selectedHistory();if(!history)return;const n=history.periods.length,size=state.to-state.from+1;let from=state.from+delta,to=state.to+delta;if(from<0){from=0;to=size-1}if(to>n-1){to=n-1;from=n-size}state.from=Math.max(0,from);state.to=Math.min(n-1,to);render()}
+function syncEventFilter(){
+  const button=$('#eventOnly'),market=state.market,ready=(market==='IN'||market==='US')&&EVENTS_READY.has(market);
+  if(!ready){button.hidden=true;state.events=false;button.classList.remove('on');return}
+  const rows=selectedRows().filter(r=>r.market===market&&(state.timeframe==='all'||r.timeframe===state.timeframe)),count=rows.filter(r=>MarketEvents.record(r.symbol,market)).length;
+  button.hidden=false;button.textContent=market==='IN'?`● Bulk history (${count.toLocaleString()})`:`● Congress history (${count.toLocaleString()})`;
+}
 function render(resetRange=false){
   syncRangeControls(resetRange);
+  syncEventFilter();
   summaries();
   const rows=filtered(),shown=rows.slice(0,250);
   $('#rankhint').textContent=`${rows.length.toLocaleString()} matching potentials`;
   $('#rows').innerHTML=shown.length?shown.map(r=>`<tr>
-    <td class="l"><a class="symbol" target="_blank" rel="noopener" href="${chartUrl(r)}">${esc(r.symbol)}</a><div class="market">${esc(r.exchange||r.market)} · ${esc(r.asset_type)}</div></td>
+    <td class="l"><a class="symbol" target="_blank" rel="noopener" href="${chartUrl(r)}">${esc(r.symbol)}</a>${MarketEvents.dot(r.symbol,r.market)}<div class="market">${esc(r.exchange||r.market)} · ${esc(r.asset_type)}</div></td>
     <td>${esc(r.signal_date)}</td><td><span class="pill">${r.market==='IN'?'India':'US'} ${esc(r.timeframe)}</span></td><td class="l">${appearanceCell(r)}</td>
     <td class="bull num">${num(r.hbcs_bull_component_count,0)}</td><td class="components">${esc(r.hbcs_components||'Union transition')}</td>
     <td class="bull num">${num(r.fast_body_pct)}%</td><td class="bull num">${num(r.slow_body_pct)}%</td><td class="num">${num(r.close)}</td><td class="num">${num(r.median_dollar_turnover_20,0)}</td><td>${esc(r.sector||'—')}</td>
@@ -179,10 +186,11 @@ $('#rangeBack').addEventListener('click',()=>shiftRange(-1));$('#rangeFwd').addE
 document.querySelectorAll('#historyRange .preset').forEach(button=>button.addEventListener('click',()=>{const history=selectedHistory();if(!history)return;const n=history.periods.length,wanted=Number(button.dataset.periods);state.to=n-1;state.from=Math.max(0,n-Math.min(wanted,n));render()}));
 $('#search').addEventListener('input',e=>{state.query=e.target.value;render()});
 $('#liquidity').addEventListener('change',e=>{state.liquidity=Number(e.target.value);render()});
+$('#eventOnly').addEventListener('click',event=>{state.events=!state.events;event.currentTarget.classList.toggle('on',state.events);render()});
 document.querySelectorAll('th[data-k]').forEach(th=>th.addEventListener('click',()=>{if(state.sort===th.dataset.k)state.desc=!state.desc;else{state.sort=th.dataset.k;state.desc=true}document.querySelectorAll('th[data-k]').forEach(item=>item.classList.toggle('sorted',item===th));th.classList.toggle('asc',!state.desc);render()}));
 document.body.addEventListener('mousemove',event=>{const target=event.target.closest('[data-tip="row"]');if(!target){hideTip();return}showTip(target.dataset.w.split(' · ').join('\n'),event.clientX,event.clientY)});
 document.body.addEventListener('mouseleave',hideTip);
-$('#download').addEventListener('click',()=>{if(!DATA)return;const history=selectedHistory(),rows=filtered(),keys=csvColumns(history,DATA.snapshot.columns);const q=v=>{if(Array.isArray(v))v=v.join('|');let text=String(v??'');if(typeof v==='string'&&/^[=+\-@]/.test(text))text=`'${text}`;return `"${text.replaceAll('"','""')}"`};const csv=[keys.join(','),...rows.map(r=>keys.map(k=>q(r[k])).join(','))].join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='tsha_hbcs_shortlist.csv';a.click();URL.revokeObjectURL(a.href)});
+$('#download').addEventListener('click',()=>{if(!DATA)return;const history=selectedHistory(),rows=filtered(),keys=[...csvColumns(history,DATA.snapshot.columns),'hasTransactionHistory'];const q=v=>{if(Array.isArray(v))v=v.join('|');let text=String(v??'');if(typeof v==='string'&&/^[=+\-@]/.test(text))text=`'${text}`;return `"${text.replaceAll('"','""')}"`};const csv=[keys.join(','),...rows.map(r=>keys.map(k=>q(r[k])).join(','))].join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='tsha_hbcs_shortlist.csv';a.click();URL.revokeObjectURL(a.href)});
 async function load(){
   try{
     const response=await fetch('/api/tsha-hbcs',{headers:{accept:'application/json'}});
@@ -194,8 +202,8 @@ async function load(){
     $('#updated').textContent=`Last updated ${formatIst(DATA.snapshot.generated_at_utc)} · India data through ${inDate} · US data through ${usDate}`;
   }catch(error){$('#status').classList.add('error');$('#status').textContent=`Snapshot unavailable: ${error.message}`;$('#rows').innerHTML='<tr><td colspan="11"><div class="empty">No stored data is available.</div></td></tr>'}
 }
-$('#themeBtn').addEventListener('click',()=>{const cur=document.documentElement.getAttribute('data-theme');const dark=matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.setAttribute('data-theme',cur?(cur==='dark'?'light':'dark'):(dark?'light':'dark'))});
 load();
+for(const market of ['IN','US'])MarketEvents.load(market,()=>{EVENTS_READY.add(market);if(DATA)render()});
 </script>
 </body>
 </html>

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0d0d'/%3E%3Crect x='6.5' y='18' width='4.5' height='8' rx='1.4' fill='%234d93ea'/%3E%3Crect x='13.75' y='12' width='4.5' height='14' rx='1.4' fill='%2316b816'/%3E%3Crect x='21' y='6.5' width='4.5' height='19.5' rx='1.4' fill='%2316b816'/%3E%3C/svg%3E">
-<title>Daily Potentials</title>
+<title>India Daily · Trend Bounce</title>
 <style>
   :root{
     color-scheme: light;
@@ -124,44 +124,40 @@
 </head>
 <body>
 <div class="wrap">
-  <nav class="nav" aria-label="Views">
-    <a href="dashboard.html">Weekly</a>
-    <a href="daily.html" class="on" aria-current="page">Daily</a>
-    <a href="market.html">Market</a>
-    <a href="sectors.html">Sectors</a>
-    <a href="tsha_hbcs.html">HT</a>
-    <a href="recommendations.html">Forward Test</a>
-    <span class="sp"></span>
-    <button class="themebtn" id="linksBtn" title="Refresh only the in-scan ticker links (~1 min) — revives links that expired since the last scrape">⚡ Links</button>
-    <button class="themebtn" id="refreshBtn" title="Re-scrape Chartink and rebuild all pages (~10 min) — reload after">↻ Refresh</button>
-    <button class="themebtn" id="themeBtn">◐ Theme</button>
-  </nav>
+  __DASHBOARD_NAV__
 
-  <main>
+  <main id="main-content" tabindex="-1">
   <header class="top">
     <div class="title">
-      <h1>Daily potentials</h1>
+      <h1>India Daily · Trend Bounce</h1>
+      <p class="purpose">India daily candidates, ranked by signals and appearances inside the selected session window.</p>
       <div class="sub" id="sub"></div>
     </div>
+    <div class="page-actions" aria-label="India data actions">
+      <button id="linksBtn" type="button" title="Refresh only the in-scan ticker links (~1 min) — revives links that expired since the last scrape">⚡ Links</button>
+      <button id="refreshBtn" type="button" title="Re-scrape Chartink and rebuild all pages (~10 min) — reload after">↻ Refresh</button>
+    </div>
   </header>
+  __DASHBOARD_FRESHNESS__
 
   <section class="kpis" id="kpis"></section>
 
   <section class="tablecard">
     <div class="rangebar">
       <span class="lab">Days</span>
-      <select id="fromDay" title="Range start day"></select>
+      <select id="fromDay" title="Range start day" aria-label="Range start day"></select>
       <span class="arrow">→</span>
-      <select id="toDay" title="Range end day"></select>
+      <select id="toDay" title="Range end day" aria-label="Range end day"></select>
       <span style="width:4px"></span>
       <button class="offbtn" id="offBack" title="Shift the window one day older">◀</button>
       <span class="offlbl" id="offlbl"></span>
       <button class="offbtn" id="offFwd" title="Shift the window one day newer">▶</button>
       <span style="width:8px"></span>
       <button class="preset" data-days="1">1D</button>
+      <button class="preset" data-days="3">3D</button>
       <button class="preset" data-days="5">5D</button>
-      <button class="preset" data-days="10">10D</button>
-      <button class="preset" data-days="21">21D</button>
+      <button class="preset" data-days="8">8D</button>
+      <button class="preset" data-days="13">13D</button>
       <button class="preset" data-days="999">All</button>
       <div class="spacer"></div>
       <span class="rangenote" id="rangenote"></span>
@@ -179,7 +175,7 @@
       <select id="rotLevel" title="Rotation granularity" hidden><option value="sector">Sector</option><option value="industry">Industry</option><option value="basic">Basic</option></select>
       <span id="secFilterWrap"></span>
       <button class="toolbtn" id="previewBtn" title="On hover over a ticker, show quick links to open its chart (Chartink in-scan · TradingView · Yahoo)">⧉ Chart links</button>
-      <input id="search" type="search" placeholder="Search symbol / sector…" autocomplete="off">
+      <input id="search" type="search" placeholder="Search symbol / sector…" autocomplete="off" aria-label="Search symbols and sectors">
       <button class="toolbtn" id="csvBtn">⭳ CSV</button>
     </div>
     <div class="legend" id="legend"></div>
@@ -200,12 +196,13 @@
   <footer id="foot"></footer>
   </main>
 </div>
-<div id="tt"></div>
+<div id="tt" role="tooltip" aria-hidden="true"></div>
 <div id="pv"></div>
 
+<script src="market-events.js?v=2"></script>
 <script>
 const HISTORY_B64="__HISTORY_B64__";
-const WINDOW=5;                     // default window (trading days)
+const WINDOW=8;                     // default window (trading days)
 const DOTCAP=14;
 const $=s=>document.querySelector(s);
 function b64utf8(b){try{return decodeURIComponent(escape(atob(b)));}catch(e){return atob(b);}}
@@ -218,6 +215,7 @@ const filByDay=new Map(Object.entries((H.filter&&H.filter.weeks)||{}).map(([d,a]
 const SIGS=(H.signals||[]).map(s=>({key:s.key,label:s.label,name:s.name,url:s.url,by:new Map(Object.entries(s.weeks||{}).map(([d,a])=>[d,new Set(a)]))}));
 const CROSS=new Map(Object.entries((H.cross&&H.cross.weeks)||{}).map(([d,a])=>[d,new Set(a)]));
 function mondayOf(iso){const dt=new Date(iso+'T00:00:00Z');const wd=(dt.getUTCDay()+6)%7;dt.setUTCDate(dt.getUTCDate()-wd);return dt.toISOString().slice(0,10);}
+function displayDate(iso){const [y,m,d]=String(iso).split('-');const mon=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][Number(m)-1];return mon?`${d} ${mon} ${y}`:String(iso);}
 
 let SEL={from:Math.max(0,DAYS.length-WINDOW), to:DAYS.length-1};
 let sortKey='score', sortAsc=false, MODEL=null;
@@ -294,7 +292,7 @@ function render(){
 
   const all3=rows.filter(r=>r.score===3).length, pb=rows.filter(r=>r.sig.pb).length, mq=rows.filter(r=>r.sig.mq).length;
   const fil=rows.filter(r=>r.inFil).length, nw=rows.filter(r=>r.isNew).length;
-  $('#sub').innerHTML=`<b>${rows.length}</b> potentials · ${nD===1?win[0]:`${win[0]} → ${win[nD-1]}`} · Last updated <b>${escH(H.last_updated_ist||'—')}</b>${H.data_as_of?` · Data through <b>${escH(H.data_as_of)}</b>`:''}`;
+  $('#sub').innerHTML=`<b>${rows.length}</b> potentials · ${nD===1?win[0]:`${win[0]} → ${win[nD-1]}`}`;
 
   const tiles=[['Potentials',String(rows.length)],['All three',`<span class="g3">${all3}</span>`],['+ PB',String(pb)],['+ MQ',String(mq)],['In filter',String(fil)],['New',`<span class="up">${nw}</span>`]];
   $('#kpis').innerHTML=tiles.map(([l,v])=>`<div class="tile"><div class="lbl">${l}</div><div class="val">${v}</div></div>`).join('');
@@ -312,7 +310,7 @@ function render(){
     ? `<span class="secfilter" id="secFilterChip" title="Clear sector filter — showing only ${escH(SECFILTER.group)}">${escH(SECFILTER.group)} <span class="x">✕</span></span>`
     : '';
   renderTable();
-  $('#foot').innerHTML=`Self-contained · runs 2–3×/day · all three in the window = strongest candidate`;
+  $('#foot').innerHTML=`Generated ${H.generated_at||''} · self-contained · runs 2–3×/day · all three in the window = strongest candidate`;
 }
 
 function renderTable(){
@@ -329,12 +327,12 @@ function renderTable(){
   $('#tbody').innerHTML=list.map(r=>{
     const xc=`<span class="xc on" title="Trend bounce (daily)">DLY</span>`+SIGS.map(s=>`<span class="xc ${r.sig[s.key]?'on':''}" title="${s.name||s.label}">${s.label}</span>`).join('');
     const grid = nD<=DOTCAP
-      ? '<span class="dots">'+r.present.map((p,i)=>`<span class="dot ${p?(r.consist===nD?'hot':'on'):''}" title="${MODEL.win[i]}"></span>`).join('')+'</span>'
+      ? '<span class="dots">'+r.present.map((p,i)=>`<span class="dot ${p?(r.consist===nD?'hot':'on'):''}" title="${p?'●':'○'} ${displayDate(MODEL.win[i])}"></span>`).join('')+'</span>'
       : `<span class="minibar" title="${r.consist}/${nD}"><span style="width:${(r.consist/nD*100).toFixed(1)}%"></span></span>`;
-    const tipDays=MODEL.win.map((d,i)=>`${d}: ${r.present[i]?'●':'—'}`).join(' · ');
+    const tipDays=MODEL.win.map((d,i)=>`${r.present[i]?'●':'○'} ${displayDate(d)}`).join(' · ');
     return `<tr>
       <td class="l rankn">${r.rank}</td>
-      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${rotDot(r.symbol)}${r.inFil?'<span class="filt-dot" title="also in the stricter filter"></span>':''}${r.isNew?' <span class="up" title="new on latest day">✦</span>':''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}</td>
+      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${rotDot(r.symbol)}${r.inFil?'<span class="filt-dot" title="also in the stricter filter"></span>':''}${r.isNew?' <span class="up" title="new on latest day">✦</span>':''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}${MarketEvents.dot(r.symbol)}</td>
       <td class="l"><span class="xtab">${xc}<span class="xscore s${r.score}">${r.score}/3</span></span></td>
       <td class="l"><span class="appc" data-tip="row" data-w="${tipDays.replace(/"/g,'')}"><span class="frac">${r.consist}<small>/${nD}</small></span>${grid}</span></td>
       <td class="l mc">${r.sector||'—'}</td>
@@ -347,9 +345,10 @@ function renderTable(){
 document.querySelectorAll('thead th').forEach(th=>th.addEventListener('click',()=>{const k=th.dataset.k; if(k===sortKey)sortAsc=!sortAsc; else{sortKey=k; sortAsc=(k==='symbol'||k==='sector');} renderTable();}));
 $('#search').addEventListener('input',renderTable);
 const tt=$('#tt');
-function showTip(html,x,y){tt.innerHTML=html;tt.style.opacity='1';const b=tt.getBoundingClientRect();let nx=x+12,ny=y-b.height-8;if(nx+b.width>innerWidth-8)nx=x-b.width-12;if(ny<8)ny=y+16;tt.style.left=nx+'px';tt.style.top=ny+'px';}
-$('#tbody').addEventListener('mousemove',e=>{const el=e.target.closest('[data-tip="row"]'); if(!el){tt.style.opacity='0';return;} showTip(el.dataset.w.split(' · ').join('<br>'),e.clientX,e.clientY);});
-$('#tbody').addEventListener('mouseleave',()=>{tt.style.opacity='0';});
+function showTip(html,x,y){tt.innerHTML=html;tt.style.opacity='1';tt.setAttribute('aria-hidden','false');const b=tt.getBoundingClientRect();let nx=x+12,ny=y-b.height-8;if(nx+b.width>innerWidth-8)nx=x-b.width-12;if(ny<8)ny=y+16;tt.style.left=nx+'px';tt.style.top=ny+'px';}
+function hideTip(){tt.style.opacity='0';tt.setAttribute('aria-hidden','true');}
+$('#tbody').addEventListener('mousemove',e=>{const el=e.target.closest('[data-tip="row"]'); if(!el){hideTip();return;} showTip(el.dataset.w.split(' · ').join('<br>'),e.clientX,e.clientY);});
+$('#tbody').addEventListener('mouseleave',hideTip);
 function toggle(id,setter){const b=$('#'+id); b.addEventListener('click',()=>{setter(); b.classList.toggle('on'); renderTable();});}
 toggle('allThree',()=>allThree=!allThree); toggle('pbOnly',()=>pbOnly=!pbOnly); toggle('mqOnly',()=>mqOnly=!mqOnly); toggle('filOnly',()=>filOnly=!filOnly); toggle('newOnly',()=>newOnly=!newOnly); toggle('crossOnly',()=>crossOnly=!crossOnly);
 $('#rotOnly').addEventListener('click',()=>{ROT_ON=!ROT_ON; render();});
@@ -361,7 +360,6 @@ $('#csvBtn').addEventListener('click',()=>{const {rows,win,nD}=MODEL; const head
   const esc=s=>`"${String(s).replace(/"/g,'""')}"`; const wl=nD===1?win[0]:`${win[0]}..${win[nD-1]}`;
   const body=rows.map(r=>[r.rank,esc(r.symbol),wl,r.score,1,r.sig.pb?1:0,r.sig.mq?1:0,r.inFil?1:0,r.consist,nD,esc(r.sector),esc(r.marketcap)].join(',')).join('\n');
   const blob=new Blob([head.join(',')+'\n'+body],{type:'text/csv'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='daily_potentials.csv'; a.click();});
-$('#themeBtn').addEventListener('click',()=>{const cur=document.documentElement.getAttribute('data-theme');const dark=matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.setAttribute('data-theme',cur?(cur==='dark'?'light':'dark'):(dark?'light':'dark'));});
 /* on-demand refresh → GitHub Actions (hosted site only) */
 (function(){ const rb=document.getElementById('refreshBtn'); if(!rb) return;
   if(location.protocol==='file:'){ rb.style.display='none'; return; }
@@ -436,6 +434,7 @@ $('#previewBtn').classList.toggle('on',preview);
 buildControls();
 buildLegend();
 render();
+MarketEvents.load('IN',()=>renderTable());
 </script>
 </body>
 </html>

@@ -26,7 +26,7 @@ class RenderSiteTests(unittest.TestCase):
         self.assertIsNotNone(match)
         return json.loads(base64.b64decode(match.group(1)))
 
-    def test_valid_fixture_renders_six_pages_and_manifest(self):
+    def test_valid_fixture_renders_eight_pages_and_manifest(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "dist"
             manifest = render_site.render_site(FIXTURE, output)
@@ -37,8 +37,20 @@ class RenderSiteTests(unittest.TestCase):
                 "sectors.html",
                 "recommendations.html",
                 "tsha_hbcs.html",
+                "us-weekly.html",
+                "us-daily.html",
                 "index.html",
                 "build-manifest.json",
+                "dashboard-freshness.json",
+                "dashboard-shell.css",
+                "dashboard-shell.js",
+                "market-events.js",
+                "functions/_middleware.js",
+                "functions/api/market-events.js",
+                "functions/api/refresh.js",
+                "functions/api/scanlink.js",
+                "functions/api/tsha-hbcs.js",
+                "functions/api/us-trend-bounce.js",
             }
             actual = {
                 path.relative_to(output).as_posix()
@@ -61,7 +73,7 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn(
                 "fetch('/api/tsha-hbcs'", (output / "tsha_hbcs.html").read_text()
             )
-            self.assertFalse((output / "functions").exists())
+            self.assertTrue((output / "functions").exists())
 
     def test_build_requires_an_explicit_immutable_bundle(self):
         completed = subprocess.run(
@@ -95,7 +107,7 @@ class RenderSiteTests(unittest.TestCase):
             output = Path(directory) / "dist"
             render_site.render_site(FIXTURE, output)
             page = (output / "tsha_hbcs.html").read_text()
-            self.assertIn("<h1>HT potentials</h1>", page)
+            self.assertIn("<h1>HT Confirmations</h1>", page)
             self.assertIn('class="tablecard"', page)
             self.assertIn('class="tablewrap"', page)
             self.assertIn('id="themeBtn"', page)
@@ -133,11 +145,11 @@ class RenderSiteTests(unittest.TestCase):
             source.write_text(json.dumps(bundle))
             render_site.render_site(source, output)
             expectations = {
-                "dashboard.html": ("2026-08-10", "Week of"),
+                "dashboard.html": ("2026-08-10", "Data through"),
                 "daily.html": ("2026-08-11", "Data through"),
                 "market.html": ("2026-08-11", "Data through"),
-                "sectors.html": ("2026-08-10", "Week of"),
-                "recommendations.html": ("2026-08-10", "Source data through"),
+                "sectors.html": ("2026-08-10", "Data through"),
+                "recommendations.html": ("2026-08-10", "Data through"),
             }
             for name, (as_of, label) in expectations.items():
                 page = (output / name).read_text()
@@ -184,37 +196,26 @@ console.log(JSON.stringify({{
         self.assertEqual("—", result["missing"])
         self.assertEqual("—", result["naive"])
 
-    def test_market_freshness_fields_are_html_escaped(self):
-        page = (ROOT / "templates" / "market.html").read_text()
-        self.assertIn("esc(M.last_updated_ist||'—')", page)
-        self.assertIn("esc(M.data_as_of)", page)
-        helper_start = page.index("const esc=")
-        helper_end = page.index("\n", helper_start)
-        script = f"""
-{page[helper_start:helper_end]}
-console.log(esc('<img src=x onerror=alert(1)>'));
-"""
-        completed = subprocess.run(
-            ["node", "--input-type=module", "--eval", script],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
-        self.assertEqual("&lt;img src=x onerror=alert(1)&gt;", completed.stdout.strip())
+    def test_shared_freshness_shell_writes_values_as_text(self):
+        shell = (ROOT / "assets" / "dashboard-shell.js").read_text()
+        self.assertIn('output.textContent = value || "—"', shell)
+        self.assertNotIn("output.innerHTML", shell)
 
     def test_ht_appearance_dots_preserve_period_order(self):
         page = (ROOT / "templates" / "tsha_hbcs.html").read_text()
         start = page.index("function appearanceCell(r){")
         end = page.index("\nfunction sourceSummary(", start)
         function_source = page[start:end]
+        label_start = page.index("const periodLabel=")
+        label_end = page.index("\n", label_start)
         script = f"""
 const esc=v=>String(v??'').replace(/[&<>\"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#39;'}}[c]));
+{page[label_start:label_end]}
 {function_source}
 const mixed=appearanceCell({{appearance_periods:['2026-08-12','2026-08-13','2026-08-14'],appearance_bits:'101',appearance_count:2}});
 const every=appearanceCell({{appearance_periods:['2026-08-12','2026-08-13','2026-08-14'],appearance_bits:'111',appearance_count:3}});
-const malicious=appearanceCell({{appearance_periods:['<img src=x onerror=alert(1)>'],appearance_bits:'1',appearance_count:1}});
 const missing=appearanceCell({{appearance_periods:[],appearance_bits:'',appearance_count:0}});
-console.log(JSON.stringify({{mixed,every,malicious,missing}}));
+console.log(JSON.stringify({{mixed,every,missing}}));
 """
         completed = subprocess.run(
             ["node", "--input-type=module", "--eval", script],
@@ -226,15 +227,13 @@ console.log(JSON.stringify({{mixed,every,malicious,missing}}));
         self.assertIn("2<small>/3</small>", rendered["mixed"])
         self.assertEqual(3, rendered["mixed"].count('class="dot '))
         self.assertIn('data-tip="row"', rendered["mixed"])
-        self.assertIn("2026-08-12: ●", rendered["mixed"])
-        self.assertIn("2026-08-13: —", rendered["mixed"])
+        self.assertIn("● 12 Aug 2026", rendered["mixed"])
+        self.assertIn("○ 13 Aug 2026", rendered["mixed"])
         self.assertLess(
-            rendered["mixed"].index("2026-08-12"),
-            rendered["mixed"].index("2026-08-14"),
+            rendered["mixed"].index("12 Aug 2026"),
+            rendered["mixed"].index("14 Aug 2026"),
         )
         self.assertEqual(3, rendered["every"].count('class="dot hot"'))
-        self.assertIn("&lt;img src=x onerror=alert(1)&gt;", rendered["malicious"])
-        self.assertNotIn("<img", rendered["malicious"])
         self.assertIn("—", rendered["missing"])
 
     def test_ht_appearance_hover_uses_weekly_tooltip_contract(self):

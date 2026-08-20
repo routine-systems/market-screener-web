@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0d0d'/%3E%3Crect x='6.5' y='18' width='4.5' height='8' rx='1.4' fill='%234d93ea'/%3E%3Crect x='13.75' y='12' width='4.5' height='14' rx='1.4' fill='%2316b816'/%3E%3Crect x='21' y='6.5' width='4.5' height='19.5' rx='1.4' fill='%2316b816'/%3E%3C/svg%3E">
-<title>Chartink Weekly Tracker</title>
+<title>India Weekly · Trend Bounce</title>
 <style>
   :root{
     color-scheme: light;
@@ -167,46 +167,41 @@
 </head>
 <body>
 <div class="wrap">
-  <nav class="nav" aria-label="Views">
-    <a href="dashboard.html" class="on" aria-current="page">Weekly</a>
-    <a href="daily.html">Daily</a>
-    <a href="market.html">Market</a>
-    <a href="sectors.html">Sectors</a>
-    <a href="tsha_hbcs.html">HT</a>
-    <a href="recommendations.html">Forward Test</a>
-    <span class="sp"></span>
-    <button class="themebtn" id="linksBtn" title="Refresh only the in-scan ticker links (~1 min) — revives links that expired since the last scrape">⚡ Links</button>
-    <button class="themebtn" id="refreshBtn" title="Re-scrape Chartink and rebuild all pages (~10 min) — reload after">↻ Refresh</button>
-    <button class="themebtn" id="themeBtn">◐ Theme</button>
-  </nav>
+  __DASHBOARD_NAV__
 
-  <main>
+  <main id="main-content" tabindex="-1">
   <header class="top">
     <div class="title">
-      <h1>Weekly potentials</h1>
+      <h1>India Weekly · Trend Bounce</h1>
+      <p class="purpose">India stocks in the weekly Trend Bounce screen, ranked by repeat appearances.</p>
       <div class="sub" id="scr-sub"></div>
     </div>
     <div class="spacer"></div>
+    <div class="page-actions" aria-label="India data actions">
+      <button id="linksBtn" type="button" title="Refresh only the in-scan ticker links (~1 min) — revives links that expired since the last scrape">⚡ Links</button>
+      <button id="refreshBtn" type="button" title="Re-scrape Chartink and rebuild all pages (~10 min) — reload after">↻ Refresh</button>
+    </div>
   </header>
+  __DASHBOARD_FRESHNESS__
 
   <section class="kpis" id="kpis"></section>
 
   <section class="tablecard" style="margin-bottom:22px">
     <div class="rangebar">
       <span class="lab">Weeks</span>
-      <select id="fromWk" title="Range start week"></select>
+      <select id="fromWk" title="Range start week" aria-label="Range start week"></select>
       <span class="arrow">→</span>
-      <select id="toWk" title="Range end week"></select>
+      <select id="toWk" title="Range end week" aria-label="Range end week"></select>
       <span style="width:4px"></span>
       <button class="offbtn" id="offBack" title="Shift the window one week older">◀</button>
       <span class="offlbl" id="offlbl"></span>
       <button class="offbtn" id="offFwd" title="Shift the window one week newer">▶</button>
       <span style="width:8px"></span>
-      <button class="preset" data-preset="5">Last 5</button>
-      <button class="preset" data-preset="8">Last 8</button>
-      <button class="preset" data-preset="13">13</button>
-      <button class="preset" data-preset="26">26</button>
-      <button class="preset" data-preset="52">52</button>
+      <button class="preset" data-preset="1">1W</button>
+      <button class="preset" data-preset="3">3W</button>
+      <button class="preset" data-preset="5">5W</button>
+      <button class="preset" data-preset="8">8W</button>
+      <button class="preset" data-preset="13">13W</button>
       <button class="preset" data-preset="all">All</button>
       <div class="spacer"></div>
       <span class="rangenote" id="rangenote"></span>
@@ -222,7 +217,7 @@
       <select id="rotLevel" title="Rotation granularity" hidden><option value="sector">Sector</option><option value="industry">Industry</option><option value="basic">Basic</option></select>
       <span id="secFilterWrap"></span>
       <button class="toolbtn" id="previewBtn" title="On hover over a ticker, show quick links to open its chart (Chartink in-scan · TradingView · Yahoo)">⧉ Chart links</button>
-      <input id="search" type="search" placeholder="Search symbol or sector…" autocomplete="off">
+      <input id="search" type="search" placeholder="Search symbol or sector…" autocomplete="off" aria-label="Search symbols and sectors">
       <button class="toolbtn" id="csvBtn" title="Download ranking as CSV">⭳ CSV</button>
     </div>
     <div style="color:var(--muted); font-size:11.5px; margin-bottom:10px">
@@ -274,10 +269,11 @@
   </main>
 </div>
 
-<div id="tt"></div>
+<div id="tt" role="tooltip" aria-hidden="true"></div>
 <div id="pv"></div>
 <div id="drop"><div class="msg">Drop a Chartink <b>Backtest</b> CSV to load it</div></div>
 
+<script src="market-events.js?v=2"></script>
 <script>
 const HISTORY_B64="__HISTORY_B64__";
 const WINDOW=__WINDOW__;
@@ -322,11 +318,12 @@ function weeksFromBacktest(t){const rows=parseCSV(t);if(!rows.length)return[];co
 
 /* tooltip */
 const tt=$('#tt');
-function showTip(html,x,y){tt.innerHTML=html;tt.style.opacity='1';const b=tt.getBoundingClientRect();let nx=x+12,ny=y-b.height-8;if(nx+b.width>innerWidth-8)nx=x-b.width-12;if(ny<8)ny=y+16;tt.style.left=nx+'px';tt.style.top=ny+'px';}
-function hideTip(){tt.style.opacity='0';}
+function showTip(html,x,y){tt.innerHTML=html;tt.style.opacity='1';tt.setAttribute('aria-hidden','false');const b=tt.getBoundingClientRect();let nx=x+12,ny=y-b.height-8;if(nx+b.width>innerWidth-8)nx=x-b.width-12;if(ny<8)ny=y+16;tt.style.left=nx+'px';tt.style.top=ny+'px';}
+function hideTip(){tt.style.opacity='0';tt.setAttribute('aria-hidden','true');}
 
 let H=null, WEEKS=[], ALLTIME=new Map(), FILT=new Map(), CROSS=new Map(), SEL={from:0,to:0};
 function addDays(iso,n){const dt=new Date(iso+'T00:00:00Z');dt.setUTCDate(dt.getUTCDate()+n);return dt.toISOString().slice(0,10);}
+function displayDate(iso){const [y,m,d]=String(iso).split('-');const mon=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][Number(m)-1];return mon?`${d} ${mon} ${y}`:String(iso);}
 let sortKey='count', sortAsc=false, MODEL=null, newOnly=false, filtOnly=false, crossOnly=false;
 let ROT=null, ROT_ON=false, ROT_LEVEL='sector', SECFILTER=null;
 
@@ -418,8 +415,6 @@ function render(){
   sub.push(`<b>${n}</b> weeks · ranking over <b>${nW}</b>`);
   if(H.scanlink) sub.push('in-scan links on');
   if(H.source_url) sub.push(`<a href="${H.source_url}" target="_blank" rel="noopener">source ↗</a>`);
-  sub.push(`Last updated <b>${escH(H.last_updated_ist||'—')}</b>`);
-  if(H.data_as_of) sub.push(`Week of <b>${escH(H.data_as_of)}</b>`);
   $('#scr-sub').innerHTML=sub.join(' · ');
 
   const persistent=rows.filter(r=>r.count===nW).length;
@@ -475,7 +470,7 @@ function render(){
   $('#drop-chips').innerHTML=hasPrev?(dropSyms.length?dropSyms.map(s=>`<span class="chip"><a href="${stockUrl(s)}" target="_blank" rel="noopener">${s}</a></span>`).join(''):'<div class="empty">None — nobody dropped.</div>'):'<div class="empty">Need ≥2 weeks in range.</div>';
 
   renderTable();
-  $('#foot').innerHTML=`Self-contained · sourced from Chartink backtest history · drop a Backtest CSV to reload`;
+  $('#foot').innerHTML=`Generated ${H.generated_at||''} · self-contained · sourced from Chartink backtest history · drop a Backtest CSV to reload`;
 }
 
 function renderTable(){
@@ -496,16 +491,16 @@ function renderTable(){
   $('#rankhint').textContent=`${list.length} of ${rows.length} tickers · ${nW} wk${newOnly?' · new only':''}${filtOnly?' · in filter':''}${crossOnly&&H.cross?' · in '+H.cross.name:''}${SECFILTER?' · '+SECFILTER.group:''}`;
   const dotgrid=(r)=>{
     if(nW<=DOTCAP){
-      return '<span class="dots">'+r.present.map((p,i)=>`<span class="dot ${p?(r.count===nW?'hot':'on'):''}" title="${keys[i]}: ${p?'present':'absent'}"></span>`).join('')+'</span>';
+      return '<span class="dots">'+r.present.map((p,i)=>`<span class="dot ${p?(r.count===nW?'hot':'on'):''}" title="${p?'●':'○'} ${displayDate(keys[i])}"></span>`).join('')+'</span>';
     }
     return `<span class="minibar" title="${r.count}/${nW}"><span style="width:${(r.count/nW*100).toFixed(1)}%"></span></span>`;
   };
   $('#tbody').innerHTML=list.map(r=>{
-    const tipWeeks=nW<=DOTCAP?keys.map((k,i)=>`${k}: ${r.present[i]?'●':'—'}`).join(' · '):`${r.count} of ${nW} weeks`;
+    const tipWeeks=nW<=DOTCAP?keys.map((k,i)=>`${r.present[i]?'●':'○'} ${displayDate(k)}`).join(' · '):`${r.count} of ${nW} weeks`;
     const badge=r.count===nW&&nW>1?'<span class="badge">every wk</span>':'';
     return `<tr>
       <td class="l rankn">${r.rank}</td>
-      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${rotDot(r.symbol)}${r.inFilter?`<span class="filt-dot" title="Also in the stricter filter · ${keys[nW-1]}"></span>`:''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}</td>
+      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${rotDot(r.symbol)}${r.inFilter?`<span class="filt-dot" title="Also in the stricter filter · ${keys[nW-1]}"></span>`:''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}${MarketEvents.dot(r.symbol)}</td>
       <td class="l"><span class="appc" data-tip="row" data-w="${tipWeeks.replace(/"/g,'')}"><span class="frac">${r.count}<small>/${nW}</small></span>${dotgrid(r)}${badge}</span></td>
       <td class="l mc">${r.sector||'—'}</td>
       <td class="l mc">${r.marketcap||'—'}</td>
@@ -538,12 +533,6 @@ document.body.addEventListener('mousemove',e=>{
   else if(t==='row')html=el.dataset.w.split(' · ').join('<br>');
   else{hideTip();return;}
   showTip(html,e.clientX,e.clientY);
-});
-
-$('#themeBtn').addEventListener('click',()=>{
-  const cur=document.documentElement.getAttribute('data-theme');
-  const dark=matchMedia('(prefers-color-scheme: dark)').matches;
-  document.documentElement.setAttribute('data-theme', cur?(cur==='dark'?'light':'dark'):(dark?'light':'dark'));
 });
 
 /* on-demand refresh → GitHub Actions (hosted site only) */
@@ -641,6 +630,7 @@ ROT_ON = !!ROT;                                  // rotation dots on by default 
 initSelection();
 buildRangeControls();
 render();
+MarketEvents.load('IN',()=>renderTable());
 </script>
 </body>
 </html>
