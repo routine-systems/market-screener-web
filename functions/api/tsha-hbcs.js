@@ -11,7 +11,7 @@ function json(value, status = 200) {
   });
 }
 
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ env, request }) {
   if (!env.SCANLINKS) {
     return json({ error: "SCANLINKS KV not bound" }, 500);
   }
@@ -21,6 +21,21 @@ export async function onRequestGet({ env }) {
     });
     if (stored.value === null) {
       return json({ error: "HT snapshot unavailable" }, 503);
+    }
+    const metaOnly = new URL(request.url).searchParams.get("meta") === "1";
+    if (metaOnly) {
+      const markets = stored.value.markets || {};
+      return json({
+        schema_version: API_SCHEMA_VERSION,
+        snapshot: {
+          generated_at_utc: stored.value.generated_at_utc || null,
+          data_cutoff: {
+            IN: markets.IN?.data_session || null,
+            US: markets.US?.data_session || null,
+          },
+        },
+        publication: stored.metadata || {},
+      });
     }
     return json({
       schema_version: API_SCHEMA_VERSION,

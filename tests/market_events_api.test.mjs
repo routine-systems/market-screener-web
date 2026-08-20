@@ -10,6 +10,13 @@ const subject = await import(
   `data:text/javascript;base64,${Buffer.from(source).toString("base64")}`
 );
 
+async function moduleFrom(path) {
+  const moduleSource = readFileSync(new URL(path, import.meta.url), "utf8");
+  return import(
+    `data:text/javascript;base64,${Buffer.from(moduleSource).toString("base64")}`
+  );
+}
+
 test("rejects an unsupported market before reading KV", async () => {
   let reads = 0;
   const response = await subject.onRequestGet({
@@ -47,5 +54,64 @@ test("reads the complete-history market snapshot from its market key", async () 
     schema_version: "market-events.api.v1",
     snapshot,
     publication: { digest: "fixture" },
+  });
+});
+
+test("US Trend Bounce metadata response omits the stored histories", async () => {
+  const endpoint = await moduleFrom("../functions/api/us-trend-bounce.js");
+  const snapshot = {
+    generated_at_utc: "2026-08-20T01:00:00Z",
+    pages: {
+      weekly: { data_cutoff: "2026-08-17", weeks: [{ large: "payload" }] },
+      daily: { data_cutoff: "2026-08-19", weeks: [{ large: "payload" }] },
+    },
+  };
+  const response = await endpoint.onRequestGet({
+    request: new Request("https://screener.example/api/us-trend-bounce?meta=1"),
+    env: {
+      SCANLINKS: {
+        getWithMetadata: async () => ({ value: snapshot, metadata: { digest: "us" } }),
+      },
+    },
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    schema_version: "us-trend-bounce.api.v1",
+    snapshot: {
+      generated_at_utc: "2026-08-20T01:00:00Z",
+      pages: {
+        weekly: { data_cutoff: "2026-08-17" },
+        daily: { data_cutoff: "2026-08-19" },
+      },
+    },
+    publication: { digest: "us" },
+  });
+});
+
+test("HT metadata response exposes only market cutoffs", async () => {
+  const endpoint = await moduleFrom("../functions/api/tsha-hbcs.js");
+  const snapshot = {
+    generated_at_utc: "2026-08-20T02:00:00Z",
+    markets: {
+      IN: { data_session: "2026-08-19", timeframes: { large: "payload" } },
+      US: { data_session: "2026-08-19", timeframes: { large: "payload" } },
+    },
+  };
+  const response = await endpoint.onRequestGet({
+    request: new Request("https://screener.example/api/tsha-hbcs?meta=1"),
+    env: {
+      SCANLINKS: {
+        getWithMetadata: async () => ({ value: snapshot, metadata: { digest: "ht" } }),
+      },
+    },
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    schema_version: "tsha-hbcs.api.v1",
+    snapshot: {
+      generated_at_utc: "2026-08-20T02:00:00Z",
+      data_cutoff: { IN: "2026-08-19", US: "2026-08-19" },
+    },
+    publication: { digest: "ht" },
   });
 });

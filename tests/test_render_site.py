@@ -32,6 +32,9 @@ class RenderSiteTests(unittest.TestCase):
                 "us-daily.html",
                 "index.html",
                 "build-manifest.json",
+                "dashboard-freshness.json",
+                "dashboard-shell.css",
+                "dashboard-shell.js",
                 "market-events.js",
                 "functions/api/market-events.js",
                 "functions/api/refresh.js",
@@ -48,7 +51,7 @@ class RenderSiteTests(unittest.TestCase):
             self.assertEqual("fixture-commit", manifest["producer_commit"])
             self.assertIn("const WINDOW=8;", (output / "dashboard.html").read_text())
             self.assertNotIn("__HISTORY_B64__", (output / "dashboard.html").read_text())
-            self.assertEqual(HT_TEMPLATE.read_text(), (output / "tsha_hbcs.html").read_text())
+            self.assertNotIn("__DASHBOARD_NAV__", (output / "tsha_hbcs.html").read_text())
             self.assertIn("fetch('/api/tsha-hbcs'", (output / "tsha_hbcs.html").read_text())
             self.assertIn(
                 "fetch('/api/us-trend-bounce'",
@@ -69,9 +72,14 @@ class RenderSiteTests(unittest.TestCase):
                 ("us-daily.html", "US"),
             ):
                 rendered = (output / page).read_text()
-                self.assertIn('src="market-events.js?v=2"', rendered)
+                self.assertIn('src="market-events.js?v=4"', rendered)
                 self.assertIn(f"MarketEvents.load('{market}'", rendered)
                 self.assertIn("MarketEvents.dot(", rendered)
+                if market == "IN":
+                    self.assertIn(
+                        "MarketEvents.dot(r.symbol,'IN','insider_trade')",
+                        rendered,
+                    )
             us_weekly = (output / "us-weekly.html").read_text()
             self.assertIn('id="tt" role="tooltip"', us_weekly)
             self.assertIn('class="dots" data-tip=', us_weekly)
@@ -86,12 +94,19 @@ class RenderSiteTests(unittest.TestCase):
                 self.assertIn("'hasCongressHistory'", rendered)
                 self.assertIn("EVENTS_READY", rendered)
             ht_page = (output / "tsha_hbcs.html").read_text()
-            self.assertIn('src="market-events.js?v=2"', ht_page)
+            self.assertIn('src="market-events.js?v=4"', ht_page)
             self.assertIn('id="eventOnly"', ht_page)
             self.assertIn("MarketEvents.load(market", ht_page)
             self.assertIn("MarketEvents.record(r.symbol,r.market)", ht_page)
             self.assertIn("MarketEvents.dot(r.symbol,r.market)", ht_page)
+            self.assertIn(
+                "MarketEvents.dot(r.symbol,'IN','insider_trade')", ht_page
+            )
             self.assertNotIn("?'present':'absent'", ht_page)
+            self.assertNotIn('id="historyPrompt"', ht_page)
+            self.assertIn("sort:'appearance_count'", ht_page)
+            self.assertIn('class="l sorted" data-k="appearance_count"', ht_page)
+            self.assertIn("const weekStart=date=>", ht_page)
             for page in (
                 "dashboard.html",
                 "daily.html",
@@ -106,6 +121,49 @@ class RenderSiteTests(unittest.TestCase):
                 self.assertIn('href="tsha_hbcs.html"', rendered)
                 self.assertIn('href="us-weekly.html"', rendered)
                 self.assertIn('href="us-daily.html"', rendered)
+                self.assertEqual(1, rendered.count('id="themeBtn"'))
+                self.assertEqual(1, rendered.count('aria-current="page"'))
+                self.assertIn('href="#main-content">Skip to results</a>', rendered)
+                self.assertIn('id="main-content"', rendered)
+                self.assertNotIn('class="dashboard-freshness"', rendered)
+                self.assertNotIn('data-freshness="', rendered)
+                self.assertNotIn('class="purpose"', rendered)
+                self.assertIn('src="dashboard-shell.js?v=1"', rendered)
+                self.assertIn('href="dashboard-shell.css?v=1"', rendered)
+            freshness = json.loads((output / "dashboard-freshness.json").read_text())
+            self.assertEqual("dashboard-freshness.v1", freshness["schema_version"])
+            self.assertEqual(
+                "2026-08-11",
+                freshness["sources"]["india_weekly"]["as_of"],
+            )
+            self.assertNotIn("status", freshness["sources"]["india_weekly"])
+            weekly = (output / "dashboard.html").read_text()
+            daily = (output / "daily.html").read_text()
+            recommendations = (output / "recommendations.html").read_text()
+            self.assertIn("India Weekly · Trend Bounce", weekly)
+            self.assertIn('data-preset="8">8W</button>', weekly)
+            self.assertIn("India Daily · Trend Bounce", daily)
+            self.assertIn("const WINDOW=8;", daily)
+            self.assertIn('data-days="8">8D</button>', daily)
+            for page in (weekly, daily):
+                self.assertIn("?'●':'○'", page)
+                self.assertNotIn("?'present':'absent'", page)
+            self.assertIn("Forward Test · Outcomes", recommendations)
+            self.assertIn('id="researchColumns"', recommendations)
+            self.assertIn('data-sort="entry_open"', recommendations)
+            self.assertIn("1. Choose market", ht_page)
+            for page in ("us-weekly.html", "us-daily.html"):
+                rendered = (output / page).read_text()
+                self.assertIn(
+                    '<th class="l ticker-col" data-sort="symbol">Ticker</th>',
+                    rendered,
+                )
+                self.assertNotIn('<div class="name">', rendered)
+                self.assertNotIn('id="formula"', rendered)
+                self.assertNotIn("Formula: EMA10", rendered)
+            shell = (output / "dashboard-shell.js").read_text()
+            self.assertIn('const THEME_KEY = "market-screener-theme"', shell)
+            self.assertIn('header.setAttribute(\n        "aria-sort"', shell)
 
     def test_rejects_missing_ht_page(self):
         with tempfile.TemporaryDirectory() as directory:

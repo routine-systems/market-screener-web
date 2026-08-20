@@ -43,6 +43,7 @@
       .event-card-head strong{font-size:14px}.event-card-head .event-card-meta{color:var(--muted);margin-top:2px}.event-card-pin{margin-left:auto;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.04em}
       .event-card-row{padding:9px 0;border-bottom:1px solid var(--grid)}.event-card-row:last-of-type{border-bottom:0}.event-card-title{font-weight:700}.event-card-side{display:inline-block;margin-left:5px;font-size:9px;letter-spacing:.04em;color:var(--ink-2)}
       .event-card-when,.event-card-amount{color:var(--ink-2);margin-top:2px}.event-card-source{margin-top:3px}.event-card-source a{color:var(--vol);text-decoration:none}.event-card-source a:hover{text-decoration:underline}.event-card-foot{color:var(--muted);font-size:10.5px;padding-top:7px}
+      .event-card-summary{color:var(--muted);font-size:10.5px;margin-top:3px}
     `;
     document.head.appendChild(style);
     state.card = document.createElement("aside");
@@ -87,7 +88,8 @@
         event.stopPropagation();
         const symbol = dot.dataset.eventSymbol;
         const market = dot.dataset.eventMarket || state.defaultMarket;
-        const key = `${market}:${symbol}`;
+        const eventType = dot.dataset.eventType || "";
+        const key = `${market}:${eventType}:${symbol}`;
         if (state.pinnedKey === key) {
           state.pinnedKey = null;
           hide();
@@ -121,24 +123,48 @@
     return normalized ? state.datasets.get(normalized) || null : null;
   }
 
-  function record(symbol, market) {
-    return dataset(market)?.snapshot?.records?.[String(symbol).trim().toUpperCase()] || null;
+  function eventSet(market, eventType) {
+    const data = dataset(market);
+    if (!data) return null;
+    if (!eventType || data.snapshot.event_type === eventType) return data.snapshot;
+    return data.snapshot.related_event_sets?.[eventType] || null;
   }
 
-  function dot(symbol, market) {
+  function record(symbol, market, eventType) {
+    return eventSet(market, eventType)?.records?.[String(symbol).trim().toUpperCase()] || null;
+  }
+
+  function eventLabels(type) {
+    if (type === "insider_trade") {
+      return { singular: "insider trade", plural: "insider trades" };
+    }
+    if (type === "bulk_deal") {
+      return { singular: "bulk deal", plural: "bulk deals" };
+    }
+    return { singular: "political transaction", plural: "political transactions" };
+  }
+
+  function scopeLabel(scope) {
+    return scope === "rolling_1_year" ? "the last year" : "complete history";
+  }
+
+  function dot(symbol, market, eventType) {
     const normalized = String(symbol).trim().toUpperCase();
     const eventMarket = normalizedMarket(market) || state.defaultMarket;
-    const entry = record(normalized, eventMarket);
+    const selectedSet = eventSet(eventMarket, eventType);
+    const entry = record(normalized, eventMarket, eventType);
     if (!entry) return "";
-    const kind = eventMarket === "IN" ? "bulk deal" : "political transaction";
+    const type = selectedSet.event_type;
+    const labels = eventLabels(type);
     const count = Number(entry.count) || 0;
-    const label = `${normalized}: ${count} ${kind}${count === 1 ? "" : "s"} in complete history`;
-    return `<button type="button" class="event-dot" data-event-market="${eventMarket}" data-event-symbol="${escapeHtml(normalized)}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"></button>`;
+    const label = `${normalized}: ${count} ${count === 1 ? labels.singular : labels.plural} in ${scopeLabel(selectedSet.history_scope)}`;
+    return `<button type="button" class="event-dot" data-event-market="${eventMarket}" data-event-type="${escapeHtml(type)}" data-event-symbol="${escapeHtml(normalized)}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"></button>`;
   }
 
-  function field(row, name, market) {
-    const index = dataset(market)?.columns.get(name);
-    return index === undefined ? null : row[index];
+  function field(row, name, market, eventType) {
+    const columns = eventSet(market, eventType)?.event_columns;
+    const index = Array.isArray(columns) ? columns.indexOf(name) : -1;
+    return index < 0 ? null : row[index];
   }
 
   function formatNumber(value, digits = 0) {
@@ -153,16 +179,17 @@
     return `${market === "IN" ? "₹" : "$"}${number}`;
   }
 
-  function eventHtml(row, market) {
-    const actor = field(row, "actor", market) || "Actor not stated";
-    const side = field(row, "side", market);
-    const eventDate = field(row, "event_date", market) || "Date not stated";
-    const reportedAt = field(row, "reported_at", market);
-    const shares = formatNumber(field(row, "shares", market), 4);
-    const value = formatMoney(field(row, "value", market), market);
-    const price = formatMoney(field(row, "price", market), market);
-    const source = field(row, "source", market) || "Source not stated";
-    const sourceUrl = safeUrl(field(row, "url", market));
+  function eventHtml(row, market, eventType) {
+    const actor = field(row, "actor", market, eventType) || "Actor not stated";
+    const side = field(row, "side", market, eventType);
+    const eventDate = field(row, "event_date", market, eventType) || "Date not stated";
+    const reportedAt = field(row, "reported_at", market, eventType);
+    const shares = formatNumber(field(row, "shares", market, eventType), 4);
+    const value = formatMoney(field(row, "value", market, eventType), market);
+    const price = formatMoney(field(row, "price", market, eventType), market);
+    const source = field(row, "source", market, eventType) || "Source not stated";
+    const sourceUrl = safeUrl(field(row, "url", market, eventType));
+    const summary = field(row, "summary", market, eventType);
     const amount = [
       shares === null ? null : `${shares} shares`,
       value === null ? null : `${value} value`,
@@ -172,29 +199,38 @@
     const sourceMarkup = sourceUrl
       ? `<a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">${escapeHtml(source)} ↗</a>`
       : escapeHtml(source);
-    return `<div class="event-card-row"><div class="event-card-title">${escapeHtml(actor)}${side ? `<span class="event-card-side">${escapeHtml(side)}</span>` : ""}</div><div class="event-card-when">Transaction ${escapeHtml(eventDate)}${reportDate}</div><div class="event-card-amount">${amount.length ? amount.join(" · ") : "amount not stated in source"}</div><div class="event-card-source">${sourceMarkup}</div></div>`;
+    return `<div class="event-card-row"><div class="event-card-title">${escapeHtml(actor)}${side ? `<span class="event-card-side">${escapeHtml(side)}</span>` : ""}</div><div class="event-card-when">Transaction ${escapeHtml(eventDate)}${reportDate}</div><div class="event-card-amount">${amount.length ? amount.join(" · ") : "amount not stated in source"}</div>${summary ? `<div class="event-card-summary">${escapeHtml(summary)}</div>` : ""}<div class="event-card-source">${sourceMarkup}</div></div>`;
   }
 
-  function cardHtml(symbol, entry, pinned, market) {
+  function cardHtml(symbol, entry, pinned, market, eventType) {
     const count = Number(entry.count) || 0;
-    const events = Array.isArray(entry.events) ? entry.events : [];
-    const kind = market === "IN" ? "bulk deals" : "political transactions";
+    const events = Array.isArray(entry.events)
+      ? [...entry.events].sort((left, right) => {
+          const leftKey = `${field(left, "event_date", market, eventType) || ""}|${field(left, "reported_at", market, eventType) || ""}|${field(left, "url", market, eventType) || ""}`;
+          const rightKey = `${field(right, "event_date", market, eventType) || ""}|${field(right, "reported_at", market, eventType) || ""}|${field(right, "url", market, eventType) || ""}`;
+          return rightKey.localeCompare(leftKey);
+        })
+      : [];
+    const selectedSet = eventSet(market, eventType);
+    const kind = eventLabels(selectedSet?.event_type).plural;
     const span = entry.first_date && entry.last_date
       ? `${entry.first_date} → ${entry.last_date}`
       : "stored history";
-    const detail = events.map((event) => eventHtml(event, market)).join("");
+    const detail = events.map((event) => eventHtml(event, market, eventType)).join("");
     const truncated = count > events.length
       ? `Showing latest ${events.length} of ${count} events.`
       : `Showing all ${count} stored event${count === 1 ? "" : "s"}.`;
-    return `<div class="event-card-head"><div><strong>${escapeHtml(symbol)}</strong><div class="event-card-meta">${count.toLocaleString("en-IN")} ${kind} · ${escapeHtml(span)}</div></div><span class="event-card-pin">${pinned ? "Pinned" : "Click to pin"}</span></div>${detail}<div class="event-card-foot">${escapeHtml(truncated)} Marker scope: complete history.</div>`;
+    const scope = scopeLabel(selectedSet?.history_scope);
+    return `<div class="event-card-head"><div><strong>${escapeHtml(symbol)}</strong><div class="event-card-meta">${count.toLocaleString("en-IN")} ${kind} · ${escapeHtml(span)}</div></div><span class="event-card-pin">${pinned ? "Pinned" : "Click to pin"}</span></div>${detail}<div class="event-card-foot">${escapeHtml(truncated)} Marker scope: ${scope}.</div>`;
   }
 
   function show(dotElement, pinned) {
     const symbol = dotElement.dataset.eventSymbol;
     const market = dotElement.dataset.eventMarket || state.defaultMarket;
-    const entry = record(symbol, market);
+    const eventType = dotElement.dataset.eventType || null;
+    const entry = record(symbol, market, eventType);
     if (!entry) return;
-    state.card.innerHTML = cardHtml(symbol, entry, pinned, market);
+    state.card.innerHTML = cardHtml(symbol, entry, pinned, market, eventType);
     state.card.hidden = false;
     const anchor = dotElement.getBoundingClientRect();
     const box = state.card.getBoundingClientRect();
@@ -227,9 +263,14 @@
         payload.schema_version !== "market-events.api.v1" ||
         snapshot?.schema_version !== "market-events.snapshot.v1" ||
         snapshot?.market !== normalized ||
-        snapshot?.history_scope !== "complete" ||
+        snapshot?.history_scope !== (normalized === "IN" ? "rolling_1_year" : "complete") ||
         !Array.isArray(snapshot?.event_columns) ||
-        !snapshot?.records
+        !snapshot?.records ||
+        (normalized === "IN" &&
+          (snapshot?.related_event_sets?.insider_trade?.event_type !== "insider_trade" ||
+            snapshot?.related_event_sets?.insider_trade?.history_scope !== "rolling_1_year" ||
+            !Array.isArray(snapshot?.related_event_sets?.insider_trade?.event_columns) ||
+            !snapshot?.related_event_sets?.insider_trade?.records))
       ) {
         throw new Error(payload.error || `HTTP ${response.status}`);
       }

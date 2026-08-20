@@ -42,6 +42,16 @@ PAGE_SPECS = {
         "__RECOMMENDATIONS_B64__",
     ),
 }
+NAV_ITEMS = (
+    ("weekly", "dashboard.html", "Weekly"),
+    ("daily", "daily.html", "Daily"),
+    ("us-weekly", "us-weekly.html", "US Weekly"),
+    ("us-daily", "us-daily.html", "US Daily"),
+    ("market", "market.html", "Market"),
+    ("sectors", "sectors.html", "Sectors"),
+    ("ht", "tsha_hbcs.html", "HT"),
+    ("recommendations", "recommendations.html", "Forward Test"),
+)
 TREND_BOUNCE_TEMPLATE = "us_trend_bounce.html"
 TREND_BOUNCE_PAGES = {
     "weekly": "us-weekly.html",
@@ -173,7 +183,42 @@ def load_bundle(path: Path) -> dict:
     return validate_bundle(bundle)
 
 
-def _render_template(template_path: Path, token: str, payload: dict, window: int) -> str:
+def _navigation(active: str) -> str:
+    links = []
+    for page, href, label in NAV_ITEMS:
+        state = ' class="on" aria-current="page"' if page == active else ""
+        links.append(f'<a href="{href}"{state}>{label}</a>')
+    return (
+        '<a class="skip-link" href="#main-content">Skip to results</a>'
+        '<nav class="nav dashboard-nav" aria-label="Views">'
+        + "".join(links)
+        + '<span class="sp"></span>'
+        + '<button class="themebtn" id="themeBtn" type="button" '
+        + 'aria-label="Change color theme">◐ Theme</button></nav>'
+    )
+
+
+def _apply_shell(source: str, active: str) -> str:
+    if "__DASHBOARD_NAV__" not in source:
+        raise BundleError(f"template for {active} misses __DASHBOARD_NAV__")
+    if "__DASHBOARD_FRESHNESS__" not in source:
+        raise BundleError(f"template for {active} misses __DASHBOARD_FRESHNESS__")
+    source = source.replace("__DASHBOARD_NAV__", _navigation(active))
+    source = source.replace("__DASHBOARD_FRESHNESS__", "")
+    assets = (
+        '<script src="dashboard-shell.js?v=1"></script>'
+        '<link rel="stylesheet" href="dashboard-shell.css?v=1">'
+    )
+    return source.replace("</head>", f"{assets}</head>", 1)
+
+
+def _render_template(
+    template_path: Path,
+    token: str,
+    payload: dict,
+    window: int,
+    active: str,
+) -> str:
     source = template_path.read_text(encoding="utf-8")
     encoded = base64.b64encode(
         json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
@@ -181,12 +226,49 @@ def _render_template(template_path: Path, token: str, payload: dict, window: int
     if token not in source:
         raise BundleError(f"template {template_path.name} misses {token}")
     rendered = source.replace(token, encoded).replace("__WINDOW__", str(window))
+    rendered = _apply_shell(rendered, active)
     leftovers = sorted(set(PLACEHOLDER.findall(rendered)))
     if leftovers:
         raise BundleError(
             f"template {template_path.name} has unresolved placeholders: {', '.join(leftovers)}"
         )
     return rendered
+
+
+def _source_freshness(bundle: dict) -> dict:
+    source = bundle.get("source_freshness", {})
+
+    def item(name: str, fallback: object = None) -> dict:
+        value = source.get(name, {})
+        if isinstance(value, str):
+            value = {"as_of": value}
+        elif not isinstance(value, dict):
+            value = {}
+        result = {
+            key: value[key]
+            for key in ("as_of", "status")
+            if key in value and value[key] is not None
+        }
+        if not result.get("as_of") and fallback:
+            result["as_of"] = fallback
+        return result
+
+    cutoffs = bundle.get("data_cutoff", {})
+    return {
+        "schema_version": "dashboard-freshness.v1",
+        "generated_at_utc": bundle["generated_at_utc"],
+        "sources": {
+            "india_weekly": item("weekly", cutoffs.get("IN")),
+            "india_daily": item("daily", cutoffs.get("IN")),
+            "market": item("market"),
+            "sectors": item("sectors"),
+            "us_weekly": item("us_weekly"),
+            "us_daily": item("us_daily"),
+            "ht_india": item("ht_india"),
+            "ht_us": item("ht_us"),
+            "outcomes": item("recommendations"),
+        },
+    }
 
 
 def _index_document() -> str:
@@ -215,14 +297,22 @@ def render_site(bundle_path: Path, output: Path = DEFAULT_OUTPUT) -> dict:
     for page_name, (template_name, output_name, token) in PAGE_SPECS.items():
         payload = dict(bundle["pages"][page_name]["payload"])
         payload.setdefault("generated_at", generated)
-        html = _render_template(TEMPLATES / template_name, token, payload, window)
+        html = _render_template(
+            TEMPLATES / template_name,
+            token,
+            payload,
+            window,
+            page_name,
+        )
         (temp / output_name).write_text(html, encoding="utf-8")
 
     (temp / "index.html").write_text(_index_document(), encoding="utf-8")
-    shutil.copy2(ht_page, temp / "tsha_hbcs.html")
+    ht_source = _apply_shell(ht_page.read_text(encoding="utf-8"), "ht")
+    (temp / "tsha_hbcs.html").write_text(ht_source, encoding="utf-8")
     trend_source = trend_bounce_template.read_text(encoding="utf-8")
     for timeframe, output_name in TREND_BOUNCE_PAGES.items():
         rendered = trend_source.replace("__TIMEFRAME__", timeframe)
+        rendered = _apply_shell(rendered, f"us-{timeframe}")
         leftovers = sorted(set(PLACEHOLDER.findall(rendered)))
         if leftovers:
             raise BundleError(
@@ -236,6 +326,11 @@ def render_site(bundle_path: Path, output: Path = DEFAULT_OUTPUT) -> dict:
         for asset in ASSETS.iterdir():
             if asset.is_file():
                 shutil.copy2(asset, temp / asset.name)
+
+    (temp / "dashboard-freshness.json").write_text(
+        json.dumps(_source_freshness(bundle), indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
 
     rendered_files = sorted(
         path.relative_to(temp).as_posix() for path in temp.rglob("*") if path.is_file()
