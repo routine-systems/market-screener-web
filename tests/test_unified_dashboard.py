@@ -141,6 +141,8 @@ class RenderSiteTests(unittest.TestCase):
                 self.assertIn('id="main-content"', rendered)
                 self.assertNotIn('class="dashboard-freshness"', rendered)
                 self.assertNotIn('data-freshness="', rendered)
+                self.assertNotIn('class="purpose"', rendered)
+                self.assertNotIn('id="purpose"', rendered)
                 self.assertIn('src="dashboard-shell.js?v=1"', rendered)
                 self.assertIn('href="dashboard-shell.css?v=1"', rendered)
             freshness = json.loads((output / "dashboard-freshness.json").read_text())

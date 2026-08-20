@@ -138,12 +138,6 @@ header.top {
   padding: 6px 10px;
 }
 
-.purpose {
-  margin: 2px 0 5px;
-  color: var(--ink-2, var(--muted));
-  font-size: 12.5px;
-}
-
 .sr-only {
   position: absolute !important;
   width: 1px !important;

@@ -124,6 +124,8 @@ def _verify_navigation(page: str, source: str, active_href: str) -> None:
             _fail(f"{page} must contain one id={element_id!r}")
     if 'class="dashboard-freshness"' in source or 'data-freshness="' in source:
         _fail(f"{page} retains the superseded shared data-through row")
+    if 'class="purpose"' in source or 'id="purpose"' in source:
+        _fail(f"{page} retains the superseded title description")
 
 
 def _decode_history(page: str, source: str) -> dict:

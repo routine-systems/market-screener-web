@@ -129,6 +129,20 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             ):
                 subject.verify_site(root)
 
+    def test_rejects_title_description(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_valid_site(root)
+            source = (root / "dashboard.html").read_text().replace(
+                '<main id="main-content">',
+                '<main id="main-content"><p class="purpose">Description</p>',
+            )
+            (root / "dashboard.html").write_text(source)
+            with self.assertRaisesRegex(
+                subject.DashboardContractError, "title description"
+            ):
+                subject.verify_site(root)
+
     def test_rejects_missing_rotation_metadata(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
