@@ -93,96 +93,6 @@
     });
   }
 
-  const freshnessState = {};
-  const asOf = (value) =>
-    value && typeof value === "object" ? value.as_of || value.date || null : value || null;
-  const statusOf = (value) =>
-    value && typeof value === "object" ? String(value.status || "").toLowerCase() : "";
-  const compact = (value) => value || "—";
-
-  function setFreshnessGroup(key, value, status = "") {
-    freshnessState[key] = { value, status };
-    const chip = document.querySelector(`[data-freshness="${key}"]`);
-    if (!chip) return;
-    chip.classList.remove("pending", "stale");
-    if (!value || value.includes("—")) chip.classList.add("pending");
-    if (status === "stale") chip.classList.add("stale");
-    const output = chip.querySelector(".freshness-value");
-    if (output) output.textContent = value || "—";
-  }
-
-  function applyStaticFreshness(payload) {
-    const sources = payload && payload.sources ? payload.sources : {};
-    setFreshnessGroup(
-      "india",
-      `W ${compact(asOf(sources.india_weekly))} · D ${compact(asOf(sources.india_daily))}`,
-      [statusOf(sources.india_weekly), statusOf(sources.india_daily)].includes("stale")
-        ? "stale"
-        : "",
-    );
-    setFreshnessGroup(
-      "context",
-      `M ${compact(asOf(sources.market))} · S ${compact(asOf(sources.sectors))}`,
-      [statusOf(sources.market), statusOf(sources.sectors)].includes("stale")
-        ? "stale"
-        : "",
-    );
-    setFreshnessGroup(
-      "outcomes",
-      compact(asOf(sources.outcomes)),
-      statusOf(sources.outcomes),
-    );
-    const usWeekly = asOf(sources.us_weekly);
-    const usDaily = asOf(sources.us_daily);
-    if (usWeekly || usDaily) {
-      setFreshnessGroup("us", `W ${compact(usWeekly)} · D ${compact(usDaily)}`);
-    }
-    const htIndia = asOf(sources.ht_india);
-    const htUs = asOf(sources.ht_us);
-    if (htIndia || htUs) {
-      setFreshnessGroup("ht", `IN ${compact(htIndia)} · US ${compact(htUs)}`);
-    }
-  }
-
-  async function loadFreshness() {
-    if (!document.querySelector(".dashboard-freshness")) return;
-    try {
-      const response = await fetch("dashboard-freshness.json", {
-        headers: { accept: "application/json" },
-        cache: "no-store",
-      });
-      if (response.ok) applyStaticFreshness(await response.json());
-    } catch (error) {
-      // Page-specific status remains visible when the shared file is unavailable.
-    }
-
-    const requests = [
-      fetch("/api/us-trend-bounce?meta=1", { headers: { accept: "application/json" } })
-        .then((response) => (response.ok ? response.json() : null))
-        .then((payload) => {
-          const pages = payload && payload.snapshot && payload.snapshot.pages;
-          if (!pages) return;
-          setFreshnessGroup(
-            "us",
-            `W ${compact(pages.weekly && pages.weekly.data_cutoff)} · D ${compact(
-              pages.daily && pages.daily.data_cutoff,
-            )}`,
-          );
-        }),
-      fetch("/api/tsha-hbcs?meta=1", { headers: { accept: "application/json" } })
-        .then((response) => (response.ok ? response.json() : null))
-        .then((payload) => {
-          const cutoff = payload && payload.snapshot && payload.snapshot.data_cutoff;
-          if (!cutoff) return;
-          setFreshnessGroup(
-            "ht",
-            `IN ${compact(cutoff.IN)} · US ${compact(cutoff.US)}`,
-          );
-        }),
-    ];
-    await Promise.allSettled(requests);
-  }
-
   function init() {
     const themeButton = document.getElementById("themeBtn");
     if (themeButton) themeButton.addEventListener("click", toggleTheme);
@@ -200,11 +110,9 @@
       attributes: true,
       attributeFilter: ["class"],
     });
-    loadFreshness();
   }
 
   window.DashboardShell = {
-    setFreshnessGroup,
     setTheme,
     syncPressed,
     syncSortHeaders,

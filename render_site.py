@@ -221,34 +221,13 @@ def _navigation(active: str) -> str:
     )
 
 
-def _freshness_markup() -> str:
-    groups = (
-        ("india", "India signals"),
-        ("us", "US signals"),
-        ("context", "Context"),
-        ("ht", "HT"),
-        ("outcomes", "Outcomes"),
-    )
-    items = "".join(
-        f'<span class="freshness-chip pending" data-freshness="{key}">'
-        f'<span class="freshness-label">{label}</span>'
-        '<span class="freshness-value">loading</span></span>'
-        for key, label in groups
-    )
-    return (
-        '<section class="dashboard-freshness" aria-label="Data freshness">'
-        '<span class="freshness-heading">Data through</span>'
-        f'<span class="freshness-items">{items}</span></section>'
-    )
-
-
 def _apply_shell(source: str, active: str) -> str:
     if "__DASHBOARD_NAV__" not in source:
         raise BundleError(f"template for {active} misses __DASHBOARD_NAV__")
     if "__DASHBOARD_FRESHNESS__" not in source:
         raise BundleError(f"template for {active} misses __DASHBOARD_FRESHNESS__")
     source = source.replace("__DASHBOARD_NAV__", _navigation(active))
-    source = source.replace("__DASHBOARD_FRESHNESS__", _freshness_markup())
+    source = source.replace("__DASHBOARD_FRESHNESS__", "")
     assets = (
         '<script src="dashboard-shell.js?v=1"></script>'
         '<link rel="stylesheet" href="dashboard-shell.css?v=1">'

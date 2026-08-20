@@ -122,8 +122,8 @@ def _verify_navigation(page: str, source: str, active_href: str) -> None:
     for element_id in ("themeBtn", "main-content"):
         if parser.ids[element_id] != 1:
             _fail(f"{page} must contain one id={element_id!r}")
-    if source.count('data-freshness="') != 5:
-        _fail(f"{page} must contain five freshness groups")
+    if 'class="dashboard-freshness"' in source or 'data-freshness="' in source:
+        _fail(f"{page} retains the superseded shared data-through row")
 
 
 def _decode_history(page: str, source: str) -> dict:
@@ -210,7 +210,6 @@ def verify_site(root: Path) -> dict:
             source,
             (
                 'href="#main-content">Skip to results</a>',
-                'class="dashboard-freshness"',
                 'src="dashboard-shell.js?v=1"',
                 'href="dashboard-shell.css?v=1"',
             ),
@@ -261,6 +260,8 @@ def verify_site(root: Path) -> dict:
         )
         if '<div class="name">' in source or 'data-sort="exchange"' in source:
             _fail(f"{page} retains the superseded company-name or Exchange column")
+        if 'id="formula"' in source or "Formula: EMA10" in source:
+            _fail(f"{page} retains the superseded formula row")
         if state_words.search(source):
             _fail(f"{page} uses present/absent appearance tooltip words")
     _require_text(

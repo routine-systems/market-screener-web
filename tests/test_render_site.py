@@ -131,7 +131,7 @@ class RenderSiteTests(unittest.TestCase):
             self.assertNotIn("Twin Smoothed HA + HBCS", page)
             self.assertNotIn("Completed-bar confluence", page)
 
-    def test_render_injects_page_freshness_and_ist_timestamp(self):
+    def test_render_preserves_page_cutoffs_without_shared_data_row(self):
         bundle = self.load_fixture()
         bundle["source_freshness"] = {
             "daily": {"as_of": "2026-08-11"},
@@ -145,18 +145,19 @@ class RenderSiteTests(unittest.TestCase):
             source.write_text(json.dumps(bundle))
             render_site.render_site(source, output)
             expectations = {
-                "dashboard.html": ("2026-08-10", "Data through"),
-                "daily.html": ("2026-08-11", "Data through"),
-                "market.html": ("2026-08-11", "Data through"),
-                "sectors.html": ("2026-08-10", "Data through"),
-                "recommendations.html": ("2026-08-10", "Data through"),
+                "dashboard.html": "2026-08-10",
+                "daily.html": "2026-08-11",
+                "market.html": "2026-08-11",
+                "sectors.html": "2026-08-10",
+                "recommendations.html": "2026-08-10",
             }
-            for name, (as_of, label) in expectations.items():
+            for name, as_of in expectations.items():
                 page = (output / name).read_text()
                 payload = self.decode_rendered_payload(page)
                 self.assertEqual("11 Aug 2026, 17:30 IST", payload["last_updated_ist"])
                 self.assertEqual(as_of, payload["data_as_of"])
-                self.assertIn(label, page)
+                self.assertNotIn('class="dashboard-freshness"', page)
+                self.assertNotIn('data-freshness="', page)
 
     def test_format_ist_handles_midnight_rollover(self):
         self.assertEqual(
@@ -196,10 +197,12 @@ console.log(JSON.stringify({{
         self.assertEqual("—", result["missing"])
         self.assertEqual("—", result["naive"])
 
-    def test_shared_freshness_shell_writes_values_as_text(self):
+    def test_shared_shell_omits_freshness_runtime(self):
         shell = (ROOT / "assets" / "dashboard-shell.js").read_text()
-        self.assertIn('output.textContent = value || "—"', shell)
-        self.assertNotIn("output.innerHTML", shell)
+        self.assertNotIn("loadFreshness", shell)
+        self.assertNotIn("setFreshnessGroup", shell)
+        self.assertNotIn("data-freshness", shell)
+        self.assertNotIn("dashboard-freshness", shell)
 
     def test_ht_appearance_dots_preserve_period_order(self):
         page = (ROOT / "templates" / "tsha_hbcs.html").read_text()

@@ -37,17 +37,13 @@ def _nav(active: str) -> str:
 
 
 def _page(active: str, body: str = "") -> str:
-    freshness = "".join(
-        f'<span data-freshness="{name}"></span>'
-        for name in ("india", "us", "context", "ht", "outcomes")
-    )
     return (
         '<!doctype html><html><head><link rel="stylesheet" '
         'href="dashboard-shell.css?v=1"></head><body>'
         '<a class="skip-link" href="#main-content">Skip to results</a>'
         f'{_nav(active)}<button id="themeBtn">Theme</button>'
-        f'<main id="main-content"><section class="dashboard-freshness">{freshness}</section>'
-        f'{body}</main><script src="dashboard-shell.js?v=1"></script></body></html>'
+        f'<main id="main-content">{body}</main>'
+        '<script src="dashboard-shell.js?v=1"></script></body></html>'
     )
 
 
@@ -118,6 +114,21 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             with self.assertRaisesRegex(subject.DashboardContractError, "us-weekly"):
                 subject.verify_site(root)
 
+    def test_rejects_shared_data_through_row(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_valid_site(root)
+            source = (root / "dashboard.html").read_text().replace(
+                '<main id="main-content">',
+                '<main id="main-content"><section class="dashboard-freshness">'
+                '<span data-freshness="india">Data through</span></section>',
+            )
+            (root / "dashboard.html").write_text(source)
+            with self.assertRaisesRegex(
+                subject.DashboardContractError, "shared data-through row"
+            ):
+                subject.verify_site(root)
+
     def test_rejects_missing_rotation_metadata(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -141,6 +152,20 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             (root / "tsha_hbcs.html").write_text(source)
             with self.assertRaisesRegex(
                 subject.DashboardContractError, "history instruction box"
+            ):
+                subject.verify_site(root)
+
+    def test_rejects_us_formula_row(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_valid_site(root)
+            source = (root / "us-weekly.html").read_text().replace(
+                '<button id="congressOnly">',
+                '<div id="formula">Formula: EMA10</div><button id="congressOnly">',
+            )
+            (root / "us-weekly.html").write_text(source)
+            with self.assertRaisesRegex(
+                subject.DashboardContractError, "formula row"
             ):
                 subject.verify_site(root)
 
