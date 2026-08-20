@@ -132,7 +132,8 @@
     if (!entry) return "";
     const kind = eventMarket === "IN" ? "bulk deal" : "political transaction";
     const count = Number(entry.count) || 0;
-    const label = `${normalized}: ${count} ${kind}${count === 1 ? "" : "s"} in complete history`;
+    const scope = eventMarket === "IN" ? "the last year" : "complete history";
+    const label = `${normalized}: ${count} ${kind}${count === 1 ? "" : "s"} in ${scope}`;
     return `<button type="button" class="event-dot" data-event-market="${eventMarket}" data-event-symbol="${escapeHtml(normalized)}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"></button>`;
   }
 
@@ -177,7 +178,13 @@
 
   function cardHtml(symbol, entry, pinned, market) {
     const count = Number(entry.count) || 0;
-    const events = Array.isArray(entry.events) ? entry.events : [];
+    const events = Array.isArray(entry.events)
+      ? [...entry.events].sort((left, right) => {
+          const leftKey = `${field(left, "event_date", market) || ""}|${field(left, "reported_at", market) || ""}|${field(left, "url", market) || ""}`;
+          const rightKey = `${field(right, "event_date", market) || ""}|${field(right, "reported_at", market) || ""}|${field(right, "url", market) || ""}`;
+          return rightKey.localeCompare(leftKey);
+        })
+      : [];
     const kind = market === "IN" ? "bulk deals" : "political transactions";
     const span = entry.first_date && entry.last_date
       ? `${entry.first_date} → ${entry.last_date}`
@@ -186,7 +193,8 @@
     const truncated = count > events.length
       ? `Showing latest ${events.length} of ${count} events.`
       : `Showing all ${count} stored event${count === 1 ? "" : "s"}.`;
-    return `<div class="event-card-head"><div><strong>${escapeHtml(symbol)}</strong><div class="event-card-meta">${count.toLocaleString("en-IN")} ${kind} · ${escapeHtml(span)}</div></div><span class="event-card-pin">${pinned ? "Pinned" : "Click to pin"}</span></div>${detail}<div class="event-card-foot">${escapeHtml(truncated)} Marker scope: complete history.</div>`;
+    const scope = market === "IN" ? "last one year" : "complete history";
+    return `<div class="event-card-head"><div><strong>${escapeHtml(symbol)}</strong><div class="event-card-meta">${count.toLocaleString("en-IN")} ${kind} · ${escapeHtml(span)}</div></div><span class="event-card-pin">${pinned ? "Pinned" : "Click to pin"}</span></div>${detail}<div class="event-card-foot">${escapeHtml(truncated)} Marker scope: ${scope}.</div>`;
   }
 
   function show(dotElement, pinned) {
@@ -227,7 +235,7 @@
         payload.schema_version !== "market-events.api.v1" ||
         snapshot?.schema_version !== "market-events.snapshot.v1" ||
         snapshot?.market !== normalized ||
-        snapshot?.history_scope !== "complete" ||
+        snapshot?.history_scope !== (normalized === "IN" ? "rolling_1_year" : "complete") ||
         !Array.isArray(snapshot?.event_columns) ||
         !snapshot?.records
       ) {

@@ -51,7 +51,7 @@ def _india_body(*, weekly: bool, rotation: bool = True) -> str:
     history = _history(weekly=weekly, rotation=rotation)
     return f'''<button id="crossOnly"></button><button id="rotOnly"></button>
 <div id="tt" role="tooltip"></div><span data-tip="row"></span>
-<script src="market-events.js?v=2"></script><script>
+<script src="market-events.js?v=3"></script><script>
 const HISTORY_B64="{history}"; const glyph=on?'●':'○';
 MarketEvents.load('IN',()=>MarketEvents.dot('TEST'));
 </script>'''
@@ -62,7 +62,7 @@ def _us_body(timeframe: str) -> str:
     return f'''<button id="congressOnly">● Congress history</button>
 <table><thead><tr><th class="l ticker-col" data-sort="symbol">Ticker</th></tr></thead><tbody><tr><td class="l ticker-col">TEST</td></tr></tbody></table>
 <div id="tt" role="tooltip"></div><span class="dots" data-tip="x"></span>
-<script src="market-events.js?v=2"></script><script>
+<script src="market-events.js?v=3"></script><script>
 const TIMEFRAME='{timeframe}'; {week_start}
 fetch('/api/us-trend-bounce'); state.congress; row.hasCongressHistory;
 const glyph=on?'●':'○'; MarketEvents.load('US',()=>MarketEvents.dot('TEST'));

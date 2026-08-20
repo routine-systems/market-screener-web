@@ -84,7 +84,7 @@ class RenderSiteTests(unittest.TestCase):
                 ("us-daily.html", "US"),
             ):
                 rendered = (output / page).read_text()
-                self.assertIn('src="market-events.js?v=2"', rendered)
+                self.assertIn('src="market-events.js?v=3"', rendered)
                 self.assertIn(f"MarketEvents.load('{market}'", rendered)
                 self.assertIn("MarketEvents.dot(", rendered)
             us_weekly = (output / "us-weekly.html").read_text()
@@ -113,7 +113,7 @@ class RenderSiteTests(unittest.TestCase):
                 self.assertNotIn('id="formula"', rendered)
                 self.assertNotIn("Formula: EMA10", rendered)
             ht_page = (output / "tsha_hbcs.html").read_text()
-            self.assertIn('src="market-events.js?v=2"', ht_page)
+            self.assertIn('src="market-events.js?v=3"', ht_page)
             self.assertIn('id="eventOnly"', ht_page)
             self.assertIn("MarketEvents.load(market", ht_page)
             self.assertIn("MarketEvents.record(r.symbol,r.market)", ht_page)
@@ -121,6 +121,10 @@ class RenderSiteTests(unittest.TestCase):
             self.assertNotIn("?'present':'absent'", ht_page)
             self.assertNotIn('id="historyPrompt"', ht_page)
             self.assertNotIn("unlock period history", ht_page)
+            event_shell = (output / "market-events.js").read_text()
+            self.assertIn('normalized === "IN" ? "rolling_1_year"', event_shell)
+            self.assertIn("return rightKey.localeCompare(leftKey)", event_shell)
+            self.assertIn('market === "IN" ? "last one year"', event_shell)
             for page in (
                 "dashboard.html",
                 "daily.html",
