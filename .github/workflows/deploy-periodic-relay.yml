@@ -1,0 +1,49 @@
+name: deploy-periodic-relay
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/deploy-periodic-relay.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-periodic-relay
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_ACCOUNT_ID: 62231b040ed00c96cdcf3a4541eab958
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Check out relay source
+        uses: actions/checkout@v4
+        with:
+          repository: NakliTechie/chartink-dashboard
+          ref: main
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: ops/periodic-relay/package-lock.json
+
+      - name: Install relay dependencies
+        working-directory: ops/periodic-relay
+        run: npm ci
+
+      - name: Verify relay
+        working-directory: ops/periodic-relay
+        run: npm test && npm run check
+
+      - name: Deploy relay
+        working-directory: ops/periodic-relay
+        run: npx wrangler deploy
