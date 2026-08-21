@@ -129,8 +129,8 @@
 
   <div class="presets">
     <span class="lab">Layout</span>
-    <button class="preset" data-layout="grid">Grid</button>
-    <button class="preset" data-layout="quad">Quadrant</button>
+    <button class="preset" data-layout="grid" aria-pressed="false">Grid</button>
+    <button class="preset on" data-layout="quad" aria-pressed="true">Quadrant</button>
     <span style="width:12px"></span>
     <span class="lab">Level</span>
     <button class="preset" data-level="sector">Sector</button>
@@ -157,8 +157,8 @@
   </div>
   <div class="legend" id="legend"></div>
 
-  <section class="grid" id="grid"></section>
-  <section class="quadwrap" id="quad" hidden></section>
+  <section class="grid" id="grid" hidden></section>
+  <section class="quadwrap" id="quad"></section>
   <footer id="foot"></footer>
   </main>
 </div>
@@ -171,7 +171,7 @@ function b64utf8(b){try{return decodeURIComponent(escape(atob(b)));}catch(e){ret
 const M=JSON.parse(b64utf8(SECTOR_B64));
 const LEVEL_KEYS=(M.levels||[]).map(l=>l[0]);
 let LEVEL=localStorage.getItem('sec.level'); if(!LEVEL_KEYS.includes(LEVEL)) LEVEL=LEVEL_KEYS[0]||'sector';
-let LAYOUT=(localStorage.getItem('sec.layout')==='quad')?'quad':'grid';   // grid cards | quadrant
+let LAYOUT=(localStorage.getItem('sec.layout')==='grid')?'grid':'quad';   // default quadrant
 let PERIOD_BY={grid:13, quad:8};                          // default window per layout (weeks)
 let PERIOD=PERIOD_BY[LAYOUT], OFFSET=0;
 let CHART=(localStorage.getItem('sec.chart')==='line')?'line':'hist';   // default Bars
@@ -234,7 +234,11 @@ function render(){
   document.querySelectorAll('.preset[data-days]').forEach(b=>b.classList.toggle('on', +b.dataset.days===PERIOD));
   document.querySelectorAll('.preset[data-level]').forEach(b=>b.classList.toggle('on', b.dataset.level===LEVEL));
   document.querySelectorAll('.preset[data-chart]').forEach(b=>b.classList.toggle('on', b.dataset.chart===CHART));
-  document.querySelectorAll('.preset[data-layout]').forEach(b=>b.classList.toggle('on', b.dataset.layout===LAYOUT));
+  document.querySelectorAll('.preset[data-layout]').forEach(b=>{
+    const on=b.dataset.layout===LAYOUT;
+    b.classList.toggle('on',on);
+    b.setAttribute('aria-pressed',String(on));
+  });
 
   const weeks=M.weeks||[], maxLen=weeks.length;
   OFFSET=Math.max(0, Math.min(OFFSET, Math.max(0,maxLen-1)));

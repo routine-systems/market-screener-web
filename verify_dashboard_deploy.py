@@ -286,6 +286,18 @@ def verify_site(root: Path) -> dict:
         ("const weekStart=date=>",),
     )
 
+    _require_text(
+        "sectors.html",
+        page_sources["sectors.html"],
+        (
+            "let LAYOUT=(localStorage.getItem('sec.layout')==='grid')?'grid':'quad';",
+            'data-layout="quad" aria-pressed="true">Quadrant</button>',
+            '<section class="grid" id="grid" hidden>',
+            '<section class="quadwrap" id="quad">',
+            "b.setAttribute('aria-pressed',String(on))",
+        ),
+    )
+
     ht = page_sources["tsha_hbcs.html"]
     _require_text(
         "tsha_hbcs.html",

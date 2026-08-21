@@ -105,6 +105,22 @@ class RenderSiteTests(unittest.TestCase):
             )
             self.assertTrue((output / "functions").exists())
 
+    def test_sectors_defaults_to_quadrant(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "dist"
+            render_site.render_site(FIXTURE, output)
+            page = (output / "sectors.html").read_text()
+            self.assertIn(
+                "let LAYOUT=(localStorage.getItem('sec.layout')==='grid')?"
+                "'grid':'quad';",
+                page,
+            )
+            self.assertIn(
+                'data-layout="quad" aria-pressed="true">Quadrant</button>', page
+            )
+            self.assertIn('<section class="grid" id="grid" hidden>', page)
+            self.assertIn('<section class="quadwrap" id="quad">', page)
+
     def test_build_requires_an_explicit_immutable_bundle(self):
         completed = subprocess.run(
             [ROOT / "scripts" / "build"],

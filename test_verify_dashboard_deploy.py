@@ -83,6 +83,10 @@ def _write_valid_site(root: Path) -> None:
         "daily.html": _india_body(weekly=False),
         "us-weekly.html": _us_body("weekly"),
         "us-daily.html": _us_body("daily"),
+        "sectors.html": '''<button data-layout="quad" aria-pressed="true">Quadrant</button>
+<section class="grid" id="grid" hidden></section><section class="quadwrap" id="quad"></section>
+<script>let LAYOUT=(localStorage.getItem('sec.layout')==='grid')?'grid':'quad';
+const b={setAttribute(){}}; const on=true; b.setAttribute('aria-pressed',String(on));</script>''',
         "tsha_hbcs.html": '''<button id="eventOnly">● Bulk history · ● Congress history</button>
 <table><th class="l sorted" data-k="appearance_count">Appearances</th></table>
 <script src="market-events.js?v=5"></script><script>const state={sort:'appearance_count'}; const weekStart=date=>date;
@@ -135,6 +139,22 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             (root / "dashboard.html").write_text(source.replace(current, legacy, 1))
             with self.assertRaisesRegex(
                 subject.DashboardContractError, "canonical eight-tab order"
+            ):
+                subject.verify_site(root)
+
+    def test_rejects_grid_as_the_sectors_default(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_valid_site(root)
+            source = (root / "sectors.html").read_text().replace(
+                "let LAYOUT=(localStorage.getItem('sec.layout')==='grid')?"
+                "'grid':'quad';",
+                "let LAYOUT=(localStorage.getItem('sec.layout')==='quad')?"
+                "'quad':'grid';",
+            )
+            (root / "sectors.html").write_text(source)
+            with self.assertRaisesRegex(
+                subject.DashboardContractError, "sectors.html misses contract markers"
             ):
                 subject.verify_site(root)
 
