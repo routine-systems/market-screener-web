@@ -173,6 +173,10 @@ class RenderSiteTests(unittest.TestCase):
                 page,
             )
             self.assertIn("function appearanceCell(r)", page)
+            self.assertIn('id="ignitionOnly"', page)
+            self.assertIn("function ignitionDot(r)", page)
+            self.assertIn('class="ignition-dot"', page)
+            self.assertIn("!state.ignition||r.ignition===true", page)
             self.assertIn(".sort(compareRows)", page)
             self.assertNotIn('data-k="hbcs_components"', page)
             self.assertNotIn('data-k="fast_body_pct"', page)
@@ -320,12 +324,14 @@ console.log(JSON.stringify({{mixed,every,missing}}));
         start = page.index("function buildHistoryRows(")
         end = page.index("\nfunction singleSelection()", start)
         function_source = page[start:end]
+        ignition_label = javascript_function(page, "ignitionReasonLabel")
         script = f"""
+{ignition_label}
 {function_source}
 const latest=[{{symbol:'LATEST'}}];
 const history={{periods:[
-  {{date:'2026-08-14',source:'replay',rows:[{{symbol:'ABC',close:10}},{{symbol:'XYZ',close:20}}]}},
-  {{date:'2026-08-15',source:'stored',rows:[{{symbol:'ABC',close:12}},{{symbol:'NEW',close:30}}]}},
+  {{date:'2026-08-14',source:'replay',rows:[{{symbol:'ABC',close:10,ignition:true,ignition_reason:'first_bullish_stack_signal'}},{{symbol:'XYZ',close:20,ignition:false,ignition_reason:''}}]}},
+  {{date:'2026-08-15',source:'stored',rows:[{{symbol:'ABC',close:12,ignition:false,ignition_reason:''}},{{symbol:'NEW',close:30,ignition:true,ignition_reason:'fast_sha_bounce_signal'}}]}},
 ]}};
 console.log(JSON.stringify({{
   fallback:rowsForView(latest,null,0,0,'IN','daily'),
@@ -347,6 +353,13 @@ console.log(JSON.stringify({{
         self.assertEqual(by_symbol["ABC"]["appearance_bits"], "11")
         self.assertEqual(by_symbol["XYZ"]["appearance_bits"], "10")
         self.assertEqual(by_symbol["NEW"]["appearance_bits"], "01")
+        self.assertTrue(by_symbol["ABC"]["ignition"])
+        self.assertTrue(by_symbol["NEW"]["ignition"])
+        self.assertFalse(by_symbol["XYZ"]["ignition"])
+        self.assertEqual(
+            by_symbol["ABC"]["ignition_periods"],
+            ["2026-08-14 · first bullish-stack signal"],
+        )
         self.assertEqual(
             by_symbol["ABC"]["appearance_periods"],
             ["2026-08-14", "2026-08-15"],

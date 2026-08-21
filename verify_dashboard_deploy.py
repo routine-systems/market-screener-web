@@ -311,6 +311,10 @@ def verify_site(root: Path) -> dict:
         "tsha_hbcs.html",
         ht,
         (
+            'id="ignitionOnly"',
+            'class="ignition-dot"',
+            "function ignitionDot(r)",
+            "!state.ignition||r.ignition===true",
             'id="eventOnly"',
             "MarketEvents.load(market",
             "MarketEvents.record(r.symbol,r.market)",

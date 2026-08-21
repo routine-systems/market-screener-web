@@ -91,10 +91,11 @@ def _write_valid_site(root: Path) -> None:
 snapshot?.rotation?.schema_version!=='us-sector-rotation.v1';
 const wt=MARKET==='US'?'us-weekly.html':'dashboard.html'; const dt=MARKET==='US'?'us-daily.html':'daily.html';
 const b={setAttribute(){}}; const on=true; b.setAttribute('aria-pressed',String(on));</script>''',
-        "tsha_hbcs.html": '''<button id="eventOnly">● Bulk history · ● Congress history</button>
+        "tsha_hbcs.html": '''<button id="ignitionOnly"></button><button id="eventOnly">● Bulk history · ● Congress history</button>
 <table><th class="l sorted" data-k="appearance_count">Appearances</th></table>
 <script src="market-events.js?v=5"></script><script>const state={sort:'appearance_count'}; const weekStart=date=>date;
 function compareRows(a,b){return 0} const rows=[]; rows.sort(compareRows); const glyph=on?'●':'○'; MarketEvents.load(market,()=>{});
+function ignitionDot(r){return '<span class="ignition-dot"></span>'} !state.ignition||r.ignition===true;
 MarketEvents.record(r.symbol,r.market); MarketEvents.dot(r.symbol,r.market);
 MarketEvents.dot(r.symbol,'IN','insider_trade');</script>''',
     }

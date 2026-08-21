@@ -37,8 +37,8 @@ def valid_snapshot():
     }
 
 
-def history_fixture():
-    return {
+def history_fixture(*, ignition: bool = False):
+    history = {
         "schema_version": "ht-history.v1",
         "instrument_columns": ["symbol", "exchange", "asset_type", "sector"],
         "instruments": [["ABC", "NSE", "equity", "Industrials"]],
@@ -59,6 +59,12 @@ def history_fixture():
             }
         ],
     }
+    if ignition:
+        history["row_columns"].extend(["ignition", "ignition_reason"])
+        history["periods"][0]["rows"][0].extend(
+            [True, "first_bullish_stack_signal"]
+        )
+    return history
 
 
 def run_probe(mode: str) -> dict:
@@ -68,6 +74,7 @@ def run_probe(mode: str) -> dict:
     snapshot_value = valid_snapshot()
     history_modes = {
         "history",
+        "ignition_history",
         "malformed_history",
         "current_history",
         "empty_history",
@@ -87,6 +94,10 @@ def run_probe(mode: str) -> dict:
     if mode in history_modes:
         snapshot_value["markets"]["IN"]["timeframes"]["daily"]["history"] = (
             history_fixture()
+        )
+    if mode == "ignition_history":
+        snapshot_value["markets"]["IN"]["timeframes"]["daily"]["history"] = (
+            history_fixture(ignition=True)
         )
     if mode == "malformed_history":
         snapshot_value["markets"]["IN"]["timeframes"]["daily"]["history"]["periods"][0][
@@ -168,6 +179,7 @@ const stores = {{
   missing: {{async getWithMetadata(){{reads += 1; return {{value:null,metadata:null}};}}}},
   valid: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:{{write_count:2}}}};}}}},
   history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:{{write_count:2}}}};}}}},
+  ignition_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:{{write_count:2}}}};}}}},
   malformed_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
   current_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
   empty_history: {{async getWithMetadata(){{reads += 1; return {{value:{snapshot},metadata:null}};}}}},
@@ -231,6 +243,18 @@ class TshaHbcsApiTests(unittest.TestCase):
         ]
         self.assertEqual(history["schema_version"], "ht-history.v1")
         self.assertEqual(history["periods"][0]["source"], "stored")
+
+    def test_ignition_history_columns_are_returned(self):
+        result = run_probe("ignition_history")
+        self.assertEqual(result["status"], 200)
+        history = result["body"]["snapshot"]["markets"]["IN"]["timeframes"]["daily"][
+            "history"
+        ]
+        self.assertEqual(history["row_columns"][-2:], ["ignition", "ignition_reason"])
+        self.assertEqual(
+            history["periods"][0]["rows"][0][-2:],
+            [True, "first_bullish_stack_signal"],
+        )
 
     def test_api_defers_deep_history_record_validation(self):
         for mode in (

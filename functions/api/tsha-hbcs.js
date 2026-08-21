@@ -2,7 +2,7 @@ const SNAPSHOT_KEY = "tsha-hbcs:v1:latest";
 const SNAPSHOT_VERSION = "tsha-hbcs.snapshot.v1";
 const HISTORY_VERSION = "ht-history.v1";
 const INSTRUMENT_COLUMNS = ["symbol", "exchange", "asset_type", "sector"];
-const HISTORY_ROW_COLUMNS = [
+const LEGACY_HISTORY_ROW_COLUMNS = [
   "instrument_index",
   "hbcs_bull_component_count",
   "hbcs_components",
@@ -10,6 +10,11 @@ const HISTORY_ROW_COLUMNS = [
   "slow_body_pct",
   "close",
   "median_dollar_turnover_20",
+];
+const HISTORY_ROW_COLUMNS = [
+  ...LEGACY_HISTORY_ROW_COLUMNS,
+  "ignition",
+  "ignition_reason",
 ];
 
 function json(body, status = 200) {
@@ -51,7 +56,8 @@ function validHistory(value, signalDate) {
     typeof value !== "object" ||
     value.schema_version !== HISTORY_VERSION ||
     !sameColumns(value.instrument_columns, INSTRUMENT_COLUMNS) ||
-    !sameColumns(value.row_columns, HISTORY_ROW_COLUMNS) ||
+    (!sameColumns(value.row_columns, LEGACY_HISTORY_ROW_COLUMNS) &&
+      !sameColumns(value.row_columns, HISTORY_ROW_COLUMNS)) ||
     !Array.isArray(value.instruments) ||
     !Array.isArray(value.periods) ||
     value.periods.length === 0 ||
