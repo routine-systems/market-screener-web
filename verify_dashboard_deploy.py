@@ -28,9 +28,9 @@ NAV_ITEMS = (
     ("daily.html", "Daily"),
     ("us-weekly.html", "US Weekly"),
     ("us-daily.html", "US Daily"),
+    ("tsha_hbcs.html", "HT"),
     ("market.html", "Market"),
     ("sectors.html", "Sectors"),
-    ("tsha_hbcs.html", "HT"),
     ("recommendations.html", "Forward Test"),
 )
 REQUIRED_FILES = {

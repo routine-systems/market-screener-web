@@ -116,6 +116,28 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             self.assertEqual(8, result["pages"])
             self.assertEqual("site-manifest.json", result["manifest"])
 
+    def test_rejects_legacy_ht_position_after_context_tabs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_valid_site(root)
+            source = (root / "dashboard.html").read_text()
+            current = (
+                '<a href="tsha_hbcs.html">HT</a>'
+                '<a href="market.html">Market</a>'
+                '<a href="sectors.html">Sectors</a>'
+            )
+            legacy = (
+                '<a href="market.html">Market</a>'
+                '<a href="sectors.html">Sectors</a>'
+                '<a href="tsha_hbcs.html">HT</a>'
+            )
+            self.assertIn(current, source)
+            (root / "dashboard.html").write_text(source.replace(current, legacy, 1))
+            with self.assertRaisesRegex(
+                subject.DashboardContractError, "canonical eight-tab order"
+            ):
+                subject.verify_site(root)
+
     def test_rejects_an_old_six_page_bundle(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -30,6 +30,21 @@ def javascript_function(source: str, name: str) -> str:
 
 
 class RenderSiteTests(unittest.TestCase):
+    def test_navigation_groups_ranked_shortlists_before_context_pages(self):
+        self.assertEqual(
+            (
+                ("weekly", "dashboard.html", "Weekly"),
+                ("daily", "daily.html", "Daily"),
+                ("us-weekly", "us-weekly.html", "US Weekly"),
+                ("us-daily", "us-daily.html", "US Daily"),
+                ("ht", "tsha_hbcs.html", "HT"),
+                ("market", "market.html", "Market"),
+                ("sectors", "sectors.html", "Sectors"),
+                ("recommendations", "recommendations.html", "Forward Test"),
+            ),
+            render_site.NAV_ITEMS,
+        )
+
     def load_fixture(self):
         return json.loads(FIXTURE.read_text())
 

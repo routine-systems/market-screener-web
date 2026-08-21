@@ -48,9 +48,9 @@ NAV_ITEMS = (
     ("daily", "daily.html", "Daily"),
     ("us-weekly", "us-weekly.html", "US Weekly"),
     ("us-daily", "us-daily.html", "US Daily"),
+    ("ht", "tsha_hbcs.html", "HT"),
     ("market", "market.html", "Market"),
     ("sectors", "sectors.html", "Sectors"),
-    ("ht", "tsha_hbcs.html", "HT"),
     ("recommendations", "recommendations.html", "Forward Test"),
 )
 TREND_BOUNCE_TEMPLATE = "us_trend_bounce.html"
