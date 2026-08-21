@@ -1,0 +1,20 @@
+{
+  "$schema": "../../../node_modules/wrangler/config-schema.json",
+  "name": "periodic-relay",
+  "main": "src/index.ts",
+  "account_id": "62231b040ed00c96cdcf3a4541eab958",
+  "compatibility_date": "2026-08-13",
+  "compatibility_flags": ["nodejs_compat"],
+  "kv_namespaces": [
+    {
+      "binding": "BUNDLES",
+      "id": "c85ac5582e0b49fd927bddbeaa487805"
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "head_sampling_rate": 1
+    }
+  }
+}

@@ -23,11 +23,8 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: 62231b040ed00c96cdcf3a4541eab958
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     steps:
-      - name: Check out relay source
+      - name: Check out deployment repository
         uses: actions/checkout@v4
-        with:
-          repository: NakliTechie/chartink-dashboard
-          ref: main
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -42,7 +39,9 @@ jobs:
 
       - name: Verify relay
         working-directory: ops/periodic-relay
-        run: npm test && npm run check
+        run: |
+          npm test
+          npm run check
 
       - name: Deploy relay
         working-directory: ops/periodic-relay

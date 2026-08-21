@@ -1,0 +1,14 @@
+{
+  "name": "periodic-relay",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-strip-types --test src/index.test.ts",
+    "check": "wrangler types --env-file .dev.vars.example --check && tsc --noEmit && wrangler deploy --dry-run --outdir .wrangler/dry-run"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.122.0"
+  }
+}
