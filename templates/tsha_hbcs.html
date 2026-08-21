@@ -58,10 +58,9 @@ __DASHBOARD_NAV__
   <div class="tablewrap"><table id="tbl">
     <thead><tr>
       <th class="l" data-k="symbol">Symbol</th><th data-k="signal_date">Date</th><th data-k="timeframe">Bucket</th><th class="l sorted" data-k="appearance_count">Appearances</th>
-      <th data-k="hbcs_bull_component_count">HBCS count</th><th data-k="hbcs_components">Bullish components</th>
-      <th data-k="fast_body_pct">Fast body</th><th data-k="slow_body_pct">Slow body</th><th data-k="close">Close</th><th data-k="median_dollar_turnover_20">Median turnover</th><th data-k="sector">Sector</th>
+      <th data-k="hbcs_bull_component_count">HBCS count</th><th data-k="close">Close</th><th data-k="median_dollar_turnover_20">Median turnover</th><th data-k="sector">Sector</th>
     </tr></thead>
-    <tbody id="rows"><tr><td colspan="11"><div class="empty">Loading snapshot…</div></td></tr></tbody>
+    <tbody id="rows"><tr><td colspan="8"><div class="empty">Loading snapshot…</div></td></tr></tbody>
   </table></div></section>
   <footer id="foot"></footer>
 </main>
@@ -185,9 +184,8 @@ function render(resetRange=false){
   $('#rows').innerHTML=shown.length?shown.map(r=>`<tr>
     <td class="l"><a class="symbol" target="_blank" rel="noopener" href="${chartUrl(r)}">${esc(r.symbol)}</a>${MarketEvents.dot(r.symbol,r.market)}${r.market==='IN'?MarketEvents.dot(r.symbol,'IN','insider_trade'):''}<div class="market">${esc(r.exchange||r.market)} · ${esc(r.asset_type)}</div></td>
     <td>${esc(r.signal_date)}</td><td><span class="pill">${r.market==='IN'?'India':'US'} ${esc(r.timeframe)}</span></td><td class="l">${appearanceCell(r)}</td>
-    <td class="bull num">${num(r.hbcs_bull_component_count,0)}</td><td class="components">${esc(r.hbcs_components||'Bullish state')}</td>
-    <td class="bull num">${num(r.fast_body_pct)}%</td><td class="bull num">${num(r.slow_body_pct)}%</td><td class="num">${num(r.close)}</td><td class="num">${num(r.median_dollar_turnover_20,0)}</td><td>${esc(r.sector||'—')}</td>
-  </tr>`).join(''):`<tr><td colspan="11"><div class="empty">No rows match these filters.</div></td></tr>`;
+    <td class="bull num">${num(r.hbcs_bull_component_count,0)}</td><td class="num">${num(r.close)}</td><td class="num">${num(r.median_dollar_turnover_20,0)}</td><td>${esc(r.sector||'—')}</td>
+  </tr>`).join(''):`<tr><td colspan="8"><div class="empty">No rows match these filters.</div></td></tr>`;
   const cap=rows.length>shown.length?'first ':'';
   $('#foot').textContent=`Showing ${cap}${shown.length} of ${rows.length} matching rows`;
 }
@@ -213,7 +211,7 @@ async function load(){
     const inDate=DATA.snapshot.markets.IN.data_session,usDate=DATA.snapshot.markets.US.data_session;
     $('#status').textContent=`India ${inDate} · US ${usDate} · ${DATA.rows.length.toLocaleString()} potentials`;
     $('#updated').textContent=`Last updated ${formatIst(DATA.snapshot.generated_at_utc)} · India data through ${inDate} · US data through ${usDate}`;
-  }catch(error){$('#status').classList.add('error');$('#status').textContent=`Snapshot unavailable: ${error.message}`;$('#rows').innerHTML='<tr><td colspan="11"><div class="empty">No stored data is available.</div></td></tr>'}
+  }catch(error){$('#status').classList.add('error');$('#status').textContent=`Snapshot unavailable: ${error.message}`;$('#rows').innerHTML='<tr><td colspan="8"><div class="empty">No stored data is available.</div></td></tr>'}
 }
 load();
 for(const market of ['IN','US'])MarketEvents.load(market,()=>{EVENTS_READY.add(market);if(DATA)render()});

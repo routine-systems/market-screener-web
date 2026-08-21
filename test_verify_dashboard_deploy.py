@@ -84,7 +84,7 @@ def _write_valid_site(root: Path) -> None:
         "us-weekly.html": _us_body("weekly"),
         "us-daily.html": _us_body("daily"),
         "tsha_hbcs.html": '''<button id="eventOnly">● Bulk history · ● Congress history</button>
-<table><th class="l sorted" data-k="appearance_count">Appearances</th><th>Bullish components</th></table>
+<table><th class="l sorted" data-k="appearance_count">Appearances</th></table>
 <script src="market-events.js?v=5"></script><script>const state={sort:'appearance_count'}; const weekStart=date=>date;
 function compareRows(a,b){return 0} const rows=[]; rows.sort(compareRows); const glyph=on?'●':'○'; MarketEvents.load(market,()=>{});
 MarketEvents.record(r.symbol,r.market); MarketEvents.dot(r.symbol,r.market);
@@ -229,6 +229,21 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             (root / "dashboard.html").write_text(source)
             with self.assertRaisesRegex(
                 subject.DashboardContractError, "Appearances"
+            ):
+                subject.verify_site(root)
+
+    def test_rejects_ht_diagnostic_columns(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_valid_site(root)
+            source = (root / "tsha_hbcs.html").read_text().replace(
+                "</table>",
+                '<th data-k="hbcs_components">Fresh components</th></table>',
+                1,
+            )
+            (root / "tsha_hbcs.html").write_text(source)
+            with self.assertRaisesRegex(
+                subject.DashboardContractError, "suppressed diagnostic"
             ):
                 subject.verify_site(root)
 

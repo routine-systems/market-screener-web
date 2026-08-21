@@ -143,7 +143,9 @@ class RenderSiteTests(unittest.TestCase):
                 ht_page,
             )
             self.assertIn(".sort(compareRows)", ht_page)
-            self.assertIn("Bullish components", ht_page)
+            self.assertNotIn('data-k="hbcs_components"', ht_page)
+            self.assertNotIn('data-k="fast_body_pct"', ht_page)
+            self.assertNotIn('data-k="slow_body_pct"', ht_page)
             self.assertIn("const weekStart=date=>", ht_page)
             self.assertNotIn("oldest→newest", ht_page)
             event_shell = (output / "market-events.js").read_text()

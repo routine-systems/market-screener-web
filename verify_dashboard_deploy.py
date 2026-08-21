@@ -302,7 +302,6 @@ def verify_site(root: Path) -> dict:
             "function compareRows(",
             ".sort(compareRows)",
             "const weekStart=date=>",
-            "Bullish components",
             "● Bulk history",
             "● Congress history",
             "?'●':'○'",
@@ -310,6 +309,15 @@ def verify_site(root: Path) -> dict:
     )
     if 'id="historyPrompt"' in ht or "unlock period history" in ht:
         _fail("tsha_hbcs.html retains the superseded history instruction box")
+    for diagnostic_column in (
+        'data-k="hbcs_components"',
+        'data-k="fast_body_pct"',
+        'data-k="slow_body_pct"',
+        "Fresh components</th>",
+        "Bullish components</th>",
+    ):
+        if diagnostic_column in ht:
+            _fail("tsha_hbcs.html restores suppressed diagnostic columns")
 
     freshness = json.loads(_read(root, "dashboard-freshness.json"))
     if freshness.get("schema_version") != "dashboard-freshness.v1":
