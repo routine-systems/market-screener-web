@@ -139,9 +139,12 @@ class RenderSiteTests(unittest.TestCase):
             self.assertNotIn('id="historyPrompt"', ht_page)
             self.assertNotIn("unlock period history", ht_page)
             self.assertIn(
-                '<th class="l" data-k="appearance_count">Appearances</th>',
+                '<th class="l sorted" data-k="appearance_count">Appearances</th>',
                 ht_page,
             )
+            self.assertIn(".sort(compareRows)", ht_page)
+            self.assertIn("Bullish components", ht_page)
+            self.assertIn("const weekStart=date=>", ht_page)
             self.assertNotIn("oldest→newest", ht_page)
             event_shell = (output / "market-events.js").read_text()
             self.assertIn('normalized === "IN" ? "rolling_1_year"', event_shell)

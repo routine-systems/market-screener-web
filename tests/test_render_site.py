@@ -12,6 +12,21 @@ import render_site
 
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests" / "fixtures" / "signals-bundle.v1.json"
+HT_TEMPLATE = ROOT / "templates" / "tsha_hbcs.html"
+
+
+def javascript_function(source: str, name: str) -> str:
+    start = source.index(f"function {name}(")
+    body_start = source.index("{", start)
+    depth = 0
+    for position in range(body_start, len(source)):
+        if source[position] == "{":
+            depth += 1
+        elif source[position] == "}":
+            depth -= 1
+            if depth == 0:
+                return source[start : position + 1]
+    raise AssertionError(f"unterminated JavaScript function: {name}")
 
 
 class RenderSiteTests(unittest.TestCase):
@@ -112,10 +127,13 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn('class="tablewrap"', page)
             self.assertIn('id="themeBtn"', page)
             self.assertIn(
-                '<th class="l" data-k="appearance_count">Appearances</th>',
+                '<th class="l sorted" data-k="appearance_count">Appearances</th>',
                 page,
             )
             self.assertIn("function appearanceCell(r)", page)
+            self.assertIn(".sort(compareRows)", page)
+            self.assertIn("Bullish components", page)
+            self.assertIn("const weekStart=date=>", page)
             self.assertIn('class="dots"', page)
             self.assertIn('id="tt" role="tooltip"', page)
             self.assertIn("Union potentials", page)
@@ -293,6 +311,53 @@ console.log(JSON.stringify({{
         self.assertEqual(result["stats"]["newCount"], 1)
         self.assertEqual(result["stats"]["everyCount"], 1)
 
+    def test_ht_default_sort_uses_appearance_count_and_recency(self):
+        compare_rows = javascript_function(HT_TEMPLATE.read_text(), "compareRows")
+        rows = [
+            {
+                "symbol": "OLD",
+                "market": "IN",
+                "timeframe": "daily",
+                "appearance_count": 2,
+                "appearance_bits": "110",
+                "hbcs_bull_component_count": 1,
+            },
+            {
+                "symbol": "LOWCOUNT",
+                "market": "IN",
+                "timeframe": "daily",
+                "appearance_count": 1,
+                "appearance_bits": "001",
+                "hbcs_bull_component_count": 4,
+            },
+            {
+                "symbol": "RECENT",
+                "market": "IN",
+                "timeframe": "daily",
+                "appearance_count": 2,
+                "appearance_bits": "011",
+                "hbcs_bull_component_count": 4,
+            },
+        ]
+        program = f"""
+const state={{sort:'appearance_count',desc:true}};
+{compare_rows}
+const rows={json.dumps(rows)}.sort(compareRows);
+process.stdout.write(JSON.stringify(rows.map(row=>row.symbol)));
+"""
+
+        completed = subprocess.run(
+            ["node", "-e", program],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+
+        self.assertEqual(
+            ["RECENT", "OLD", "LOWCOUNT"],
+            json.loads(completed.stdout),
+        )
+
     def test_ht_history_csv_uses_only_populated_history_columns(self):
         page = (ROOT / "templates" / "tsha_hbcs.html").read_text()
         constant_start = page.index("const HISTORY_EXPORT_COLUMNS=")
@@ -323,10 +388,13 @@ console.log(JSON.stringify({{history:csvColumns({{}},latest),latest:csvColumns(n
 
     def test_ht_browser_rejects_unknown_history_instrument(self):
         page = (ROOT / "templates" / "tsha_hbcs.html").read_text()
+        period_helpers_start = page.index("const weekStart=")
+        period_helpers_end = page.index("\nconst periodLabel=", period_helpers_start)
         start = page.index("function unpackHistory(")
         end = page.index("\nfunction unpack(snapshot)", start)
         function_source = page[start:end]
         script = f"""
+{page[period_helpers_start:period_helpers_end]}
 {function_source}
 const history={{schema_version:'ht-history.v1',instrument_columns:['symbol','exchange','asset_type','sector'],instruments:[['ABC','NSE','equity','Industrials']],row_columns:['instrument_index','hbcs_bull_component_count','hbcs_components','fast_body_pct','slow_body_pct','close','median_dollar_turnover_20'],periods:[{{date:'2026-08-18',source:'stored',rows:[[9,2,'HMM',1,1,100,2000000]]}}]}};
 let error='';try{{unpackHistory(history,'IN','daily')}}catch(caught){{error=caught.message}}
@@ -344,10 +412,13 @@ console.log(JSON.stringify({{error}}));
 
     def test_ht_browser_rejects_malformed_compact_row(self):
         page = (ROOT / "templates" / "tsha_hbcs.html").read_text()
+        period_helpers_start = page.index("const weekStart=")
+        period_helpers_end = page.index("\nconst periodLabel=", period_helpers_start)
         start = page.index("function unpackHistory(")
         end = page.index("\nfunction unpack(snapshot)", start)
         function_source = page[start:end]
         script = f"""
+{page[period_helpers_start:period_helpers_end]}
 {function_source}
 const history={{schema_version:'ht-history.v1',instrument_columns:['symbol','exchange','asset_type','sector'],instruments:[['ABC','NSE','equity','Industrials']],row_columns:['instrument_index','hbcs_bull_component_count','hbcs_components','fast_body_pct','slow_body_pct','close','median_dollar_turnover_20'],periods:[{{date:'2026-08-18',source:'stored',rows:[[0,2,'HMM']]}}]}};
 let error='';try{{unpackHistory(history,'IN','daily')}}catch(caught){{error=caught.message}}

@@ -57,8 +57,8 @@ __DASHBOARD_NAV__
   <div class="count" id="rankhint" role="status">Loading rows…</div>
   <div class="tablewrap"><table id="tbl">
     <thead><tr>
-      <th class="l" data-k="symbol">Symbol</th><th data-k="signal_date">Date</th><th data-k="timeframe">Bucket</th><th class="l" data-k="appearance_count">Appearances</th>
-      <th data-k="hbcs_bull_component_count">HBCS count</th><th data-k="hbcs_components">Fresh components</th>
+      <th class="l" data-k="symbol">Symbol</th><th data-k="signal_date">Date</th><th data-k="timeframe">Bucket</th><th class="l sorted" data-k="appearance_count">Appearances</th>
+      <th data-k="hbcs_bull_component_count">HBCS count</th><th data-k="hbcs_components">Bullish components</th>
       <th data-k="fast_body_pct">Fast body</th><th data-k="slow_body_pct">Slow body</th><th data-k="close">Close</th><th data-k="median_dollar_turnover_20">Median turnover</th><th data-k="sector">Sector</th>
     </tr></thead>
     <tbody id="rows"><tr><td colspan="11"><div class="empty">Loading snapshot…</div></td></tr></tbody>
@@ -70,12 +70,14 @@ __DASHBOARD_NAV__
 <script src="market-events.js?v=5"></script>
 <script>
 let DATA=null,EVENTS_READY=new Set();
-const state={market:'all',timeframe:'all',events:false,query:'',liquidity:0,sort:'hbcs_bull_component_count',desc:true,rangeKey:null,from:0,to:0};
+const state={market:'all',timeframe:'all',events:false,query:'',liquidity:0,sort:'appearance_count',desc:true,rangeKey:null,from:0,to:0};
 const HISTORY_EXPORT_COLUMNS=['market','timeframe','signal_date','instrument_index','symbol','exchange','asset_type','sector','hbcs_bull_component_count','hbcs_components','fast_body_pct','slow_body_pct','close','median_dollar_turnover_20','appearance_count','appearance_periods','appearance_bits'];
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const num=(v,d=2)=>v==null||!Number.isFinite(Number(v))?'—':Number(v).toLocaleString(undefined,{maximumFractionDigits:d});
 const tt=$('#tt');
+const weekStart=date=>{const value=new Date(`${date}T00:00:00Z`);if(Number.isNaN(value.getTime()))return date;value.setUTCDate(value.getUTCDate()-((value.getUTCDay()+6)%7));return value.toISOString().slice(0,10)};
+const displayPeriod=(date,timeframe)=>timeframe==='weekly'?weekStart(date):date;
 const periodLabel=date=>new Intl.DateTimeFormat('en-GB',{timeZone:'UTC',day:'2-digit',month:'short',year:'numeric'}).format(new Date(`${date}T00:00:00Z`));
 function formatIst(value){if(typeof value!=='string'||!/(?:Z|[+-]\d\d:\d\d)$/.test(value))return '—';const date=new Date(value);if(Number.isNaN(date.getTime()))return '—';const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(date).filter(part=>part.type!=='literal').map(part=>[part.type,part.value]));return `${parts.day} ${parts.month} ${parts.year}, ${parts.hour}:${parts.minute} IST`}
 function showTip(text,x,y){tt.textContent=text;tt.style.opacity='1';tt.setAttribute('aria-hidden','false');const box=tt.getBoundingClientRect();let left=x+12,top=y-box.height-8;if(left+box.width>innerWidth-8)left=x-box.width-12;if(top<8)top=y+16;tt.style.left=left+'px';tt.style.top=top+'px'}
@@ -84,7 +86,7 @@ function chartUrl(r){const aliases={'NYSE American':'AMEX','NYSE Arca':'AMEX','C
 function unpackHistory(history,market,timeframe){
   if(!history||history.schema_version!=='ht-history.v1'||!Array.isArray(history.instruments)||!Array.isArray(history.periods))return null;
   const instruments=history.instruments.map(values=>{if(!Array.isArray(values)||values.length!==history.instrument_columns.length)throw new Error('Invalid history instrument');const row={};history.instrument_columns.forEach((key,index)=>{row[key]=values[index]});return row});
-  const periods=history.periods.map(period=>({date:period.date,source:period.source,rows:period.rows.map(values=>{if(!Array.isArray(values)||values.length!==history.row_columns.length)throw new Error('Invalid history row');const dynamic={};history.row_columns.forEach((key,index)=>{dynamic[key]=values[index]});const instrument=instruments[dynamic.instrument_index];if(!instrument)throw new Error('Invalid history instrument');return {...instrument,...dynamic,market,timeframe,signal_date:period.date}})}));
+  const periods=history.periods.map(period=>{const date=displayPeriod(period.date,timeframe);return {date,source:period.source,rows:period.rows.map(values=>{if(!Array.isArray(values)||values.length!==history.row_columns.length)throw new Error('Invalid history row');const dynamic={};history.row_columns.forEach((key,index)=>{dynamic[key]=values[index]});const instrument=instruments[dynamic.instrument_index];if(!instrument)throw new Error('Invalid history instrument');return {...instrument,...dynamic,market,timeframe,signal_date:date}})}});
   return {periods};
 }
 function unpack(snapshot){
@@ -93,9 +95,9 @@ function unpack(snapshot){
   for(const market of ['IN','US'])for(const timeframe of ['daily','weekly']){
     const bucket=snapshot.markets?.[market]?.timeframes?.[timeframe];
     if(!bucket||!Array.isArray(bucket.rows))throw new Error(`Missing ${market} ${timeframe} bucket`);
-    const periods=Array.isArray(bucket.appearance_periods)?bucket.appearance_periods:[];
+    const periods=Array.isArray(bucket.appearance_periods)?bucket.appearance_periods.map(period=>displayPeriod(period,timeframe)):[];
     const bitsBySymbol=bucket.appearance_bits&&typeof bucket.appearance_bits==='object'?bucket.appearance_bits:{};
-    for(const values of bucket.rows){if(!Array.isArray(values)||values.length!==snapshot.columns.length)throw new Error('Invalid row shape');const row={};snapshot.columns.forEach((key,index)=>{row[key]=values[index]});const bits=typeof bitsBySymbol[row.symbol]==='string'?bitsBySymbol[row.symbol]:'';row.market=row.market||market;row.timeframe=row.timeframe||timeframe;row.signal_date=row.signal_date||bucket.signal_date;row.appearance_periods=periods;row.appearance_bits=bits;row.appearance_count=[...bits].filter(bit=>bit==='1').length;rows.push(row)}
+    for(const values of bucket.rows){if(!Array.isArray(values)||values.length!==snapshot.columns.length)throw new Error('Invalid row shape');const row={};snapshot.columns.forEach((key,index)=>{row[key]=values[index]});const bits=typeof bitsBySymbol[row.symbol]==='string'?bitsBySymbol[row.symbol]:'';row.market=row.market||market;row.timeframe=row.timeframe||timeframe;row.signal_date=displayPeriod(row.signal_date||bucket.signal_date,timeframe);row.appearance_periods=periods;row.appearance_bits=bits;row.appearance_count=[...bits].filter(bit=>bit==='1').length;rows.push(row)}
     histories[`${market}:${timeframe}`]=unpackHistory(bucket.history,market,timeframe);
   }
   return {rows,histories,snapshot};
@@ -115,12 +117,24 @@ function csvColumns(history,latestColumns){return history?HISTORY_EXPORT_COLUMNS
 function singleSelection(){return state.market!=='all'&&state.timeframe!=='all'}
 function selectedHistory(){if(!DATA||!singleSelection())return null;const history=DATA.histories[`${state.market}:${state.timeframe}`];return history&&history.periods.length?history:null}
 function selectedRows(){if(!DATA)return [];return rowsForView(DATA.rows,selectedHistory(),state.from,state.to,state.market,state.timeframe)}
+function compareRows(a,b){
+  if(state.sort==='appearance_count'){
+    const countDelta=Number(a.appearance_count??-Infinity)-Number(b.appearance_count??-Infinity);
+    if(countDelta)return state.desc?-countDelta:countDelta;
+    const aRecency=String(a.appearance_bits||'').split('').reverse().join(''),bRecency=String(b.appearance_bits||'').split('').reverse().join(''),recencyDelta=aRecency.localeCompare(bRecency);
+    if(recencyDelta)return state.desc?-recencyDelta:recencyDelta;
+    return `${a.symbol||''}:${a.market||''}:${a.timeframe||''}`.localeCompare(`${b.symbol||''}:${b.market||''}:${b.timeframe||''}`);
+  }
+  let x=a[state.sort],y=b[state.sort];
+  if(typeof x==='string'||typeof y==='string'){x=String(x??'');y=String(y??'');return state.desc?y.localeCompare(x):x.localeCompare(y)}
+  x=Number(x??-Infinity);y=Number(y??-Infinity);return state.desc?y-x:x-y;
+}
 function filtered(sourceRows=selectedRows()){
   if(!DATA)return [];
   const q=state.query.toLowerCase();
   return sourceRows.filter(r=>(state.market==='all'||r.market===state.market)&&(state.timeframe==='all'||r.timeframe===state.timeframe)&&(!state.events||!!MarketEvents.record(r.symbol,r.market))&&(!q||`${r.symbol} ${r.sector||''}`.toLowerCase().includes(q))&&Number(r.median_dollar_turnover_20||0)>=state.liquidity)
     .map(r=>({...r,hasTransactionHistory:!!MarketEvents.record(r.symbol,r.market)}))
-    .sort((a,b)=>{let x=a[state.sort],y=b[state.sort];if(typeof x==='string'||typeof y==='string'){x=String(x??'');y=String(y??'');return state.desc?y.localeCompare(x):x.localeCompare(y)}x=Number(x??-Infinity);y=Number(y??-Infinity);return state.desc?y-x:x-y});
+    .sort(compareRows);
 }
 function summaries(){
   const history=selectedHistory();
@@ -130,7 +144,7 @@ function summaries(){
     $('#summary').innerHTML=cards.map(([label,value])=>`<div class="tile"><span class="lbl">${esc(label)}</span><span class="val">${num(value,0)}</span></div>`).join('');return;
   }
   const cards=[['IN','daily','India Daily'],['IN','weekly','India Weekly'],['US','daily','US Daily'],['US','weekly','US Weekly']];
-  $('#summary').innerHTML=cards.map(([m,t,label])=>{const bucket=DATA.snapshot.markets[m].timeframes[t];return `<div class="tile"><span class="lbl">${label} · ${esc(bucket.signal_date)}</span><span class="val">${num(bucket.shortlist_size,0)}</span></div>`}).join('');
+  $('#summary').innerHTML=cards.map(([m,t,label])=>{const bucket=DATA.snapshot.markets[m].timeframes[t];return `<div class="tile"><span class="lbl">${label} · ${esc(displayPeriod(bucket.signal_date,t))}</span><span class="val">${num(bucket.shortlist_size,0)}</span></div>`}).join('');
 }
 function appearanceCell(r){
   const periods=Array.isArray(r.appearance_periods)?r.appearance_periods:[],bits=String(r.appearance_bits||'');
@@ -171,7 +185,7 @@ function render(resetRange=false){
   $('#rows').innerHTML=shown.length?shown.map(r=>`<tr>
     <td class="l"><a class="symbol" target="_blank" rel="noopener" href="${chartUrl(r)}">${esc(r.symbol)}</a>${MarketEvents.dot(r.symbol,r.market)}${r.market==='IN'?MarketEvents.dot(r.symbol,'IN','insider_trade'):''}<div class="market">${esc(r.exchange||r.market)} · ${esc(r.asset_type)}</div></td>
     <td>${esc(r.signal_date)}</td><td><span class="pill">${r.market==='IN'?'India':'US'} ${esc(r.timeframe)}</span></td><td class="l">${appearanceCell(r)}</td>
-    <td class="bull num">${num(r.hbcs_bull_component_count,0)}</td><td class="components">${esc(r.hbcs_components||'Union transition')}</td>
+    <td class="bull num">${num(r.hbcs_bull_component_count,0)}</td><td class="components">${esc(r.hbcs_components||'Bullish state')}</td>
     <td class="bull num">${num(r.fast_body_pct)}%</td><td class="bull num">${num(r.slow_body_pct)}%</td><td class="num">${num(r.close)}</td><td class="num">${num(r.median_dollar_turnover_20,0)}</td><td>${esc(r.sector||'—')}</td>
   </tr>`).join(''):`<tr><td colspan="11"><div class="empty">No rows match these filters.</div></td></tr>`;
   const cap=rows.length>shown.length?'first ':'';

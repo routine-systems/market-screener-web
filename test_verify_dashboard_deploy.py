@@ -84,8 +84,9 @@ def _write_valid_site(root: Path) -> None:
         "us-weekly.html": _us_body("weekly"),
         "us-daily.html": _us_body("daily"),
         "tsha_hbcs.html": '''<button id="eventOnly">● Bulk history · ● Congress history</button>
-<table><th class="l" data-k="appearance_count">Appearances</th></table>
-<script src="market-events.js?v=5"></script><script>const glyph=on?'●':'○'; MarketEvents.load(market,()=>{});
+<table><th class="l sorted" data-k="appearance_count">Appearances</th><th>Bullish components</th></table>
+<script src="market-events.js?v=5"></script><script>const state={sort:'appearance_count'}; const weekStart=date=>date;
+function compareRows(a,b){return 0} const rows=[]; rows.sort(compareRows); const glyph=on?'●':'○'; MarketEvents.load(market,()=>{});
 MarketEvents.record(r.symbol,r.market); MarketEvents.dot(r.symbol,r.market);
 MarketEvents.dot(r.symbol,'IN','insider_trade');</script>''',
     }
