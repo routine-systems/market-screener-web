@@ -80,6 +80,16 @@ class RenderSiteTests(unittest.TestCase):
                         "MarketEvents.dot(r.symbol,'IN','insider_trade')",
                         rendered,
                     )
+            appearance_headers = {
+                "dashboard.html": '<th data-k="count" class="sorted l">Appearances</th>',
+                "daily.html": '<th class="l" data-k="consist">Appearances</th>',
+                "us-weekly.html": '<th class="l sorted" data-sort="count">Appearances</th>',
+                "us-daily.html": '<th class="l sorted" data-sort="count">Appearances</th>',
+            }
+            for page, header in appearance_headers.items():
+                rendered = (output / page).read_text()
+                self.assertIn(header, rendered)
+                self.assertNotIn("oldest→newest", rendered)
             us_weekly = (output / "us-weekly.html").read_text()
             self.assertIn('id="tt" role="tooltip"', us_weekly)
             self.assertIn('class="dots" data-tip=', us_weekly)
@@ -105,7 +115,11 @@ class RenderSiteTests(unittest.TestCase):
             self.assertNotIn("?'present':'absent'", ht_page)
             self.assertNotIn('id="historyPrompt"', ht_page)
             self.assertIn("sort:'appearance_count'", ht_page)
-            self.assertIn('class="l sorted" data-k="appearance_count"', ht_page)
+            self.assertIn(
+                '<th class="l sorted" data-k="appearance_count">Appearances</th>',
+                ht_page,
+            )
+            self.assertNotIn("oldest→newest", ht_page)
             self.assertIn("const weekStart=date=>", ht_page)
             for page in (
                 "dashboard.html",
