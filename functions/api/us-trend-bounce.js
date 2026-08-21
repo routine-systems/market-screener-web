@@ -29,6 +29,10 @@ export async function onRequestGet({ env, request }) {
         schema_version: API_SCHEMA_VERSION,
         snapshot: {
           generated_at_utc: stored.value.generated_at_utc || null,
+          rotation: {
+            schema_version: stored.value.rotation?.schema_version || null,
+            data_cutoff: stored.value.rotation?.data_cutoff || null,
+          },
           pages: {
             weekly: { data_cutoff: pages.weekly?.data_cutoff || null },
             daily: { data_cutoff: pages.daily?.data_cutoff || null },

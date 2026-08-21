@@ -271,7 +271,10 @@ def verify_site(root: Path) -> dict:
                 '<th class="l ticker-col" data-sort="symbol">Ticker</th>',
                 '<th class="l sorted" data-sort="count">Appearances</th>',
                 '<td class="l ticker-col">',
-                '<div class="market">${esc(row.exchange||\'US\')} · ${esc(row.asset_type||\'stock\')}</div>',
+                '<div class="market">${esc(row.exchange||\'US\')} · ${esc(row.rotationGroup||row.asset_type||\'stock\')}</div>',
+                'id="rotOnly"',
+                "snapshot.rotation?.schema_version!=='us-sector-rotation.v1'",
+                "rotationDot(row.symbol)",
             ),
         )
         if '<div class="name">' in source or 'data-sort="exchange"' in source:
@@ -295,6 +298,11 @@ def verify_site(root: Path) -> dict:
             '<section class="grid" id="grid" hidden>',
             '<section class="quadwrap" id="quad">',
             "b.setAttribute('aria-pressed',String(on))",
+            'data-market="IN" aria-pressed="true">India</button>',
+            'data-market="US" aria-pressed="false">US</button>',
+            "snapshot?.rotation?.schema_version!=='us-sector-rotation.v1'",
+            "MARKET==='US'?'us-weekly.html':'dashboard.html'",
+            "MARKET==='US'?'us-daily.html':'daily.html'",
         ),
     )
 

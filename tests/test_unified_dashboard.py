@@ -119,9 +119,12 @@ class RenderSiteTests(unittest.TestCase):
                 )
                 self.assertIn(
                     '<div class="market">${esc(row.exchange||\'US\')} · '
-                    "${esc(row.asset_type||'stock')}</div>",
+                    "${esc(row.rotationGroup||row.asset_type||'stock')}</div>",
                     rendered,
                 )
+                self.assertIn('id="rotOnly"', rendered)
+                self.assertIn("rotationDot(row.symbol)", rendered)
+                self.assertIn("snapshot.rotation?.schema_version", rendered)
                 self.assertNotIn('<div class="name">', rendered)
                 self.assertNotIn('data-sort="exchange"', rendered)
                 self.assertNotIn('id="formula"', rendered)

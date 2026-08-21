@@ -61,6 +61,11 @@ test("US Trend Bounce metadata response omits the stored histories", async () =>
   const endpoint = await moduleFrom("../functions/api/us-trend-bounce.js");
   const snapshot = {
     generated_at_utc: "2026-08-20T01:00:00Z",
+    rotation: {
+      schema_version: "us-sector-rotation.v1",
+      data_cutoff: "2026-08-17",
+      counts: { sector: { Technology: [1] } },
+    },
     pages: {
       weekly: { data_cutoff: "2026-08-17", weeks: [{ large: "payload" }] },
       daily: { data_cutoff: "2026-08-19", weeks: [{ large: "payload" }] },
@@ -79,6 +84,10 @@ test("US Trend Bounce metadata response omits the stored histories", async () =>
     schema_version: "us-trend-bounce.api.v1",
     snapshot: {
       generated_at_utc: "2026-08-20T01:00:00Z",
+      rotation: {
+        schema_version: "us-sector-rotation.v1",
+        data_cutoff: "2026-08-17",
+      },
       pages: {
         weekly: { data_cutoff: "2026-08-17" },
         daily: { data_cutoff: "2026-08-19" },

@@ -121,6 +121,17 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn('<section class="grid" id="grid" hidden>', page)
             self.assertIn('<section class="quadwrap" id="quad">', page)
 
+    def test_sectors_switches_between_india_and_us_rotation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "dist"
+            render_site.render_site(FIXTURE, output)
+            page = (output / "sectors.html").read_text()
+            self.assertIn('data-market="IN" aria-pressed="true">India</button>', page)
+            self.assertIn('data-market="US" aria-pressed="false">US</button>', page)
+            self.assertIn("snapshot?.rotation?.schema_version!=='us-sector-rotation.v1'", page)
+            self.assertIn("MARKET==='US'?'us-weekly.html':'dashboard.html'", page)
+            self.assertIn("MARKET==='US'?'us-daily.html':'daily.html'", page)
+
     def test_build_requires_an_explicit_immutable_bundle(self):
         completed = subprocess.run(
             [ROOT / "scripts" / "build"],

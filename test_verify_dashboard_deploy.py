@@ -66,14 +66,15 @@ MarketEvents.dot(r.symbol,'IN','insider_trade');
 
 def _us_body(timeframe: str) -> str:
     week_start = "const weekStart=date=>date;" if timeframe == "weekly" else ""
-    return f'''<button id="congressOnly">● Congress history</button>
+    return f'''<button id="congressOnly">● Congress history</button><button id="rotOnly">◉ Rotation</button>
 <table><thead><tr><th class="l ticker-col" data-sort="symbol">Ticker</th><th class="l sorted" data-sort="count">Appearances</th></tr></thead><tbody><tr><td class="l ticker-col">TEST</td></tr></tbody></table>
 <div id="tt" role="tooltip"></div><span class="dots" data-tip="x"></span>
 <script src="market-events.js?v=5"></script><script>
 const TIMEFRAME='{timeframe}'; {week_start}
 fetch('/api/us-trend-bounce'); state.congress; row.hasCongressHistory;
+snapshot.rotation?.schema_version!=='us-sector-rotation.v1'; rotationDot(row.symbol);
 const glyph=on?'●':'○'; MarketEvents.load('US',()=>MarketEvents.dot('TEST'));
-const cell=`<div class="market">${{esc(row.exchange||'US')}} · ${{esc(row.asset_type||'stock')}}</div>`;
+const cell=`<div class="market">${{esc(row.exchange||'US')}} · ${{esc(row.rotationGroup||row.asset_type||'stock')}}</div>`;
 </script>'''
 
 
@@ -83,9 +84,12 @@ def _write_valid_site(root: Path) -> None:
         "daily.html": _india_body(weekly=False),
         "us-weekly.html": _us_body("weekly"),
         "us-daily.html": _us_body("daily"),
-        "sectors.html": '''<button data-layout="quad" aria-pressed="true">Quadrant</button>
+        "sectors.html": '''<button data-market="IN" aria-pressed="true">India</button><button data-market="US" aria-pressed="false">US</button>
+<button data-layout="quad" aria-pressed="true">Quadrant</button>
 <section class="grid" id="grid" hidden></section><section class="quadwrap" id="quad"></section>
 <script>let LAYOUT=(localStorage.getItem('sec.layout')==='grid')?'grid':'quad';
+snapshot?.rotation?.schema_version!=='us-sector-rotation.v1';
+const wt=MARKET==='US'?'us-weekly.html':'dashboard.html'; const dt=MARKET==='US'?'us-daily.html':'daily.html';
 const b={setAttribute(){}}; const on=true; b.setAttribute('aria-pressed',String(on));</script>''',
         "tsha_hbcs.html": '''<button id="eventOnly">● Bulk history · ● Congress history</button>
 <table><th class="l sorted" data-k="appearance_count">Appearances</th></table>
@@ -155,6 +159,32 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             (root / "sectors.html").write_text(source)
             with self.assertRaisesRegex(
                 subject.DashboardContractError, "sectors.html misses contract markers"
+            ):
+                subject.verify_site(root)
+
+    def test_rejects_sectors_without_the_us_market_choice(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_valid_site(root)
+            source = (root / "sectors.html").read_text().replace(
+                '<button data-market="US" aria-pressed="false">US</button>', ""
+            )
+            (root / "sectors.html").write_text(source)
+            with self.assertRaisesRegex(
+                subject.DashboardContractError, "sectors.html misses contract markers"
+            ):
+                subject.verify_site(root)
+
+    def test_rejects_us_page_without_rotation_contract(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_valid_site(root)
+            source = (root / "us-weekly.html").read_text().replace(
+                "snapshot.rotation?.schema_version!=='us-sector-rotation.v1'", ""
+            )
+            (root / "us-weekly.html").write_text(source)
+            with self.assertRaisesRegex(
+                subject.DashboardContractError, "us-weekly.html misses contract markers"
             ):
                 subject.verify_site(root)
 

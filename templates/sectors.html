@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0d0d'/%3E%3Crect x='6.5' y='18' width='4.5' height='8' rx='1.4' fill='%234d93ea'/%3E%3Crect x='13.75' y='12' width='4.5' height='14' rx='1.4' fill='%2316b816'/%3E%3Crect x='21' y='6.5' width='4.5' height='19.5' rx='1.4' fill='%2316b816'/%3E%3C/svg%3E">
-<title>India Sector Rotation</title>
+<title>Sector Rotation</title>
 <style>
   :root{
     color-scheme: light;
@@ -120,14 +120,18 @@
 
   <main id="main-content" tabindex="-1">
   <header class="top">
-    <div><h1>India Sector Rotation</h1></div>
+    <div><h1 id="pageTitle">India Sector Rotation</h1></div>
     <div class="spacer"></div>
-    <div class="page-actions" aria-label="India data actions"><button id="refreshBtn" type="button" title="Re-scrape Chartink and rebuild all pages (~3–4 min) — reload after">↻ Refresh</button></div>
+    <div class="page-actions" aria-label="Dashboard data actions"><button id="refreshBtn" type="button" title="Queue the public data workflow — reload after it finishes">↻ Refresh</button></div>
   </header>
   <div class="sub" id="sub"></div>
   __DASHBOARD_FRESHNESS__
 
   <div class="presets">
+    <span class="lab">Market</span>
+    <button class="preset on" data-market="IN" aria-pressed="true">India</button>
+    <button class="preset" data-market="US" aria-pressed="false">US</button>
+    <span style="width:12px"></span>
     <span class="lab">Layout</span>
     <button class="preset" data-layout="grid" aria-pressed="false">Grid</button>
     <button class="preset on" data-layout="quad" aria-pressed="true">Quadrant</button>
@@ -168,9 +172,9 @@
 const SECTOR_B64="__SECTOR_B64__";
 const $=s=>document.querySelector(s);
 function b64utf8(b){try{return decodeURIComponent(escape(atob(b)));}catch(e){return atob(b);}}
-const M=JSON.parse(b64utf8(SECTOR_B64));
-const LEVEL_KEYS=(M.levels||[]).map(l=>l[0]);
-let LEVEL=localStorage.getItem('sec.level'); if(!LEVEL_KEYS.includes(LEVEL)) LEVEL=LEVEL_KEYS[0]||'sector';
+const INDIA=JSON.parse(b64utf8(SECTOR_B64));
+let M=INDIA, MARKET='IN', US_ROTATION=null;
+let LEVEL='sector';
 let LAYOUT=(localStorage.getItem('sec.layout')==='grid')?'grid':'quad';   // default quadrant
 let PERIOD_BY={grid:13, quad:8};                          // default window per layout (weeks)
 let PERIOD=PERIOD_BY[LAYOUT], OFFSET=0;
@@ -231,8 +235,14 @@ const WORD={1:'rising',[-1]:'cooling',0:'flat'};
 const CLS={1:'up',[-1]:'down',0:'flat'};
 
 function render(){
+  document.querySelectorAll('.preset[data-market]').forEach(b=>{
+    const on=b.dataset.market===MARKET;
+    b.classList.toggle('on',on);
+    b.setAttribute('aria-pressed',String(on));
+  });
   document.querySelectorAll('.preset[data-days]').forEach(b=>b.classList.toggle('on', +b.dataset.days===PERIOD));
-  document.querySelectorAll('.preset[data-level]').forEach(b=>b.classList.toggle('on', b.dataset.level===LEVEL));
+  const levelKeys=(M.levels||[]).map(l=>l[0]);
+  document.querySelectorAll('.preset[data-level]').forEach(b=>{b.hidden=!levelKeys.includes(b.dataset.level);b.classList.toggle('on', b.dataset.level===LEVEL);});
   document.querySelectorAll('.preset[data-chart]').forEach(b=>b.classList.toggle('on', b.dataset.chart===CHART));
   document.querySelectorAll('.preset[data-layout]').forEach(b=>{
     const on=b.dataset.layout===LAYOUT;
@@ -254,7 +264,7 @@ function render(){
   const showWithin = isQuad && LEVEL!=='sector';
   $('#within').hidden = !showWithin; $('#within').value = WITHIN;
   $('#sub').innerHTML = `<b>${Object.keys(groups).length}</b> ${esc(lvlName.toLowerCase())} groups · weekly · `
-    + `<a href="${esc(M.url)}" target="_blank" rel="noopener">source ↗</a> · `
+    + `<a href="${esc(M.url||'#')}" target="_blank" rel="noopener">${esc(M.source||'source')} ↗</a> · `
     + (M.updated_at?`updated <b>${esc(M.updated_at)}</b>`:'no data');
   $('#legend').innerHTML = isQuad
     ? `Quadrant of sector <b>movement</b> over the window — <b>x</b> = current participation (avg stocks in the screener), `
@@ -283,12 +293,15 @@ function render(){
   if(isQuad){ $('#grid').hidden=true; $('#quad').hidden=false; renderQuad(rows, lvlName); }
   else { $('#quad').hidden=true; $('#grid').hidden=false; renderGrid(rows, winWeeks, start, end, lvlName); }
 
+  const classification=MARKET==='US'?'point-in-time SEC filings':'data.csv',coverageUnit=MARKET==='US'?'memberships':'symbols';
   $('#foot').textContent=`Generated ${M.generated_at||''} · ${rows.length} groups shown (≥${MIN_STOCKS} stocks)`
-    + (cov.total?` · ${cov.mapped}/${cov.total} symbols classified from data.csv`:'')+` · weekly, run daily after 2pm`;
+    + (cov.total?` · ${cov.mapped}/${cov.total} ${coverageUnit} classified from ${classification}`:'')+` · Monday-keyed weekly periods`;
 }
 
 function renderGrid(rows, winWeeks, start, end, lvlName){
   const grid=$('#grid');
+  const weeklyTarget=MARKET==='US'?'us-weekly.html':'dashboard.html';
+  const dailyTarget=MARKET==='US'?'us-daily.html':'daily.html';
   const cardOf = r => {
     const vals=r.win, sg=r.sg;
     const latest=vals[vals.length-1], prev=vals.length>1?vals[vals.length-2]:latest, wd=latest-prev;
@@ -309,8 +322,8 @@ function renderGrid(rows, winWeeks, start, end, lvlName){
       <div class="spark" data-dates="${winWeeks.join(',')}" data-vals="${vals.join(',')}">${svg}</div>
       <div class="crange"><span>${winWeeks[0]||''}</span><span>${vals.length} wk</span><span>${winWeeks[winWeeks.length-1]||''}</span></div>
       <div class="jumps">
-        <a class="jump" href="dashboard.html?rot_level=${encodeURIComponent(LEVEL)}&rot_group=${encodeURIComponent(r.g)}" title="Show only ${esc(r.g)} in the Weekly sheet">Weekly ↗</a>
-        <a class="jump" href="daily.html?rot_level=${encodeURIComponent(LEVEL)}&rot_group=${encodeURIComponent(r.g)}" title="Show only ${esc(r.g)} in the Daily sheet">Daily ↗</a>
+        <a class="jump" href="${weeklyTarget}?rot_level=${encodeURIComponent(LEVEL)}&rot_group=${encodeURIComponent(r.g)}" title="Show only ${esc(r.g)} in the Weekly sheet">Weekly ↗</a>
+        <a class="jump" href="${dailyTarget}?rot_level=${encodeURIComponent(LEVEL)}&rot_group=${encodeURIComponent(r.g)}" title="Show only ${esc(r.g)} in the Daily sheet">Daily ↗</a>
       </div>
     </div>`;
   };
@@ -406,12 +419,40 @@ $('#quad').addEventListener('mousemove',e=>{
 $('#quad').addEventListener('mouseleave',()=>tt.style.opacity='0');
 
 document.querySelectorAll('.preset[data-days]').forEach(b=>b.addEventListener('click',()=>{PERIOD=+b.dataset.days; PERIOD_BY[LAYOUT]=PERIOD; render();}));
-document.querySelectorAll('.preset[data-level]').forEach(b=>b.addEventListener('click',()=>{LEVEL=b.dataset.level; localStorage.setItem('sec.level',LEVEL); render();}));
+document.querySelectorAll('.preset[data-level]').forEach(b=>b.addEventListener('click',()=>{LEVEL=b.dataset.level; localStorage.setItem(`sec.level.${MARKET}`,LEVEL); if(MARKET==='IN')localStorage.setItem('sec.level',LEVEL); render();}));
 document.querySelectorAll('.preset[data-chart]').forEach(b=>b.addEventListener('click',()=>{CHART=b.dataset.chart; localStorage.setItem('sec.chart',CHART); render();}));
 document.querySelectorAll('.preset[data-layout]').forEach(b=>b.addEventListener('click',()=>{LAYOUT=b.dataset.layout; localStorage.setItem('sec.layout',LAYOUT); PERIOD=PERIOD_BY[LAYOUT]; render();}));
 $('#within').addEventListener('change',()=>{WITHIN=$('#within').value; render();});
 $('#offBack').addEventListener('click',()=>{OFFSET=Math.min((M.weeks||[]).length-1,OFFSET+1); render();});
 $('#offFwd').addEventListener('click',()=>{OFFSET=Math.max(0,OFFSET-1); render();});
+
+function populateWithin(){const secs=Object.keys((M.counts&&M.counts.sector)||{}).sort();
+  $('#within').innerHTML='<option value="">All sectors</option>'+secs.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join('');}
+async function selectMarket(next){
+  let source=INDIA;
+  if(next==='US'){
+    $('#sub').textContent='Loading US sector rotation…';
+    try{
+      if(!US_ROTATION){
+        const response=await fetch('/api/us-trend-bounce',{headers:{accept:'application/json'}}),payload=await response.json().catch(()=>({})),snapshot=payload.snapshot;
+        if(!response.ok||payload.schema_version!=='us-trend-bounce.api.v1'||snapshot?.rotation?.schema_version!=='us-sector-rotation.v1')throw new Error(payload.error||`HTTP ${response.status}`);
+        US_ROTATION={...snapshot.rotation,generated_at:snapshot.generated_at_utc||'',updated_at:snapshot.generated_at_utc||snapshot.rotation.data_cutoff};
+      }
+      source=US_ROTATION;
+    }catch(error){
+      $('#sub').textContent=`US sector rotation unavailable: ${error.message}`;
+      return;
+    }
+  }
+  MARKET=next; M=source; OFFSET=0; WITHIN='';
+  const levelKeys=(M.levels||[]).map(l=>l[0]),saved=localStorage.getItem(`sec.level.${MARKET}`)||(MARKET==='IN'?localStorage.getItem('sec.level'):null);
+  LEVEL=levelKeys.includes(saved)?saved:(levelKeys[0]||'sector');
+  localStorage.setItem('sec.market',MARKET);
+  $('#pageTitle').textContent=`${MARKET==='US'?'US':'India'} Sector Rotation`;
+  document.title=$('#pageTitle').textContent;
+  populateWithin(); render();
+}
+document.querySelectorAll('.preset[data-market]').forEach(b=>b.addEventListener('click',()=>selectMarket(b.dataset.market)));
 /* on-demand refresh → GitHub Actions (hosted site only) */
 (function(){ const rb=document.getElementById('refreshBtn'); if(!rb) return;
   if(location.protocol==='file:'){ rb.style.display='none'; return; }
@@ -425,10 +466,9 @@ $('#offFwd').addEventListener('click',()=>{OFFSET=Math.max(0,OFFSET-1); render()
 })();
 
 /* populate the quadrant's within-sector focus list */
-(function(){ const secs=Object.keys((M.counts&&M.counts.sector)||{}).sort();
-  $('#within').innerHTML='<option value="">All sectors</option>'+secs.map(s=>`<option value="${esc(s)}">${esc(s)}</option>`).join(''); })();
-
-render();
+populateWithin();
+const initialMarket=localStorage.getItem('sec.market')==='US'?'US':'IN';
+selectMarket(initialMarket);
 </script>
 </body>
 </html>
