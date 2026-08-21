@@ -72,7 +72,7 @@ class RenderSiteTests(unittest.TestCase):
                 ("us-daily.html", "US"),
             ):
                 rendered = (output / page).read_text()
-                self.assertIn('src="market-events.js?v=4"', rendered)
+                self.assertIn('src="market-events.js?v=5"', rendered)
                 self.assertIn(f"MarketEvents.load('{market}'", rendered)
                 self.assertIn("MarketEvents.dot(", rendered)
                 if market == "IN":
@@ -94,7 +94,7 @@ class RenderSiteTests(unittest.TestCase):
                 self.assertIn("'hasCongressHistory'", rendered)
                 self.assertIn("EVENTS_READY", rendered)
             ht_page = (output / "tsha_hbcs.html").read_text()
-            self.assertIn('src="market-events.js?v=4"', ht_page)
+            self.assertIn('src="market-events.js?v=5"', ht_page)
             self.assertIn('id="eventOnly"', ht_page)
             self.assertIn("MarketEvents.load(market", ht_page)
             self.assertIn("MarketEvents.record(r.symbol,r.market)", ht_page)

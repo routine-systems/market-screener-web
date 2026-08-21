@@ -36,6 +36,7 @@
     const style = document.createElement("style");
     style.textContent = `
       .event-dot{appearance:none!important;display:inline-block!important;width:9px!important;height:9px!important;min-width:9px!important;padding:0!important;margin:0 0 0 6px!important;border:0!important;border-radius:50%!important;background:var(--ink)!important;box-shadow:0 0 0 1px var(--surface),0 0 0 2px var(--ink)!important;vertical-align:middle!important;cursor:pointer!important}
+      .event-dot-insider{background:var(--vol)!important;box-shadow:0 0 0 1px var(--surface),0 0 0 2px var(--vol)!important}
       .event-dot:hover,.event-dot:focus-visible{transform:scale(1.25);outline:2px solid var(--vol)!important;outline-offset:2px}
       #market-event-card{position:fixed;z-index:120;width:min(390px,calc(100vw - 16px));max-height:min(520px,calc(100vh - 16px));overflow:auto;background:var(--surface);color:var(--ink);border:1px solid var(--axis);border-radius:8px;box-shadow:0 12px 34px rgba(0,0,0,.24);padding:12px;white-space:normal;text-align:left;font:12px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
       #market-event-card[hidden]{display:none}
@@ -158,7 +159,8 @@
     const labels = eventLabels(type);
     const count = Number(entry.count) || 0;
     const label = `${normalized}: ${count} ${count === 1 ? labels.singular : labels.plural} in ${scopeLabel(selectedSet.history_scope)}`;
-    return `<button type="button" class="event-dot" data-event-market="${eventMarket}" data-event-type="${escapeHtml(type)}" data-event-symbol="${escapeHtml(normalized)}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"></button>`;
+    const typeClass = type === "insider_trade" ? " event-dot-insider" : "";
+    return `<button type="button" class="event-dot${typeClass}" data-event-market="${eventMarket}" data-event-type="${escapeHtml(type)}" data-event-symbol="${escapeHtml(normalized)}" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"></button>`;
   }
 
   function field(row, name, market, eventType) {

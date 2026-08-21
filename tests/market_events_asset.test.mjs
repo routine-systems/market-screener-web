@@ -95,9 +95,15 @@ test("renders independent bulk and insider dots from one India snapshot", async 
   const bulk = context.window.MarketEvents.dot("TEST", "IN");
   const insider = context.window.MarketEvents.dot("TEST", "IN", "insider_trade");
   assert.match(bulk, /data-event-type="bulk_deal"/);
+  assert.doesNotMatch(bulk, /event-dot-insider/);
   assert.match(bulk, /1 bulk deal in the last year/);
   assert.match(insider, /data-event-type="insider_trade"/);
+  assert.match(insider, /class="event-dot event-dot-insider"/);
   assert.match(insider, /2 insider trades in the last year/);
+  assert.match(
+    source,
+    /\.event-dot-insider\{background:var\(--vol\)!important/,
+  );
   assert.equal(
     context.window.MarketEvents.record("TEST", "IN", "insider_trade").count,
     2,
