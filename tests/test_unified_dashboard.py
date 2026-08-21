@@ -91,6 +91,16 @@ class RenderSiteTests(unittest.TestCase):
                     self.assertIn(
                         "MarketEvents.dot(r.symbol,'IN','insider_trade')", rendered
                     )
+            appearance_headers = {
+                "dashboard.html": '<th data-k="count" class="sorted l">Appearances</th>',
+                "daily.html": '<th class="l" data-k="consist">Appearances</th>',
+                "us-weekly.html": '<th class="l sorted" data-sort="count">Appearances</th>',
+                "us-daily.html": '<th class="l sorted" data-sort="count">Appearances</th>',
+            }
+            for page, header in appearance_headers.items():
+                rendered = (output / page).read_text()
+                self.assertIn(header, rendered)
+                self.assertNotIn("oldest→newest", rendered)
             us_weekly = (output / "us-weekly.html").read_text()
             self.assertIn('id="tt" role="tooltip"', us_weekly)
             self.assertIn('class="dots" data-tip=', us_weekly)
@@ -128,6 +138,11 @@ class RenderSiteTests(unittest.TestCase):
             self.assertNotIn("?'present':'absent'", ht_page)
             self.assertNotIn('id="historyPrompt"', ht_page)
             self.assertNotIn("unlock period history", ht_page)
+            self.assertIn(
+                '<th class="l" data-k="appearance_count">Appearances</th>',
+                ht_page,
+            )
+            self.assertNotIn("oldest→newest", ht_page)
             event_shell = (output / "market-events.js").read_text()
             self.assertIn('normalized === "IN" ? "rolling_1_year"', event_shell)
             self.assertIn("return rightKey.localeCompare(leftKey)", event_shell)

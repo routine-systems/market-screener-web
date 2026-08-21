@@ -49,7 +49,13 @@ def _page(active: str, body: str = "") -> str:
 
 def _india_body(*, weekly: bool, rotation: bool = True) -> str:
     history = _history(weekly=weekly, rotation=rotation)
+    appearance_header = (
+        '<th data-k="count" class="sorted l">Appearances</th>'
+        if weekly
+        else '<th class="l" data-k="consist">Appearances</th>'
+    )
     return f'''<button id="crossOnly"></button><button id="rotOnly"></button>
+<table><thead><tr>{appearance_header}</tr></thead></table>
 <div id="tt" role="tooltip"></div><span data-tip="row"></span>
 <script src="market-events.js?v=5"></script><script>
 const HISTORY_B64="{history}"; const glyph=on?'●':'○';
@@ -61,7 +67,7 @@ MarketEvents.dot(r.symbol,'IN','insider_trade');
 def _us_body(timeframe: str) -> str:
     week_start = "const weekStart=date=>date;" if timeframe == "weekly" else ""
     return f'''<button id="congressOnly">● Congress history</button>
-<table><thead><tr><th class="l ticker-col" data-sort="symbol">Ticker</th></tr></thead><tbody><tr><td class="l ticker-col">TEST</td></tr></tbody></table>
+<table><thead><tr><th class="l ticker-col" data-sort="symbol">Ticker</th><th class="l sorted" data-sort="count">Appearances</th></tr></thead><tbody><tr><td class="l ticker-col">TEST</td></tr></tbody></table>
 <div id="tt" role="tooltip"></div><span class="dots" data-tip="x"></span>
 <script src="market-events.js?v=5"></script><script>
 const TIMEFRAME='{timeframe}'; {week_start}
@@ -78,6 +84,7 @@ def _write_valid_site(root: Path) -> None:
         "us-weekly.html": _us_body("weekly"),
         "us-daily.html": _us_body("daily"),
         "tsha_hbcs.html": '''<button id="eventOnly">● Bulk history · ● Congress history</button>
+<table><th class="l" data-k="appearance_count">Appearances</th></table>
 <script src="market-events.js?v=5"></script><script>const glyph=on?'●':'○'; MarketEvents.load(market,()=>{});
 MarketEvents.record(r.symbol,r.market); MarketEvents.dot(r.symbol,r.market);
 MarketEvents.dot(r.symbol,'IN','insider_trade');</script>''',
@@ -206,6 +213,21 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             (root / "dashboard.html").write_text(source)
             with self.assertRaisesRegex(
                 subject.DashboardContractError, "insider_trade"
+            ):
+                subject.verify_site(root)
+
+    def test_rejects_verbose_appearance_header(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_valid_site(root)
+            source = (root / "dashboard.html").read_text().replace(
+                ">Appearances</th>",
+                ">Appearances in range (oldest→newest)</th>",
+                1,
+            )
+            (root / "dashboard.html").write_text(source)
+            with self.assertRaisesRegex(
+                subject.DashboardContractError, "Appearances"
             ):
                 subject.verify_site(root)
 

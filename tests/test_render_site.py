@@ -111,7 +111,10 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn('class="tablecard"', page)
             self.assertIn('class="tablewrap"', page)
             self.assertIn('id="themeBtn"', page)
-            self.assertIn("Appearances (oldest→newest)", page)
+            self.assertIn(
+                '<th class="l" data-k="appearance_count">Appearances</th>',
+                page,
+            )
             self.assertIn("function appearanceCell(r)", page)
             self.assertIn('class="dots"', page)
             self.assertIn('id="tt" role="tooltip"', page)

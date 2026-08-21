@@ -241,6 +241,16 @@ def verify_site(root: Path) -> dict:
         if state_words.search(source):
             _fail(f"{page} uses present/absent appearance tooltip words")
         _verify_india_payload(page, _decode_history(page, source))
+    _require_text(
+        "dashboard.html",
+        page_sources["dashboard.html"],
+        ('<th data-k="count" class="sorted l">Appearances</th>',),
+    )
+    _require_text(
+        "daily.html",
+        page_sources["daily.html"],
+        ('<th class="l" data-k="consist">Appearances</th>',),
+    )
 
     for page, timeframe in (("us-weekly.html", "weekly"), ("us-daily.html", "daily")):
         source = page_sources[page]
@@ -259,6 +269,7 @@ def verify_site(root: Path) -> dict:
                 'id="tt" role="tooltip"',
                 "?'●':'○'",
                 '<th class="l ticker-col" data-sort="symbol">Ticker</th>',
+                '<th class="l sorted" data-sort="count">Appearances</th>',
                 '<td class="l ticker-col">',
                 '<div class="market">${esc(row.exchange||\'US\')} · ${esc(row.asset_type||\'stock\')}</div>',
             ),
@@ -286,6 +297,7 @@ def verify_site(root: Path) -> dict:
             "MarketEvents.dot(r.symbol,r.market)",
             "MarketEvents.dot(r.symbol,'IN','insider_trade')",
             'src="market-events.js?v=5"',
+            '<th class="l" data-k="appearance_count">Appearances</th>',
             "● Bulk history",
             "● Congress history",
             "?'●':'○'",
