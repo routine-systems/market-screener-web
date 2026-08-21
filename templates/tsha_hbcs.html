@@ -67,7 +67,7 @@ __DASHBOARD_NAV__
 </main>
 </div>
 <div id="tt" role="tooltip" aria-hidden="true"></div>
-<script src="market-events.js?v=3"></script>
+<script src="market-events.js?v=5"></script>
 <script>
 let DATA=null,EVENTS_READY=new Set();
 const state={market:'all',timeframe:'all',events:false,query:'',liquidity:0,sort:'hbcs_bull_component_count',desc:true,rangeKey:null,from:0,to:0};
@@ -169,7 +169,7 @@ function render(resetRange=false){
   const rows=filtered(),shown=rows.slice(0,250);
   $('#rankhint').textContent=`${rows.length.toLocaleString()} matching potentials`;
   $('#rows').innerHTML=shown.length?shown.map(r=>`<tr>
-    <td class="l"><a class="symbol" target="_blank" rel="noopener" href="${chartUrl(r)}">${esc(r.symbol)}</a>${MarketEvents.dot(r.symbol,r.market)}<div class="market">${esc(r.exchange||r.market)} · ${esc(r.asset_type)}</div></td>
+    <td class="l"><a class="symbol" target="_blank" rel="noopener" href="${chartUrl(r)}">${esc(r.symbol)}</a>${MarketEvents.dot(r.symbol,r.market)}${r.market==='IN'?MarketEvents.dot(r.symbol,'IN','insider_trade'):''}<div class="market">${esc(r.exchange||r.market)} · ${esc(r.asset_type)}</div></td>
     <td>${esc(r.signal_date)}</td><td><span class="pill">${r.market==='IN'?'India':'US'} ${esc(r.timeframe)}</span></td><td class="l">${appearanceCell(r)}</td>
     <td class="bull num">${num(r.hbcs_bull_component_count,0)}</td><td class="components">${esc(r.hbcs_components||'Union transition')}</td>
     <td class="bull num">${num(r.fast_body_pct)}%</td><td class="bull num">${num(r.slow_body_pct)}%</td><td class="num">${num(r.close)}</td><td class="num">${num(r.median_dollar_turnover_20,0)}</td><td>${esc(r.sector||'—')}</td>

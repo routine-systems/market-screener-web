@@ -84,9 +84,13 @@ class RenderSiteTests(unittest.TestCase):
                 ("us-daily.html", "US"),
             ):
                 rendered = (output / page).read_text()
-                self.assertIn('src="market-events.js?v=3"', rendered)
+                self.assertIn('src="market-events.js?v=5"', rendered)
                 self.assertIn(f"MarketEvents.load('{market}'", rendered)
                 self.assertIn("MarketEvents.dot(", rendered)
+                if market == "IN":
+                    self.assertIn(
+                        "MarketEvents.dot(r.symbol,'IN','insider_trade')", rendered
+                    )
             us_weekly = (output / "us-weekly.html").read_text()
             self.assertIn('id="tt" role="tooltip"', us_weekly)
             self.assertIn('class="dots" data-tip=', us_weekly)
@@ -113,18 +117,29 @@ class RenderSiteTests(unittest.TestCase):
                 self.assertNotIn('id="formula"', rendered)
                 self.assertNotIn("Formula: EMA10", rendered)
             ht_page = (output / "tsha_hbcs.html").read_text()
-            self.assertIn('src="market-events.js?v=3"', ht_page)
+            self.assertIn('src="market-events.js?v=5"', ht_page)
             self.assertIn('id="eventOnly"', ht_page)
             self.assertIn("MarketEvents.load(market", ht_page)
             self.assertIn("MarketEvents.record(r.symbol,r.market)", ht_page)
             self.assertIn("MarketEvents.dot(r.symbol,r.market)", ht_page)
+            self.assertIn(
+                "MarketEvents.dot(r.symbol,'IN','insider_trade')", ht_page
+            )
             self.assertNotIn("?'present':'absent'", ht_page)
             self.assertNotIn('id="historyPrompt"', ht_page)
             self.assertNotIn("unlock period history", ht_page)
             event_shell = (output / "market-events.js").read_text()
             self.assertIn('normalized === "IN" ? "rolling_1_year"', event_shell)
             self.assertIn("return rightKey.localeCompare(leftKey)", event_shell)
-            self.assertIn('market === "IN" ? "last one year"', event_shell)
+            self.assertIn(
+                'return scope === "rolling_1_year" ? "the last year" : "complete history"',
+                event_shell,
+            )
+            self.assertIn(".event-dot-insider{background:var(--vol)!important", event_shell)
+            self.assertIn(
+                'type === "insider_trade" ? " event-dot-insider" : ""',
+                event_shell,
+            )
             for page in (
                 "dashboard.html",
                 "daily.html",

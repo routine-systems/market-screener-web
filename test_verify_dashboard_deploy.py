@@ -51,9 +51,10 @@ def _india_body(*, weekly: bool, rotation: bool = True) -> str:
     history = _history(weekly=weekly, rotation=rotation)
     return f'''<button id="crossOnly"></button><button id="rotOnly"></button>
 <div id="tt" role="tooltip"></div><span data-tip="row"></span>
-<script src="market-events.js?v=3"></script><script>
+<script src="market-events.js?v=5"></script><script>
 const HISTORY_B64="{history}"; const glyph=on?'●':'○';
 MarketEvents.load('IN',()=>MarketEvents.dot('TEST'));
+MarketEvents.dot(r.symbol,'IN','insider_trade');
 </script>'''
 
 
@@ -62,7 +63,7 @@ def _us_body(timeframe: str) -> str:
     return f'''<button id="congressOnly">● Congress history</button>
 <table><thead><tr><th class="l ticker-col" data-sort="symbol">Ticker</th></tr></thead><tbody><tr><td class="l ticker-col">TEST</td></tr></tbody></table>
 <div id="tt" role="tooltip"></div><span class="dots" data-tip="x"></span>
-<script src="market-events.js?v=3"></script><script>
+<script src="market-events.js?v=5"></script><script>
 const TIMEFRAME='{timeframe}'; {week_start}
 fetch('/api/us-trend-bounce'); state.congress; row.hasCongressHistory;
 const glyph=on?'●':'○'; MarketEvents.load('US',()=>MarketEvents.dot('TEST'));
@@ -77,8 +78,9 @@ def _write_valid_site(root: Path) -> None:
         "us-weekly.html": _us_body("weekly"),
         "us-daily.html": _us_body("daily"),
         "tsha_hbcs.html": '''<button id="eventOnly">● Bulk history · ● Congress history</button>
-<script>const glyph=on?'●':'○'; MarketEvents.load(market,()=>{});
-MarketEvents.record(r.symbol,r.market); MarketEvents.dot(r.symbol,r.market);</script>''',
+<script src="market-events.js?v=5"></script><script>const glyph=on?'●':'○'; MarketEvents.load(market,()=>{});
+MarketEvents.record(r.symbol,r.market); MarketEvents.dot(r.symbol,r.market);
+MarketEvents.dot(r.symbol,'IN','insider_trade');</script>''',
     }
     for page, active in subject.PAGES.items():
         (root / page).write_text(_page(active, bodies.get(page, "")))
@@ -192,6 +194,19 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             )
             (root / "us-weekly.html").write_text(source)
             with self.assertRaisesRegex(subject.DashboardContractError, "congressOnly"):
+                subject.verify_site(root)
+
+    def test_rejects_missing_india_insider_marker(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_valid_site(root)
+            source = (root / "dashboard.html").read_text().replace(
+                "MarketEvents.dot(r.symbol,'IN','insider_trade');", ""
+            )
+            (root / "dashboard.html").write_text(source)
+            with self.assertRaisesRegex(
+                subject.DashboardContractError, "insider_trade"
+            ):
                 subject.verify_site(root)
 
 

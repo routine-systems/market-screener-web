@@ -271,7 +271,7 @@
 <div id="pv"></div>
 <div id="drop"><div class="msg">Drop a Chartink <b>Backtest</b> CSV to load it</div></div>
 
-<script src="market-events.js?v=3"></script>
+<script src="market-events.js?v=5"></script>
 <script>
 const HISTORY_B64="__HISTORY_B64__";
 const WINDOW=__WINDOW__;
@@ -498,7 +498,7 @@ function renderTable(){
     const badge=r.count===nW&&nW>1?'<span class="badge">every wk</span>':'';
     return `<tr>
       <td class="l rankn">${r.rank}</td>
-      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${rotDot(r.symbol)}${r.inFilter?`<span class="filt-dot" title="Also in the stricter filter · ${keys[nW-1]}"></span>`:''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}${MarketEvents.dot(r.symbol)}</td>
+      <td class="l"><a class="stk" href="${stockUrl(r.symbol)}" target="_blank" rel="noopener">${r.symbol}</a>${rotDot(r.symbol)}${r.inFilter?`<span class="filt-dot" title="Also in the stricter filter · ${keys[nW-1]}"></span>`:''}${r.inCross&&H.cross?`<span class="cross-badge" title="also in the ${H.cross.name} sheet">${H.cross.label}</span>`:''}${MarketEvents.dot(r.symbol)}${MarketEvents.dot(r.symbol,'IN','insider_trade')}</td>
       <td class="l"><span class="appc" data-tip="row" data-w="${tipWeeks.replace(/"/g,'')}"><span class="frac">${r.count}<small>/${nW}</small></span>${dotgrid(r)}${badge}</span></td>
       <td class="l mc">${r.sector||'—'}</td>
       <td class="l mc">${r.marketcap||'—'}</td>
