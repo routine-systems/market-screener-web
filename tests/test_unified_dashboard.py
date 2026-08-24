@@ -28,7 +28,7 @@ class RenderSiteTests(unittest.TestCase):
         self.assertIsNotNone(match)
         return json.loads(base64.b64decode(match.group(1)))
 
-    def test_valid_fixture_renders_eight_pages_and_manifest(self):
+    def test_valid_fixture_renders_nine_pages_and_manifest(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "dist"
             manifest = render_site.render_site(FIXTURE, output)
@@ -39,6 +39,7 @@ class RenderSiteTests(unittest.TestCase):
                 "sectors.html",
                 "recommendations.html",
                 "tsha_hbcs.html",
+                "volume_trend.html",
                 "us-weekly.html",
                 "us-daily.html",
                 "index.html",
@@ -54,6 +55,7 @@ class RenderSiteTests(unittest.TestCase):
                 "functions/api/scanlink.js",
                 "functions/api/tsha-hbcs.js",
                 "functions/api/us-trend-bounce.js",
+                "functions/api/volume-trend.js",
             }
             actual = {
                 path.relative_to(output).as_posix()
@@ -66,6 +68,9 @@ class RenderSiteTests(unittest.TestCase):
             self.assertNotIn("__HISTORY_B64__", (output / "dashboard.html").read_text())
             self.assertNotIn("__DASHBOARD_NAV__", (output / "tsha_hbcs.html").read_text())
             self.assertIn("fetch('/api/tsha-hbcs'", (output / "tsha_hbcs.html").read_text())
+            self.assertIn(
+                "fetch('/api/volume-trend'", (output / "volume_trend.html").read_text()
+            )
             self.assertIn(
                 "fetch('/api/us-trend-bounce'",
                 (output / "us-weekly.html").read_text(),
@@ -173,9 +178,11 @@ class RenderSiteTests(unittest.TestCase):
                 "sectors.html",
                 "recommendations.html",
                 "tsha_hbcs.html",
+                "volume_trend.html",
             ):
                 rendered = (output / page).read_text()
                 self.assertIn('href="tsha_hbcs.html"', rendered)
+                self.assertIn('href="volume_trend.html"', rendered)
                 self.assertIn('href="us-weekly.html"', rendered)
                 self.assertIn('href="us-daily.html"', rendered)
                 self.assertEqual(1, rendered.count('id="themeBtn"'))
@@ -274,6 +281,7 @@ class RenderSiteTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             templates = Path(directory)
             (templates / "tsha_hbcs.html").write_text("fixture")
+            (templates / "volume_trend.html").write_text("fixture")
             with mock.patch.object(render_site, "TEMPLATES", templates):
                 with self.assertRaisesRegex(
                     render_site.BundleError,

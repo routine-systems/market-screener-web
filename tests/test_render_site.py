@@ -38,6 +38,7 @@ class RenderSiteTests(unittest.TestCase):
                 ("us-weekly", "us-weekly.html", "US Weekly"),
                 ("us-daily", "us-daily.html", "US Daily"),
                 ("ht", "tsha_hbcs.html", "HT"),
+                ("vt", "volume_trend.html", "VT"),
                 ("market", "market.html", "Market"),
                 ("sectors", "sectors.html", "Sectors"),
                 ("recommendations", "recommendations.html", "Forward Test"),
@@ -56,7 +57,7 @@ class RenderSiteTests(unittest.TestCase):
         self.assertIsNotNone(match)
         return json.loads(base64.b64decode(match.group(1)))
 
-    def test_valid_fixture_renders_eight_pages_and_manifest(self):
+    def test_valid_fixture_renders_nine_pages_and_manifest(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "dist"
             manifest = render_site.render_site(FIXTURE, output)
@@ -67,6 +68,7 @@ class RenderSiteTests(unittest.TestCase):
                 "sectors.html",
                 "recommendations.html",
                 "tsha_hbcs.html",
+                "volume_trend.html",
                 "us-weekly.html",
                 "us-daily.html",
                 "index.html",
@@ -82,6 +84,7 @@ class RenderSiteTests(unittest.TestCase):
                 "functions/api/scanlink.js",
                 "functions/api/tsha-hbcs.js",
                 "functions/api/us-trend-bounce.js",
+                "functions/api/volume-trend.js",
             }
             actual = {
                 path.relative_to(output).as_posix()
@@ -103,6 +106,9 @@ class RenderSiteTests(unittest.TestCase):
                 self.assertEqual("11 Aug 2026, 17:30 IST", payload["last_updated_ist"])
             self.assertIn(
                 "fetch('/api/tsha-hbcs'", (output / "tsha_hbcs.html").read_text()
+            )
+            self.assertIn(
+                "fetch('/api/volume-trend'", (output / "volume_trend.html").read_text()
             )
             self.assertTrue((output / "functions").exists())
 
@@ -155,10 +161,13 @@ class RenderSiteTests(unittest.TestCase):
                 "sectors.html",
                 "recommendations.html",
                 "tsha_hbcs.html",
+                "volume_trend.html",
             ):
                 page = (output / name).read_text()
                 self.assertIn('href="tsha_hbcs.html"', page)
                 self.assertIn(">HT</a>", page)
+                self.assertIn('href="volume_trend.html"', page)
+                self.assertIn(">VT</a>", page)
 
     def test_ht_uses_shared_screener_shell_without_explainer(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -200,6 +209,27 @@ class RenderSiteTests(unittest.TestCase):
             self.assertNotIn("Locally computed database screener", page)
             self.assertNotIn("Twin Smoothed HA + HBCS", page)
             self.assertNotIn("Completed-bar confluence", page)
+
+    def test_vt_mirrors_the_ht_selection_and_history_shell(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "dist"
+            render_site.render_site(FIXTURE, output)
+            page = (output / "volume_trend.html").read_text()
+            self.assertIn("<h1>VT · Volume Breakout / Breakdown</h1>", page)
+            self.assertIn('id="markets"', page)
+            self.assertIn('id="timeframes"', page)
+            self.assertIn('id="directions"', page)
+            self.assertIn('id="historyRange"', page)
+            self.assertIn('id="pageNumber"', page)
+            self.assertIn('id="pageSize"', page)
+            self.assertIn(
+                '<th class="l sorted" data-k="appearance_count">Appearances</th>',
+                page,
+            )
+            self.assertIn("const weekStart=date=>", page)
+            self.assertIn("schema_version!=='volume-trend.snapshot.v1'", page)
+            self.assertIn("MarketEvents.record(r.symbol,r.market)", page)
+            self.assertNotIn("?'present':'absent'", page)
 
     def test_render_preserves_page_cutoffs_without_shared_data_row(self):
         bundle = self.load_fixture()

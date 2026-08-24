@@ -49,6 +49,7 @@ NAV_ITEMS = (
     ("us-weekly", "us-weekly.html", "US Weekly"),
     ("us-daily", "us-daily.html", "US Daily"),
     ("ht", "tsha_hbcs.html", "HT"),
+    ("vt", "volume_trend.html", "VT"),
     ("market", "market.html", "Market"),
     ("sectors", "sectors.html", "Sectors"),
     ("recommendations", "recommendations.html", "Forward Test"),
@@ -325,6 +326,8 @@ def _source_freshness(bundle: dict) -> dict:
             "us_daily": item("us_daily"),
             "ht_india": item("ht_india"),
             "ht_us": item("ht_us"),
+            "vt_india": item("vt_india"),
+            "vt_us": item("vt_us"),
             "outcomes": item("recommendations"),
         },
     }
@@ -343,6 +346,9 @@ def render_site(bundle_path: Path, output: Path = DEFAULT_OUTPUT) -> dict:
     ht_page = TEMPLATES / "tsha_hbcs.html"
     if not ht_page.is_file():
         raise BundleError(f"HT template not found: {ht_page}")
+    vt_page = TEMPLATES / "volume_trend.html"
+    if not vt_page.is_file():
+        raise BundleError(f"VT template not found: {vt_page}")
     trend_bounce_template = TEMPLATES / TREND_BOUNCE_TEMPLATE
     if not trend_bounce_template.is_file():
         raise BundleError(f"US Trend Bounce template not found: {trend_bounce_template}")
@@ -370,6 +376,8 @@ def render_site(bundle_path: Path, output: Path = DEFAULT_OUTPUT) -> dict:
     (temp / "index.html").write_text(_index_document(), encoding="utf-8")
     ht_source = _apply_shell(ht_page.read_text(encoding="utf-8"), "ht")
     (temp / "tsha_hbcs.html").write_text(ht_source, encoding="utf-8")
+    vt_source = _apply_shell(vt_page.read_text(encoding="utf-8"), "vt")
+    (temp / "volume_trend.html").write_text(vt_source, encoding="utf-8")
     trend_source = trend_bounce_template.read_text(encoding="utf-8")
     for timeframe, output_name in TREND_BOUNCE_PAGES.items():
         rendered = trend_source.replace("__TIMEFRAME__", timeframe)

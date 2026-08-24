@@ -7,12 +7,17 @@ import worker, {
   HISTORY_INSTRUMENT_COLUMNS,
   HISTORY_ROW_COLUMNS,
   LEGACY_EXPECTED_COLUMNS,
+  VOLUME_TREND_COLUMNS,
+  VOLUME_TREND_HISTORY_INSTRUMENT_COLUMNS,
+  VOLUME_TREND_HISTORY_ROW_COLUMNS,
   marketEventsSemanticDigest,
   semanticDigest,
   trendBounceSemanticDigest,
   validateMarketEventsSnapshot,
   validateSnapshot,
   validateTrendBounceSnapshot,
+  validateVolumeTrendSnapshot,
+  volumeTrendSemanticDigest,
 } from "./index.ts";
 
 type StoredMetadata = {
@@ -258,6 +263,116 @@ async function signedRequest(
     body,
   });
 }
+
+function volumeTrendRow(
+  market: string,
+  timeframe: string,
+  signalDate: string,
+  symbol: string,
+): unknown[] {
+  const values: Record<string, unknown> = {
+    market,
+    timeframe,
+    signal_date: signalDate,
+    symbol,
+    name: symbol,
+    exchange: market === "IN" ? "NSE" : "NASDAQ",
+    asset_type: "stock",
+    sector: "Technology",
+    industry: "Software",
+    signal: "BUY",
+    close: 101.25,
+    volume: 2000,
+    volume_sma_20: 1500,
+    median_dollar_turnover_20: 2_000_000,
+    volume_bar_high: 100,
+    volume_bar_low: 90,
+    close_location: 0.75,
+  };
+  return VOLUME_TREND_COLUMNS.map((column) => values[column]);
+}
+
+async function makeVolumeTrendSnapshot(
+  inSession = "2026-08-21",
+  usSession = "2026-08-21",
+  updateMarket = "IN",
+  generatedAt = "2026-08-21T12:00:00Z",
+): Promise<Record<string, unknown>> {
+  const markets: Record<string, unknown> = {};
+  for (const [market, dailySession] of [["IN", inSession], ["US", usSession]]) {
+    const weeklySession = mondayOf(dailySession);
+    const timeframes: Record<string, unknown> = {};
+    for (const [timeframe, signalDate, suffix] of [
+      ["daily", dailySession, "D"],
+      ["weekly", weeklySession, "W"],
+    ]) {
+      const symbol = `${market}${suffix}`;
+      const latestRow = volumeTrendRow(market, timeframe, signalDate, symbol);
+      const instrument = VOLUME_TREND_HISTORY_INSTRUMENT_COLUMNS.map(
+        (column) => latestRow[VOLUME_TREND_COLUMNS.indexOf(column)],
+      );
+      const historyRow = [
+        0,
+        ...VOLUME_TREND_HISTORY_ROW_COLUMNS.slice(1).map(
+          (column) => latestRow[(VOLUME_TREND_COLUMNS as readonly string[]).indexOf(column)],
+        ),
+      ];
+      timeframes[timeframe] = {
+        signal_date: signalDate,
+        requested_asof: dailySession,
+        universe_size: 10,
+        shortlist_size: 1,
+        universe_by_exchange: {},
+        shortlist_by_exchange: {},
+        condition: "fixture VT condition",
+        lookback: 75,
+        volume_ma_length: 20,
+        appearance_periods: [signalDate],
+        appearance_bits: { [symbol]: "1" },
+        history: {
+          schema_version: "vt-history.v1",
+          instrument_columns: [...VOLUME_TREND_HISTORY_INSTRUMENT_COLUMNS],
+          instruments: [instrument],
+          row_columns: [...VOLUME_TREND_HISTORY_ROW_COLUMNS],
+          periods: [{ date: signalDate, source: "stored", rows: [historyRow] }],
+        },
+        rows: [latestRow],
+      };
+    }
+    markets[market] = { data_session: dailySession, timeframes };
+  }
+  const snapshot: Record<string, unknown> = {
+    schema_version: "volume-trend.snapshot.v1",
+    algorithm_version: "pine-vts-ll.v1",
+    columns: [...VOLUME_TREND_COLUMNS],
+    markets,
+    update_market: updateMarket,
+    target_session: updateMarket === "IN" ? inSession : usSession,
+    generated_at_utc: generatedAt,
+    producer_commit: "fixture-commit",
+    row_count: 4,
+  };
+  snapshot.snapshot_sha256 = await volumeTrendSemanticDigest(snapshot);
+  return snapshot;
+}
+
+async function volumeTrendSignedRequest(
+  snapshot: Record<string, unknown>,
+): Promise<Request> {
+  const body = JSON.stringify(snapshot);
+  const digest = createHash("sha256").update(body).digest("hex");
+  return new Request("https://relay.example/v1/volume-trend", {
+    method: "POST",
+    headers: {
+      authorization: "Bearer fixture-token",
+      "content-type": "application/json",
+      "content-length": String(Buffer.byteLength(body)),
+      "x-content-sha256": digest,
+    },
+    body,
+  });
+}
+
 
 function trendBouncePage(
   timeframe: "daily" | "weekly",
@@ -563,6 +678,88 @@ test("rejects a weekly HT bucket that omits the active week", async () => {
     /weekly session does not match active week/,
   );
 });
+
+test("accepts one validated Volume Trend snapshot", async () => {
+  const kv = new FakeKV();
+  const snapshot = await makeVolumeTrendSnapshot();
+  await validateVolumeTrendSnapshot(snapshot);
+
+  const response = await worker.fetch(await volumeTrendSignedRequest(snapshot), env(kv));
+
+  assert.equal(response.status, 202, await response.text());
+  assert.equal(kv.reads, 1);
+  assert.equal(kv.puts, 1);
+});
+
+
+test("rejects a non-Monday Volume Trend weekly bucket", async () => {
+  const kv = new FakeKV();
+  const snapshot = await makeVolumeTrendSnapshot();
+  const markets = snapshot.markets as Record<string, Record<string, unknown>>;
+  const india = markets.IN.timeframes as Record<string, Record<string, unknown>>;
+  india.weekly.signal_date = "2026-08-18";
+  snapshot.snapshot_sha256 = await volumeTrendSemanticDigest(snapshot);
+
+  const response = await worker.fetch(await volumeTrendSignedRequest(snapshot), env(kv));
+
+  assert.equal(response.status, 400);
+  assert.equal(kv.puts, 0);
+  assert.match(
+    String(((await response.json()) as Record<string, unknown>).error),
+    /Monday-keyed/,
+  );
+});
+
+test("preserves the other market Volume Trend revision when its session is unchanged", async () => {
+  const kv = new FakeKV();
+  const initial = await makeVolumeTrendSnapshot();
+  assert.equal(
+    (await worker.fetch(await volumeTrendSignedRequest(initial), env(kv))).status,
+    202,
+  );
+
+  const revisedIndia = await makeVolumeTrendSnapshot(
+    "2026-08-21",
+    "2026-08-21",
+    "IN",
+    "2026-08-21T12:01:00Z",
+  );
+  const revisedIndiaMarkets = revisedIndia.markets as Record<string, Record<string, unknown>>;
+  const revisedIndiaTimeframes = revisedIndiaMarkets.IN.timeframes as Record<
+    string,
+    Record<string, unknown>
+  >;
+  revisedIndiaTimeframes.daily.condition = "fixture VT revised condition";
+  revisedIndiaTimeframes.weekly.condition = "fixture VT revised condition";
+  revisedIndia.snapshot_sha256 = await volumeTrendSemanticDigest(revisedIndia);
+  assert.equal(
+    (await worker.fetch(await volumeTrendSignedRequest(revisedIndia), env(kv))).status,
+    202,
+  );
+  assert.equal(kv.metadata?.in_session_revision, 1);
+
+  const advancedUs = await makeVolumeTrendSnapshot(
+    "2026-08-21",
+    "2026-08-24",
+    "US",
+    "2026-08-24T12:00:00Z",
+  );
+  const advancedMarkets = advancedUs.markets as Record<string, Record<string, unknown>>;
+  const advancedIndia = advancedMarkets.IN.timeframes as Record<
+    string,
+    Record<string, unknown>
+  >;
+  advancedIndia.daily.condition = "fixture VT revised condition";
+  advancedIndia.weekly.condition = "fixture VT revised condition";
+  advancedUs.snapshot_sha256 = await volumeTrendSemanticDigest(advancedUs);
+
+  const response = await worker.fetch(await volumeTrendSignedRequest(advancedUs), env(kv));
+
+  assert.equal(response.status, 202, await response.text());
+  assert.equal(kv.metadata?.in_session_revision, 1);
+  assert.equal(kv.metadata?.us_session_revision, 0);
+});
+
 
 test("canonical producer wire still enforces the semantic digest", async () => {
   const acceptedKv = new FakeKV();

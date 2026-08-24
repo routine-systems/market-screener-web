@@ -22,6 +22,12 @@ declared update market may consume its normal same-session revision during
 that bootstrap; the other market's latest rows must remain unchanged. The
 complete request body remains capped at four MiB.
 
+`POST /v1/volume-trend` accepts the independent
+`volume-trend.snapshot.v1` contract. It validates India and US Daily/Weekly
+BUY and SELL rows, Monday-keyed weekly periods, compact `vt-history.v1`
+history, semantic digests, market-session monotonicity, and one same-session
+revision per market. The Worker stores it under `volume-trend:v1:latest`.
+
 The Worker has no scheduled trigger. The existing local India and US
 LaunchAgents remain the only schedule. The Worker writes neither R2 nor D1.
 

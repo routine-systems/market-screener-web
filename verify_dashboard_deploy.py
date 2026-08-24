@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reject a dashboard bundle that would degrade the live eight-tab contract."""
+"""Reject a dashboard bundle that would degrade the live nine-tab contract."""
 
 from __future__ import annotations
 
@@ -21,6 +21,7 @@ PAGES = {
     "market.html": "market.html",
     "sectors.html": "sectors.html",
     "tsha_hbcs.html": "tsha_hbcs.html",
+    "volume_trend.html": "volume_trend.html",
     "recommendations.html": "recommendations.html",
 }
 NAV_ITEMS = (
@@ -29,6 +30,7 @@ NAV_ITEMS = (
     ("us-weekly.html", "US Weekly"),
     ("us-daily.html", "US Daily"),
     ("tsha_hbcs.html", "HT"),
+    ("volume_trend.html", "VT"),
     ("market.html", "Market"),
     ("sectors.html", "Sectors"),
     ("recommendations.html", "Forward Test"),
@@ -47,6 +49,7 @@ REQUIRED_FILES = {
     "functions/api/scanlink.js",
     "functions/api/tsha-hbcs.js",
     "functions/api/us-trend-bounce.js",
+    "functions/api/volume-trend.js",
 }
 INDIA_PAGES = ("dashboard.html", "daily.html")
 US_PAGES = ("us-weekly.html", "us-daily.html")
@@ -112,7 +115,7 @@ def _verify_navigation(page: str, source: str, active_href: str) -> None:
     parser.feed(source)
     actual = tuple((attrs.get("href"), label) for attrs, label in parser.nav_items)
     if actual != NAV_ITEMS:
-        _fail(f"{page} navigation differs from the canonical eight-tab order")
+        _fail(f"{page} navigation differs from the canonical nine-tab order")
     active = [
         attrs.get("href")
         for attrs, _ in parser.nav_items
@@ -353,6 +356,27 @@ def verify_site(root: Path) -> dict:
             "applyPayload(fallbackPayload)",
         ),
     )
+
+    vt = page_sources["volume_trend.html"]
+    _require_text(
+        "volume_trend.html",
+        vt,
+        (
+            "VT · Volume Breakout / Breakdown",
+            "fetch('/api/volume-trend'",
+            "volume-trend.api.v1",
+            "vt-history.v1",
+            'id="directions"',
+            'id="historyRange"',
+            'id="pageNumber"',
+            'id="pageSize"',
+            '<th class="l sorted" data-k="appearance_count">Appearances</th>',
+            "MarketEvents.record(r.symbol,r.market)",
+            "?'●':'○'",
+        ),
+    )
+    if state_words.search(vt):
+        _fail("volume_trend.html uses present/absent appearance tooltip words")
 
     freshness = json.loads(_read(root, "dashboard-freshness.json"))
     if freshness.get("schema_version") != "dashboard-freshness.v1":

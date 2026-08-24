@@ -99,6 +99,11 @@ function ignitionDot(r){return '<span class="ignition-dot"></span>'} !state.igni
 MarketEvents.record(r.symbol,r.market); MarketEvents.dot(r.symbol,r.market);
 MarketEvents.dot(r.symbol,'IN','insider_trade');</script>''',
         "recommendations.html": "<script>fetch('/api/forward-test'); const schema='forward-test.api.v1'; applyPayload(fallbackPayload);</script>",
+        "volume_trend.html": '''<div>VT · Volume Breakout / Breakdown</div><div id="directions"></div><div id="historyRange"></div>
+<select id="pageSize"></select><select id="pageNumber"></select>
+<table><th class="l sorted" data-k="appearance_count">Appearances</th></table>
+<script>fetch('/api/volume-trend'); const api='volume-trend.api.v1'; const history='vt-history.v1';
+MarketEvents.record(r.symbol,r.market); const glyph=on?'●':'○';</script>''',
     }
     for page, active in subject.PAGES.items():
         (root / page).write_text(_page(active, bodies.get(page, "")))
@@ -118,12 +123,12 @@ MarketEvents.dot(r.symbol,'IN','insider_trade');</script>''',
 
 
 class VerifyDashboardDeployTests(unittest.TestCase):
-    def test_accepts_the_eight_tab_contract(self):
+    def test_accepts_the_nine_tab_contract(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             _write_valid_site(root)
             result = subject.verify_site(root)
-            self.assertEqual(8, result["pages"])
+            self.assertEqual(9, result["pages"])
             self.assertEqual("site-manifest.json", result["manifest"])
 
     def test_rejects_legacy_ht_position_after_context_tabs(self):
@@ -133,10 +138,12 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             source = (root / "dashboard.html").read_text()
             current = (
                 '<a href="tsha_hbcs.html">HT</a>'
+                '<a href="volume_trend.html">VT</a>'
                 '<a href="market.html">Market</a>'
                 '<a href="sectors.html">Sectors</a>'
             )
             legacy = (
+                '<a href="volume_trend.html">VT</a>'
                 '<a href="market.html">Market</a>'
                 '<a href="sectors.html">Sectors</a>'
                 '<a href="tsha_hbcs.html">HT</a>'
@@ -144,8 +151,16 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             self.assertIn(current, source)
             (root / "dashboard.html").write_text(source.replace(current, legacy, 1))
             with self.assertRaisesRegex(
-                subject.DashboardContractError, "canonical eight-tab order"
+                subject.DashboardContractError, "canonical nine-tab order"
             ):
+                subject.verify_site(root)
+
+    def test_rejects_an_old_eight_tab_bundle(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_valid_site(root)
+            (root / "volume_trend.html").unlink()
+            with self.assertRaisesRegex(subject.DashboardContractError, "volume_trend"):
                 subject.verify_site(root)
 
     def test_rejects_grid_as_the_sectors_default(self):

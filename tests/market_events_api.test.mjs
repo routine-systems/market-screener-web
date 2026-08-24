@@ -179,3 +179,34 @@ test("Forward Test metadata response exposes only its cutoff", async () => {
     publication: { digest: "forward" },
   });
 });
+
+test("VT metadata response exposes only market cutoffs", async () => {
+  const endpoint = await moduleFrom("../functions/api/volume-trend.js");
+  const snapshot = {
+    generated_at_utc: "2026-08-21T02:00:00Z",
+    markets: {
+      IN: { data_session: "2026-08-20", timeframes: { large: "payload" } },
+      US: { data_session: "2026-08-20", timeframes: { large: "payload" } },
+    },
+  };
+  const response = await endpoint.onRequestGet({
+    request: new Request("https://screener.example/api/volume-trend?meta=1"),
+    env: {
+      SCANLINKS: {
+        getWithMetadata: async (key) => {
+          assert.equal(key, "volume-trend:v1:latest");
+          return { value: snapshot, metadata: { digest: "vt" } };
+        },
+      },
+    },
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    schema_version: "volume-trend.api.v1",
+    snapshot: {
+      generated_at_utc: "2026-08-21T02:00:00Z",
+      data_cutoff: { IN: "2026-08-20", US: "2026-08-20" },
+    },
+    publication: { digest: "vt" },
+  });
+});

@@ -3,6 +3,12 @@ import { timingSafeEqual } from "node:crypto";
 const MAX_SNAPSHOT_BYTES = 4 * 1024 * 1024;
 const MAX_WRITES_PER_IST_DAY = 4;
 const SNAPSHOT_KEY = "tsha-hbcs:v1:latest";
+const MAX_VOLUME_TREND_BYTES = 4 * 1024 * 1024;
+const MAX_VOLUME_TREND_WRITES_PER_IST_DAY = 4;
+const VOLUME_TREND_KEY = "volume-trend:v1:latest";
+const VOLUME_TREND_SCHEMA_VERSION = "volume-trend.snapshot.v1";
+const VOLUME_TREND_ALGORITHM_VERSION = "pine-vts-ll.v1";
+const VOLUME_TREND_HISTORY_SCHEMA_VERSION = "vt-history.v1";
 const MAX_TREND_BOUNCE_BYTES = 8 * 1024 * 1024;
 const MAX_TREND_BOUNCE_WRITES_PER_IST_DAY = 2;
 const TREND_BOUNCE_KEY = "us-trend-bounce:v1:latest";
@@ -174,6 +180,60 @@ type MarketEventsWriteMetadata = {
   source_cutoff: string;
   row_count: number;
 };
+
+type VolumeTrendWriteMetadata = {
+  bytes: number;
+  received_at: string;
+  sha256: string;
+  snapshot_sha256: string;
+  write_day_ist: string;
+  write_count: number;
+  in_session: string;
+  in_session_revision: number;
+  us_session: string;
+  us_session_revision: number;
+};
+
+
+export const VOLUME_TREND_COLUMNS = [
+  "market",
+  "timeframe",
+  "signal_date",
+  "symbol",
+  "name",
+  "exchange",
+  "asset_type",
+  "sector",
+  "industry",
+  "signal",
+  "close",
+  "volume",
+  "volume_sma_20",
+  "median_dollar_turnover_20",
+  "volume_bar_high",
+  "volume_bar_low",
+  "close_location",
+] as const;
+
+export const VOLUME_TREND_HISTORY_INSTRUMENT_COLUMNS = [
+  "symbol",
+  "exchange",
+  "asset_type",
+  "sector",
+] as const;
+
+export const VOLUME_TREND_HISTORY_ROW_COLUMNS = [
+  "instrument_index",
+  "signal",
+  "close",
+  "volume",
+  "volume_sma_20",
+  "median_dollar_turnover_20",
+  "volume_bar_high",
+  "volume_bar_low",
+  "close_location",
+] as const;
+
 
 function json(body: JsonObject, status = 200): Response {
   return Response.json(body, {
@@ -831,6 +891,311 @@ function validateStoredSnapshotHeader(value: unknown): JsonObject {
   }
   return value;
 }
+
+const VT_MARKET_INDEX = VOLUME_TREND_COLUMNS.indexOf("market");
+const VT_TIMEFRAME_INDEX = VOLUME_TREND_COLUMNS.indexOf("timeframe");
+const VT_SIGNAL_DATE_INDEX = VOLUME_TREND_COLUMNS.indexOf("signal_date");
+const VT_SYMBOL_INDEX = VOLUME_TREND_COLUMNS.indexOf("symbol");
+const VT_SIGNAL_INDEX = VOLUME_TREND_COLUMNS.indexOf("signal");
+const VT_COLUMN_NAMES: readonly string[] = VOLUME_TREND_COLUMNS;
+const VT_NUMERIC_INDEXES = [
+  "close",
+  "volume",
+  "volume_sma_20",
+  "volume_bar_high",
+  "volume_bar_low",
+  "close_location",
+].map((column) => VT_COLUMN_NAMES.indexOf(column));
+const VT_TURNOVER_INDEX = VOLUME_TREND_COLUMNS.indexOf("median_dollar_turnover_20");
+
+function requireVolumeTrendNumber(value: unknown, label: string, nullable = false): void {
+  if (nullable && value === null) return;
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new Error(`${label} invalid`);
+  }
+}
+
+function requireVolumeTrendSignal(value: unknown, label: string): void {
+  if (value !== "BUY" && value !== "SELL") throw new Error(`${label} invalid`);
+}
+
+function validateVolumeTrendHistory(
+  value: unknown,
+  market: string,
+  timeframe: string,
+  signalDate: string,
+  latestRows: unknown[][],
+): void {
+  if (!isObject(value) || value.schema_version !== VOLUME_TREND_HISTORY_SCHEMA_VERSION) {
+    throw new Error(`${market} ${timeframe} history schema invalid`);
+  }
+  requireExactStringArray(
+    value.instrument_columns,
+    VOLUME_TREND_HISTORY_INSTRUMENT_COLUMNS,
+    `${market} ${timeframe} history instruments invalid`,
+  );
+  requireExactStringArray(
+    value.row_columns,
+    VOLUME_TREND_HISTORY_ROW_COLUMNS,
+    `${market} ${timeframe} history rows invalid`,
+  );
+  if (!Array.isArray(value.instruments)) {
+    throw new Error(`${market} ${timeframe} history instruments invalid`);
+  }
+  const instrumentKeys = new Set<string>();
+  for (const instrument of value.instruments) {
+    if (
+      !Array.isArray(instrument) ||
+      instrument.length !== VOLUME_TREND_HISTORY_INSTRUMENT_COLUMNS.length ||
+      typeof instrument[0] !== "string" ||
+      !instrument[0] ||
+      typeof instrument[1] !== "string" ||
+      !instrument[1]
+    ) {
+      throw new Error(`${market} ${timeframe} history instrument invalid`);
+    }
+    const key = canonical(instrument);
+    if (instrumentKeys.has(key)) {
+      throw new Error(`${market} ${timeframe} history instruments duplicate`);
+    }
+    instrumentKeys.add(key);
+  }
+  if (!Array.isArray(value.periods) || value.periods.length < 1 || value.periods.length > 13) {
+    throw new Error(`${market} ${timeframe} history periods invalid`);
+  }
+  const dates: string[] = [];
+  let latestHistoryRows: unknown[][] = [];
+  for (const period of value.periods) {
+    if (
+      !isObject(period) ||
+      !isCalendarDate(period.date) ||
+      (period.source !== "stored" && period.source !== "replay") ||
+      !Array.isArray(period.rows)
+    ) {
+      throw new Error(`${market} ${timeframe} history period invalid`);
+    }
+    if (timeframe === "weekly" && mondayOf(period.date) !== period.date) {
+      throw new Error(`${market} weekly history period is not Monday-keyed`);
+    }
+    dates.push(period.date);
+    const used = new Set<number>();
+    for (const row of period.rows) {
+      if (!Array.isArray(row) || row.length !== VOLUME_TREND_HISTORY_ROW_COLUMNS.length) {
+        throw new Error(`${market} ${timeframe} history row shape invalid`);
+      }
+      const instrumentIndex = row[0];
+      if (
+        !Number.isSafeInteger(instrumentIndex) ||
+        (instrumentIndex as number) < 0 ||
+        (instrumentIndex as number) >= value.instruments.length ||
+        used.has(instrumentIndex as number)
+      ) {
+        throw new Error(`${market} ${timeframe} history instrument index invalid`);
+      }
+      used.add(instrumentIndex as number);
+      requireVolumeTrendSignal(row[1], `${market} ${timeframe} history signal`);
+      for (const index of [2, 3, 4, 6, 7, 8]) {
+        requireVolumeTrendNumber(row[index], `${market} ${timeframe} history metric`);
+      }
+      requireVolumeTrendNumber(
+        row[5],
+        `${market} ${timeframe} history turnover`,
+        true,
+      );
+    }
+    if (period.date === signalDate) latestHistoryRows = period.rows as unknown[][];
+  }
+  const sortedDates = [...dates].sort();
+  if (
+    dates.some((value, index) => value !== sortedDates[index]) ||
+    new Set(dates).size !== dates.length ||
+    dates.at(-1) !== signalDate
+  ) {
+    throw new Error(`${market} ${timeframe} history periods invalid`);
+  }
+  const expectedLatest = new Map<string, string>();
+  for (const row of latestRows) {
+    const instrument = VOLUME_TREND_HISTORY_INSTRUMENT_COLUMNS.map((column) =>
+      row[VOLUME_TREND_COLUMNS.indexOf(column as (typeof VOLUME_TREND_COLUMNS)[number])]
+    );
+    const dynamic = VOLUME_TREND_HISTORY_ROW_COLUMNS.slice(1).map((column) =>
+      row[VOLUME_TREND_COLUMNS.indexOf(column as (typeof VOLUME_TREND_COLUMNS)[number])]
+    );
+    expectedLatest.set(canonical(instrument), canonical(dynamic));
+  }
+  const actualLatest = new Map<string, string>();
+  for (const row of latestHistoryRows) {
+    actualLatest.set(
+      canonical(value.instruments[row[0] as number]),
+      canonical(row.slice(1)),
+    );
+  }
+  if (canonical([...actualLatest.entries()].sort()) !== canonical([...expectedLatest.entries()].sort())) {
+    throw new Error(`${market} ${timeframe} history latest rows mismatch`);
+  }
+}
+
+function validateVolumeTrendBucket(
+  value: unknown,
+  market: string,
+  timeframe: string,
+): { signalDate: string; rowCount: number } {
+  if (!isObject(value) || !isCalendarDate(value.signal_date) || !Array.isArray(value.rows)) {
+    throw new Error(`${market} ${timeframe} bucket invalid`);
+  }
+  if (timeframe === "weekly" && mondayOf(value.signal_date) !== value.signal_date) {
+    throw new Error(`${market} weekly session is not Monday-keyed`);
+  }
+  if (
+    value.lookback !== 75 ||
+    value.volume_ma_length !== 20 ||
+    typeof value.condition !== "string" ||
+    !Number.isSafeInteger(value.universe_size) ||
+    (value.universe_size as number) < 0 ||
+    value.shortlist_size !== value.rows.length
+  ) {
+    throw new Error(`${market} ${timeframe} bucket metadata invalid`);
+  }
+  const symbols = new Set<string>();
+  for (const row of value.rows) {
+    if (!Array.isArray(row) || row.length !== VOLUME_TREND_COLUMNS.length) {
+      throw new Error(`${market} ${timeframe} row shape invalid`);
+    }
+    if (
+      row[VT_MARKET_INDEX] !== market ||
+      row[VT_TIMEFRAME_INDEX] !== timeframe ||
+      row[VT_SIGNAL_DATE_INDEX] !== value.signal_date ||
+      typeof row[VT_SYMBOL_INDEX] !== "string" ||
+      !row[VT_SYMBOL_INDEX]
+    ) {
+      throw new Error(`${market} ${timeframe} row identity invalid`);
+    }
+    const symbol = row[VT_SYMBOL_INDEX] as string;
+    if (symbols.has(symbol)) throw new Error(`${market} ${timeframe} row duplicate`);
+    symbols.add(symbol);
+    requireVolumeTrendSignal(row[VT_SIGNAL_INDEX], `${market} ${timeframe} signal`);
+    for (const index of VT_NUMERIC_INDEXES) {
+      requireVolumeTrendNumber(row[index], `${market} ${timeframe} metric`);
+    }
+    requireVolumeTrendNumber(row[VT_TURNOVER_INDEX], `${market} ${timeframe} turnover`, true);
+  }
+  if (
+    !Array.isArray(value.appearance_periods) ||
+    value.appearance_periods.length > 8 ||
+    !isObject(value.appearance_bits)
+  ) {
+    throw new Error(`${market} ${timeframe} appearance history invalid`);
+  }
+  const appearanceDates = value.appearance_periods as unknown[];
+  if (
+    appearanceDates.some((period) => !isCalendarDate(period)) ||
+    appearanceDates.some(
+      (period) => timeframe === "weekly" && mondayOf(period as string) !== period,
+    ) ||
+    (appearanceDates.length > 0 && appearanceDates.at(-1) !== value.signal_date)
+  ) {
+    throw new Error(`${market} ${timeframe} appearance periods invalid`);
+  }
+  const appearanceSymbols = Object.keys(value.appearance_bits).sort();
+  if (
+    canonical(appearanceSymbols) !== canonical([...symbols].sort()) ||
+    Object.values(value.appearance_bits).some(
+      (bits) =>
+        typeof bits !== "string" ||
+        bits.length !== appearanceDates.length ||
+        !/^[01]*$/.test(bits),
+    )
+  ) {
+    throw new Error(`${market} ${timeframe} appearance bits invalid`);
+  }
+  validateVolumeTrendHistory(
+    value.history,
+    market,
+    timeframe,
+    value.signal_date,
+    value.rows as unknown[][],
+  );
+  return { signalDate: value.signal_date, rowCount: value.rows.length };
+}
+
+export async function volumeTrendSemanticDigest(snapshot: JsonObject): Promise<string> {
+  return semanticDigest(snapshot);
+}
+
+export async function validateVolumeTrendSnapshot(
+  value: unknown,
+  precomputedSemanticDigest?: string,
+): Promise<JsonObject> {
+  if (!isObject(value)) throw new Error("VT snapshot root invalid");
+  if (
+    value.schema_version !== VOLUME_TREND_SCHEMA_VERSION ||
+    value.algorithm_version !== VOLUME_TREND_ALGORITHM_VERSION ||
+    !hasExactColumns(value.columns, VOLUME_TREND_COLUMNS) ||
+    !MARKETS.includes(value.update_market as (typeof MARKETS)[number]) ||
+    !isCalendarDate(value.target_session) ||
+    typeof value.generated_at_utc !== "string" ||
+    !Number.isFinite(Date.parse(value.generated_at_utc)) ||
+    typeof value.producer_commit !== "string" ||
+    !value.producer_commit ||
+    !isObject(value.markets)
+  ) {
+    throw new Error("VT snapshot header invalid");
+  }
+  let rowCount = 0;
+  for (const market of MARKETS) {
+    const marketValue = value.markets[market];
+    if (
+      !isObject(marketValue) ||
+      !isCalendarDate(marketValue.data_session) ||
+      !isObject(marketValue.timeframes)
+    ) {
+      throw new Error(`${market} VT market invalid`);
+    }
+    const daily = validateVolumeTrendBucket(marketValue.timeframes.daily, market, "daily");
+    const weekly = validateVolumeTrendBucket(marketValue.timeframes.weekly, market, "weekly");
+    if (daily.signalDate !== marketValue.data_session) {
+      throw new Error(`${market} VT daily session mismatch`);
+    }
+    if (weekly.signalDate !== mondayOf(daily.signalDate)) {
+      throw new Error(`${market} VT weekly session does not match active week`);
+    }
+    rowCount += daily.rowCount + weekly.rowCount;
+  }
+  const updateMarket = value.markets[value.update_market as string] as JsonObject;
+  if (updateMarket.data_session !== value.target_session) {
+    throw new Error("VT updated market target mismatch");
+  }
+  if (value.row_count !== rowCount) throw new Error("VT total row count mismatch");
+  if (typeof value.snapshot_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(value.snapshot_sha256)) {
+    throw new Error("VT snapshot digest missing");
+  }
+  const calculated = precomputedSemanticDigest ?? (await volumeTrendSemanticDigest(value));
+  if (calculated !== value.snapshot_sha256) throw new Error("VT snapshot digest mismatch");
+  return value;
+}
+
+function validateStoredVolumeTrendHeader(value: unknown): JsonObject {
+  if (
+    !isObject(value) ||
+    value.schema_version !== VOLUME_TREND_SCHEMA_VERSION ||
+    value.algorithm_version !== VOLUME_TREND_ALGORITHM_VERSION ||
+    !hasExactColumns(value.columns, VOLUME_TREND_COLUMNS) ||
+    typeof value.generated_at_utc !== "string" ||
+    !Number.isFinite(Date.parse(value.generated_at_utc)) ||
+    typeof value.snapshot_sha256 !== "string" ||
+    !isObject(value.markets)
+  ) {
+    throw new Error("stored VT snapshot invalid");
+  }
+  for (const market of MARKETS) {
+    const marketValue = value.markets[market];
+    if (!isObject(marketValue) || !isCalendarDate(marketValue.data_session)) {
+      throw new Error(`stored ${market} VT market invalid`);
+    }
+  }
+  return value;
+}
+
 
 function istDay(now: Date): string {
   return new Intl.DateTimeFormat("en-CA", {
@@ -1811,6 +2176,145 @@ async function receiveMarketEventsSnapshot(
   );
 }
 
+async function receiveVolumeTrendSnapshot(request: Request, env: Env): Promise<Response> {
+  if (!env.INGEST_TOKEN || !authorized(request, env.INGEST_TOKEN)) {
+    return json({ status: "rejected" }, 401);
+  }
+  if (!(request.headers.get("content-type") ?? "").startsWith("application/json")) {
+    return json({ status: "rejected", error: "content-type" }, 415);
+  }
+  const contentLength = Number(request.headers.get("content-length"));
+  if (
+    !Number.isSafeInteger(contentLength) ||
+    contentLength < 1 ||
+    contentLength > MAX_VOLUME_TREND_BYTES
+  ) {
+    return json({ status: "rejected", error: "size" }, 413);
+  }
+  const claimedDigest = request.headers.get("x-content-sha256") ?? "";
+  if (!/^[a-f0-9]{64}$/.test(claimedDigest)) {
+    return json({ status: "rejected", error: "digest" }, 400);
+  }
+  const raw = await request.arrayBuffer();
+  if (raw.byteLength !== contentLength || (await sha256(raw)) !== claimedDigest) {
+    return json({ status: "rejected", error: "digest" }, 400);
+  }
+  let snapshot: JsonObject;
+  try {
+    const decoded = new TextDecoder().decode(raw);
+    const wireDigest = await semanticDigestFromCanonicalWire(decoded);
+    snapshot = await validateVolumeTrendSnapshot(
+      JSON.parse(decoded),
+      wireDigest ?? undefined,
+    );
+  } catch (error) {
+    return json(
+      { status: "rejected", error: error instanceof Error ? error.message : "invalid" },
+      400,
+    );
+  }
+  const current = await env.BUNDLES.getWithMetadata<unknown, VolumeTrendWriteMetadata>(
+    VOLUME_TREND_KEY,
+    { type: "json" },
+  );
+  const changedMarkets = new Set<(typeof MARKETS)[number]>();
+  let previousMarkets: JsonObject | null = null;
+  if (current.value !== null) {
+    let previous: JsonObject;
+    try {
+      previous = validateStoredVolumeTrendHeader(current.value);
+    } catch {
+      return json({ status: "error", error: "stored VT snapshot invalid" }, 500);
+    }
+    if (previous.snapshot_sha256 === snapshot.snapshot_sha256) {
+      return json({ status: "unchanged", write_performed: false }, 200);
+    }
+    previousMarkets = previous.markets as JsonObject;
+    const nextMarkets = snapshot.markets as JsonObject;
+    for (const market of MARKETS) {
+      const previousMarket = previousMarkets[market] as JsonObject;
+      const nextMarket = nextMarkets[market] as JsonObject;
+      if ((nextMarket.data_session as string) < (previousMarket.data_session as string)) {
+        return json({ status: "conflict", error: `${market} VT session regressed` }, 409);
+      }
+      if (canonical(previousMarket) !== canonical(nextMarket)) changedMarkets.add(market);
+    }
+    const updateMarket = snapshot.update_market as (typeof MARKETS)[number];
+    for (const market of changedMarkets) {
+      const previousSession = (previousMarkets[market] as JsonObject).data_session;
+      const nextSession = (nextMarkets[market] as JsonObject).data_session;
+      if (previousSession === nextSession && market !== updateMarket) {
+        return json(
+          { status: "conflict", error: "VT content changed outside update market" },
+          409,
+        );
+      }
+    }
+    if (Date.parse(snapshot.generated_at_utc as string) <= Date.parse(previous.generated_at_utc as string)) {
+      return json({ status: "conflict", error: "VT generation did not advance" }, 409);
+    }
+  }
+  const now = new Date();
+  const day = istDay(now);
+  const previousCount =
+    current.metadata?.write_day_ist === day ? Number(current.metadata.write_count) : 0;
+  if (!Number.isSafeInteger(previousCount) || previousCount < 0) {
+    return json({ status: "error", error: "stored VT write budget invalid" }, 500);
+  }
+  if (previousCount >= MAX_VOLUME_TREND_WRITES_PER_IST_DAY) {
+    return json({ status: "budget_exhausted", write_performed: false }, 429);
+  }
+  const markets = snapshot.markets as JsonObject;
+  const updateMarket = snapshot.update_market as (typeof MARKETS)[number];
+  const revisions: Record<(typeof MARKETS)[number], number> = { IN: 0, US: 0 };
+  for (const market of MARKETS) {
+    const field = market === "IN" ? "in_session_revision" : "us_session_revision";
+    const previousRevision = Number(current.metadata?.[field] ?? 0);
+    if (!Number.isSafeInteger(previousRevision) || previousRevision < 0) {
+      return json({ status: "error", error: "stored VT revision invalid" }, 500);
+    }
+    if (!previousMarkets) continue;
+    const previousSession = (previousMarkets[market] as JsonObject).data_session;
+    const nextSession = (markets[market] as JsonObject).data_session;
+    if (nextSession !== previousSession) continue;
+    if (!changedMarkets.has(market)) {
+      revisions[market] = previousRevision;
+      continue;
+    }
+    if (market !== updateMarket || previousRevision >= 1) {
+      return json({ status: "conflict", error: "VT session revision exhausted" }, 409);
+    }
+    revisions[market] = previousRevision + 1;
+  }
+  const metadata: VolumeTrendWriteMetadata = {
+    bytes: raw.byteLength,
+    received_at: now.toISOString(),
+    sha256: claimedDigest,
+    snapshot_sha256: snapshot.snapshot_sha256 as string,
+    write_day_ist: day,
+    write_count: previousCount + 1,
+    in_session: (markets.IN as JsonObject).data_session as string,
+    in_session_revision: revisions.IN,
+    us_session: (markets.US as JsonObject).data_session as string,
+    us_session_revision: revisions.US,
+  };
+  await env.BUNDLES.put(VOLUME_TREND_KEY, raw, { metadata });
+  console.log(
+    JSON.stringify({
+      event: "volume-trend-snapshot-accepted",
+      bytes: raw.byteLength,
+      in_session: metadata.in_session,
+      us_session: metadata.us_session,
+      write_count: metadata.write_count,
+    }),
+  );
+  return json(
+    { status: "accepted", write_performed: true, write_count: metadata.write_count },
+    202,
+  );
+}
+
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -1825,6 +2329,9 @@ export default {
     }
     if (request.method === "POST" && url.pathname === "/v1/market-events") {
       return receiveMarketEventsSnapshot(request, env);
+    }
+    if (request.method === "POST" && url.pathname === "/v1/volume-trend") {
+      return receiveVolumeTrendSnapshot(request, env);
     }
     return json({ error: "not-found" }, 404);
   },

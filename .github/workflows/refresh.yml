@@ -112,10 +112,10 @@ jobs:
           python3 -m unittest discover -s tests -v
           python3 -m unittest -v test_verify_dashboard_deploy.py
 
-      - name: Render eight-page site
+      - name: Render nine-page site
         run: ./scripts/build artifacts/signals-bundle.v1.json
 
-      - name: Verify eight-tab deployment contract
+      - name: Verify nine-tab deployment contract
         run: python3 verify_dashboard_deploy.py dist
 
       - name: Deploy production Pages project
