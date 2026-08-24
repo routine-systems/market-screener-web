@@ -117,6 +117,8 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn('data-view="now"', shortlist)
             self.assertIn("function isFreshBatch(", shortlist)
             self.assertIn(".slice(0,5)", shortlist)
+            self.assertIn("_rank:old._rank", shortlist)
+            self.assertIn("rankedBatch(row.market,row.signal_date)", shortlist)
             self.assertIn("jsonFetch('/api/forward-test'", shortlist)
             self.assertIn("jsonFetch('/api/tsha-hbcs'", shortlist)
             self.assertIn("jsonFetch('/api/volume-trend'", shortlist)
