@@ -28,11 +28,12 @@ class RenderSiteTests(unittest.TestCase):
         self.assertIsNotNone(match)
         return json.loads(base64.b64decode(match.group(1)))
 
-    def test_valid_fixture_renders_nine_pages_and_manifest(self):
+    def test_valid_fixture_renders_ten_pages_and_manifest(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "dist"
             manifest = render_site.render_site(FIXTURE, output)
             expected = {
+                "shortlist.html",
                 "dashboard.html",
                 "daily.html",
                 "market.html",
@@ -170,6 +171,7 @@ class RenderSiteTests(unittest.TestCase):
                 event_shell,
             )
             for page in (
+                "shortlist.html",
                 "dashboard.html",
                 "daily.html",
                 "us-weekly.html",
@@ -207,6 +209,7 @@ class RenderSiteTests(unittest.TestCase):
             weekly = (output / "dashboard.html").read_text()
             daily = (output / "daily.html").read_text()
             recommendations = (output / "recommendations.html").read_text()
+            shortlist = (output / "shortlist.html").read_text()
             for page in (weekly, daily):
                 self.assertNotIn("?'present':'absent'", page)
                 self.assertIn("?'●':'○'", page)
@@ -218,6 +221,14 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn("Forward Test · Outcomes", recommendations)
             self.assertIn('id="researchColumns"', recommendations)
             self.assertIn('data-sort="entry_open"', recommendations)
+            self.assertIn("India + US Weekly · Shortlist", shortlist)
+            self.assertIn('data-view="now"', shortlist)
+            self.assertIn("function isFreshBatch(", shortlist)
+            self.assertIn(".slice(0,5)", shortlist)
+            self.assertIn("jsonFetch('/api/forward-test'", shortlist)
+            self.assertIn("jsonFetch('/api/tsha-hbcs'", shortlist)
+            self.assertIn("jsonFetch('/api/volume-trend'", shortlist)
+            self.assertIn('url=shortlist.html', (output / "index.html").read_text())
             self.assertIn("1. Choose market", ht_page)
             shell = (output / "dashboard-shell.js").read_text()
             self.assertIn('const THEME_KEY = "market-screener-theme"', shell)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reject a dashboard bundle that would degrade the live nine-tab contract."""
+"""Reject a dashboard bundle that would degrade the live ten-tab contract."""
 
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ import re
 
 
 PAGES = {
+    "shortlist.html": "shortlist.html",
     "dashboard.html": "dashboard.html",
     "daily.html": "daily.html",
     "us-weekly.html": "us-weekly.html",
@@ -25,6 +26,7 @@ PAGES = {
     "recommendations.html": "recommendations.html",
 }
 NAV_ITEMS = (
+    ("shortlist.html", "Shortlist"),
     ("dashboard.html", "Weekly"),
     ("daily.html", "Daily"),
     ("us-weekly.html", "US Weekly"),
@@ -115,7 +117,7 @@ def _verify_navigation(page: str, source: str, active_href: str) -> None:
     parser.feed(source)
     actual = tuple((attrs.get("href"), label) for attrs, label in parser.nav_items)
     if actual != NAV_ITEMS:
-        _fail(f"{page} navigation differs from the canonical nine-tab order")
+        _fail(f"{page} navigation differs from the canonical ten-tab order")
     active = [
         attrs.get("href")
         for attrs, _ in parser.nav_items
@@ -392,6 +394,22 @@ def verify_site(root: Path) -> dict:
             "fetch('/api/forward-test'",
             "forward-test.api.v1",
             "applyPayload(fallbackPayload)",
+        ),
+    )
+
+    _require_text(
+        "shortlist.html",
+        page_sources["shortlist.html"],
+        (
+            "India + US Weekly · Shortlist",
+            'data-view="now"',
+            'data-view="changes"',
+            'data-view="prior"',
+            "function isFreshBatch(",
+            ".slice(0,5)",
+            "jsonFetch('/api/forward-test'",
+            "jsonFetch('/api/tsha-hbcs'",
+            "jsonFetch('/api/volume-trend'",
         ),
     )
 

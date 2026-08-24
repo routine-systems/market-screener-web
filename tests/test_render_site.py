@@ -33,6 +33,7 @@ class RenderSiteTests(unittest.TestCase):
     def test_navigation_groups_ranked_shortlists_before_context_pages(self):
         self.assertEqual(
             (
+                ("shortlist", "shortlist.html", "Shortlist"),
                 ("weekly", "dashboard.html", "Weekly"),
                 ("daily", "daily.html", "Daily"),
                 ("us-weekly", "us-weekly.html", "US Weekly"),
@@ -57,11 +58,12 @@ class RenderSiteTests(unittest.TestCase):
         self.assertIsNotNone(match)
         return json.loads(base64.b64decode(match.group(1)))
 
-    def test_valid_fixture_renders_nine_pages_and_manifest(self):
+    def test_valid_fixture_renders_ten_pages_and_manifest(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "dist"
             manifest = render_site.render_site(FIXTURE, output)
             expected = {
+                "shortlist.html",
                 "dashboard.html",
                 "daily.html",
                 "market.html",
@@ -110,6 +112,15 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn(
                 "fetch('/api/volume-trend'", (output / "volume_trend.html").read_text()
             )
+            shortlist = (output / "shortlist.html").read_text()
+            self.assertIn("India + US Weekly · Shortlist", shortlist)
+            self.assertIn('data-view="now"', shortlist)
+            self.assertIn("function isFreshBatch(", shortlist)
+            self.assertIn(".slice(0,5)", shortlist)
+            self.assertIn("jsonFetch('/api/forward-test'", shortlist)
+            self.assertIn("jsonFetch('/api/tsha-hbcs'", shortlist)
+            self.assertIn("jsonFetch('/api/volume-trend'", shortlist)
+            self.assertIn('url=shortlist.html', (output / "index.html").read_text())
             self.assertTrue((output / "functions").exists())
 
     def test_sectors_defaults_to_quadrant(self):
@@ -155,6 +166,7 @@ class RenderSiteTests(unittest.TestCase):
             output = Path(directory) / "dist"
             render_site.render_site(FIXTURE, output)
             for name in (
+                "shortlist.html",
                 "dashboard.html",
                 "daily.html",
                 "market.html",

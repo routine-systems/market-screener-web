@@ -127,6 +127,8 @@
 
   const toggleSelectors = [
     ".preset",
+    "button[data-view]",
+    "button[data-market]",
     "button[data-filter]",
     "button[data-v]",
     "button[data-chart]",

@@ -122,6 +122,11 @@ function ignitionDot(r){return '<span class="ignition-dot"></span>'} !state.igni
 MarketEvents.record(r.symbol,r.market); MarketEvents.dot(r.symbol,r.market);
 MarketEvents.dot(r.symbol,'IN','insider_trade');</script>''',
         "recommendations.html": "<script>fetch('/api/forward-test'); const schema='forward-test.api.v1'; applyPayload(fallbackPayload);</script>",
+        "shortlist.html": '''<h1>India + US Weekly · Shortlist</h1>
+<button data-view="now">Now</button><button data-view="changes">Changes</button><button data-view="prior">Prior</button>
+<script>function isFreshBatch(){} const cap=rows.slice(0,5);
+jsonFetch('/api/forward-test'); jsonFetch('/api/tsha-hbcs'); jsonFetch('/api/volume-trend');
+</script>''',
         "volume_trend.html": '''<div>VT · Volume Breakout / Breakdown</div><div id="directions"><button class="toolbtn on" data-v="BUY">BUY</button></div><div id="historyRange"></div>
 <select id="liquidity"><option value="5" selected>Turnover ≥ ₹5cr / $5m</option></select>
 <select id="pageSize"></select><select id="pageNumber"></select>
@@ -155,12 +160,12 @@ MarketEvents.record(r.symbol,r.market); const glyph=on?'●':'○';</script>''',
 
 
 class VerifyDashboardDeployTests(unittest.TestCase):
-    def test_accepts_the_nine_tab_contract(self):
+    def test_accepts_the_ten_tab_contract(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             _write_valid_site(root)
             result = subject.verify_site(root)
-            self.assertEqual(9, result["pages"])
+            self.assertEqual(10, result["pages"])
             self.assertEqual("site-manifest.json", result["manifest"])
 
     def test_rejects_nondefault_ht_or_vt_turnover_tier(self):
@@ -210,7 +215,7 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             self.assertIn(current, source)
             (root / "dashboard.html").write_text(source.replace(current, legacy, 1))
             with self.assertRaisesRegex(
-                subject.DashboardContractError, "canonical nine-tab order"
+                subject.DashboardContractError, "canonical ten-tab order"
             ):
                 subject.verify_site(root)
 

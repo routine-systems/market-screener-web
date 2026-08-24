@@ -44,6 +44,7 @@ PAGE_SPECS = {
     ),
 }
 NAV_ITEMS = (
+    ("shortlist", "shortlist.html", "Shortlist"),
     ("weekly", "dashboard.html", "Weekly"),
     ("daily", "daily.html", "Daily"),
     ("us-weekly", "us-weekly.html", "US Weekly"),
@@ -267,6 +268,7 @@ def _freshness_strip(active: str) -> str:
         "us-weekly": "us_weekly",
         "us-daily": "us_daily",
         "ht": "ht",
+        "shortlist": "outcomes",
         "recommendations": "outcomes",
     }.get(active)
 
@@ -380,8 +382,8 @@ def _source_freshness(bundle: dict) -> dict:
 def _index_document() -> str:
     return """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta http-equiv="refresh" content="0; url=dashboard.html"><title>Screener</title></head>
-<body><a href="dashboard.html">Open the weekly screener</a></body></html>
+<meta http-equiv="refresh" content="0; url=shortlist.html"><title>Screener</title></head>
+<body><a href="shortlist.html">Open the shortlist</a></body></html>
 """
 
 
@@ -396,6 +398,9 @@ def render_site(bundle_path: Path, output: Path = DEFAULT_OUTPUT) -> dict:
     trend_bounce_template = TEMPLATES / TREND_BOUNCE_TEMPLATE
     if not trend_bounce_template.is_file():
         raise BundleError(f"US Trend Bounce template not found: {trend_bounce_template}")
+    shortlist_page = TEMPLATES / "shortlist.html"
+    if not shortlist_page.is_file():
+        raise BundleError(f"Shortlist template not found: {shortlist_page}")
     temp = output.parent / f".{output.name}.tmp"
     if temp.exists():
         shutil.rmtree(temp)
@@ -416,6 +421,15 @@ def render_site(bundle_path: Path, output: Path = DEFAULT_OUTPUT) -> dict:
             page_name,
         )
         (temp / output_name).write_text(html, encoding="utf-8")
+
+    shortlist_html = _render_template(
+        shortlist_page,
+        "__SHORTLIST_B64__",
+        dict(bundle["pages"]["recommendations"]["payload"]),
+        window,
+        "shortlist",
+    )
+    (temp / "shortlist.html").write_text(shortlist_html, encoding="utf-8")
 
     (temp / "index.html").write_text(_index_document(), encoding="utf-8")
     ht_source = _apply_shell(ht_page.read_text(encoding="utf-8"), "ht")
