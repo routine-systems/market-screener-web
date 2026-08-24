@@ -189,12 +189,14 @@ class RenderSiteTests(unittest.TestCase):
                 self.assertEqual(1, rendered.count('aria-current="page"'))
                 self.assertIn('href="#main-content">Skip to results</a>', rendered)
                 self.assertIn('id="main-content"', rendered)
-                self.assertNotIn('class="dashboard-freshness"', rendered)
-                self.assertNotIn('data-freshness="', rendered)
+                self.assertEqual(1, rendered.count('class="dashboard-freshness"'))
+                expected_active = 0 if page == "volume_trend.html" else 1
+                self.assertEqual(expected_active, rendered.count('data-active="true"'))
+                self.assertIn('data-freshness="outcomes"', rendered)
                 self.assertNotIn('class="purpose"', rendered)
                 self.assertNotIn('id="purpose"', rendered)
-                self.assertIn('src="dashboard-shell.js?v=1"', rendered)
-                self.assertIn('href="dashboard-shell.css?v=1"', rendered)
+                self.assertIn('src="dashboard-shell.js?v=2"', rendered)
+                self.assertIn('href="dashboard-shell.css?v=2"', rendered)
             freshness = json.loads((output / "dashboard-freshness.json").read_text())
             self.assertEqual("dashboard-freshness.v1", freshness["schema_version"])
             self.assertEqual(

@@ -258,16 +258,60 @@ def _navigation(active: str) -> str:
     )
 
 
+def _freshness_strip(active: str) -> str:
+    active_source = {
+        "weekly": "india_weekly",
+        "daily": "india_daily",
+        "market": "market",
+        "sectors": "sectors",
+        "us-weekly": "us_weekly",
+        "us-daily": "us_daily",
+        "ht": "ht",
+        "recommendations": "outcomes",
+    }.get(active)
+
+    def item(source: str, label: str, value: str | None = None) -> str:
+        state = ' data-active="true"' if source == active_source else ""
+        slots = value or f'<time data-freshness="{source}">—</time>'
+        return (
+            f'<div class="freshness-item" data-freshness-group="{source}"{state}>'
+            f'<span class="freshness-name">{label}</span>'
+            f'<span class="freshness-value">{slots}</span></div>'
+        )
+
+    ht_value = (
+        '<span class="freshness-market">IN</span> '
+        '<time data-freshness="ht_india">—</time>'
+        '<span class="freshness-divider">/</span>'
+        '<span class="freshness-market">US</span> '
+        '<time data-freshness="ht_us">—</time>'
+    )
+    return (
+        '<section class="dashboard-freshness" aria-label="Source cutoff dates">'
+        '<h2 class="freshness-heading">Cutoffs</h2>'
+        '<div class="freshness-items">'
+        + item("india_weekly", "India Weekly")
+        + item("india_daily", "India Daily")
+        + item("market", "Market")
+        + item("sectors", "Sectors")
+        + item("us_weekly", "US Weekly")
+        + item("us_daily", "US Daily")
+        + item("ht", "HT", ht_value)
+        + item("outcomes", "Forward Test")
+        + "</div></section>"
+    )
+
+
 def _apply_shell(source: str, active: str) -> str:
     if "__DASHBOARD_NAV__" not in source:
         raise BundleError(f"template for {active} misses __DASHBOARD_NAV__")
     if "__DASHBOARD_FRESHNESS__" not in source:
         raise BundleError(f"template for {active} misses __DASHBOARD_FRESHNESS__")
     source = source.replace("__DASHBOARD_NAV__", _navigation(active))
-    source = source.replace("__DASHBOARD_FRESHNESS__", "")
+    source = source.replace("__DASHBOARD_FRESHNESS__", _freshness_strip(active))
     assets = (
-        '<script src="dashboard-shell.js?v=1"></script>'
-        '<link rel="stylesheet" href="dashboard-shell.css?v=1">'
+        '<script src="dashboard-shell.js?v=2"></script>'
+        '<link rel="stylesheet" href="dashboard-shell.css?v=2">'
     )
     return source.replace("</head>", f"{assets}</head>", 1)
 

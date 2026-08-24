@@ -126,8 +126,42 @@ def _verify_navigation(page: str, source: str, active_href: str) -> None:
     for element_id in ("themeBtn", "main-content"):
         if parser.ids[element_id] != 1:
             _fail(f"{page} must contain one id={element_id!r}")
-    if 'class="dashboard-freshness"' in source or 'data-freshness="' in source:
-        _fail(f"{page} retains the superseded shared data-through row")
+    if source.count('class="dashboard-freshness"') != 1:
+        _fail(f"{page} must contain one shared cutoff strip")
+    expected_active_inputs = 0 if page == "volume_trend.html" else 1
+    if source.count('data-active="true"') != expected_active_inputs:
+        _fail(
+            f"{page} must identify {expected_active_inputs} active cutoff inputs"
+        )
+    expected_groups = (
+        "india_weekly",
+        "india_daily",
+        "market",
+        "sectors",
+        "us_weekly",
+        "us_daily",
+        "ht",
+        "outcomes",
+    )
+    expected_sources = (
+        "india_weekly",
+        "india_daily",
+        "market",
+        "sectors",
+        "us_weekly",
+        "us_daily",
+        "ht_india",
+        "ht_us",
+        "outcomes",
+    )
+    for group in expected_groups:
+        if source.count(f'data-freshness-group="{group}"') != 1:
+            _fail(f"{page} cutoff strip misses group {group!r}")
+    for freshness_source in expected_sources:
+        if source.count(f'data-freshness="{freshness_source}"') != 1:
+            _fail(f"{page} cutoff strip misses source {freshness_source!r}")
+    if "DATA THROUGH" in source or ">Data through<" in source:
+        _fail(f"{page} restores the superseded data-through label")
     if 'class="purpose"' in source or 'id="purpose"' in source:
         _fail(f"{page} retains the superseded title description")
 
@@ -216,8 +250,8 @@ def verify_site(root: Path) -> dict:
             source,
             (
                 'href="#main-content">Skip to results</a>',
-                'src="dashboard-shell.js?v=1"',
-                'href="dashboard-shell.css?v=1"',
+                'src="dashboard-shell.js?v=2"',
+                'href="dashboard-shell.css?v=2"',
             ),
         )
         unresolved = re.findall(r"__[A-Z][A-Z0-9_]+__", source)
@@ -381,6 +415,19 @@ def verify_site(root: Path) -> dict:
     freshness = json.loads(_read(root, "dashboard-freshness.json"))
     if freshness.get("schema_version") != "dashboard-freshness.v1":
         _fail("dashboard-freshness.json has an unsupported schema_version")
+    shell = _read(root, "dashboard-shell.js")
+    _require_text(
+        "dashboard-shell.js",
+        shell,
+        (
+            "loadFreshness",
+            "setFreshnessGroup",
+            'fetchJson("dashboard-freshness.json")',
+            'fetchJson("/api/us-trend-bounce?meta=1")',
+            'fetchJson("/api/tsha-hbcs?meta=1")',
+            'fetchJson("/api/forward-test?meta=1")',
+        ),
+    )
     middleware = _read(root, "functions/_middleware.js")
     if 'const TRUSTED_HOST = "screener.chiragpatnaik.com";' not in middleware:
         _fail("functions/_middleware.js misses the production-host restriction")

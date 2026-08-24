@@ -21,6 +21,89 @@
     matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
   const activeTheme = () =>
     document.documentElement.getAttribute("data-theme") || preferredTheme();
+  const dateFormatter = new Intl.DateTimeFormat("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+
+  function validIsoDate(value) {
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return false;
+    }
+    const parsed = new Date(`${value}T00:00:00Z`);
+    return Number.isFinite(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value;
+  }
+
+  function setFreshnessGroup(source, value) {
+    if (!validIsoDate(value)) return;
+    document.querySelectorAll(`[data-freshness="${source}"]`).forEach((element) => {
+      element.dateTime = value;
+      element.textContent = dateFormatter.format(new Date(`${value}T00:00:00Z`));
+    });
+  }
+
+  function applyFreshness(values) {
+    Object.entries(values).forEach(([source, value]) => {
+      setFreshnessGroup(source, value);
+    });
+    document.querySelectorAll("[data-freshness-group]").forEach((group) => {
+      const slots = [...group.querySelectorAll("time[data-freshness]")];
+      group.dataset.state = slots.length > 0 && slots.every((slot) => slot.dateTime)
+        ? "ready"
+        : "unavailable";
+    });
+  }
+
+  async function fetchJson(url) {
+    const response = await fetch(url, {
+      cache: "no-store",
+      headers: { accept: "application/json" },
+    });
+    if (!response.ok) throw new Error(`${url} returned HTTP ${response.status}`);
+    return response.json();
+  }
+
+  async function loadFreshness() {
+    const values = {};
+    const staticRequest = fetchJson("dashboard-freshness.json");
+    const liveRequests = [
+      fetchJson("/api/us-trend-bounce?meta=1"),
+      fetchJson("/api/tsha-hbcs?meta=1"),
+      fetchJson("/api/forward-test?meta=1"),
+    ];
+    try {
+      const manifest = await staticRequest;
+      if (manifest?.schema_version === "dashboard-freshness.v1") {
+        for (const source of ["india_weekly", "india_daily", "market", "sectors"]) {
+          values[source] = manifest.sources?.[source]?.as_of;
+        }
+      }
+      applyFreshness(values);
+    } catch (error) {
+      // Live API cutoffs can still populate when the static manifest is unavailable.
+    }
+    const [trend, ht, outcomes] = await Promise.allSettled(liveRequests);
+    if (
+      trend.status === "fulfilled" &&
+      trend.value?.schema_version === "us-trend-bounce.api.v1"
+    ) {
+      values.us_weekly = trend.value.snapshot?.pages?.weekly?.data_cutoff;
+      values.us_daily = trend.value.snapshot?.pages?.daily?.data_cutoff;
+    }
+    if (ht.status === "fulfilled" && ht.value?.schema_version === "tsha-hbcs.api.v1") {
+      values.ht_india = ht.value.snapshot?.data_cutoff?.IN;
+      values.ht_us = ht.value.snapshot?.data_cutoff?.US;
+    }
+    if (
+      outcomes.status === "fulfilled" &&
+      outcomes.value?.schema_version === "forward-test.api.v1"
+    ) {
+      values.outcomes = outcomes.value.snapshot?.data_cutoff;
+    }
+    applyFreshness(values);
+  }
 
   function setTheme(theme) {
     document.documentElement.setAttribute("data-theme", theme);
@@ -97,6 +180,7 @@
     const themeButton = document.getElementById("themeBtn");
     if (themeButton) themeButton.addEventListener("click", toggleTheme);
     setTheme(activeTheme());
+    void loadFreshness();
     syncPressed();
     syncSortHeaders();
     const observer = new MutationObserver((mutations) => {
@@ -113,7 +197,9 @@
   }
 
   window.DashboardShell = {
+    loadFreshness,
     setTheme,
+    setFreshnessGroup,
     syncPressed,
     syncSortHeaders,
     toggleTheme,

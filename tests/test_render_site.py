@@ -231,7 +231,7 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn("MarketEvents.record(r.symbol,r.market)", page)
             self.assertNotIn("?'present':'absent'", page)
 
-    def test_render_preserves_page_cutoffs_without_shared_data_row(self):
+    def test_render_preserves_page_cutoffs_with_shared_strip_inputs(self):
         bundle = self.load_fixture()
         bundle["source_freshness"] = {
             "daily": {"as_of": "2026-08-11"},
@@ -256,8 +256,20 @@ class RenderSiteTests(unittest.TestCase):
                 payload = self.decode_rendered_payload(page)
                 self.assertEqual("11 Aug 2026, 17:30 IST", payload["last_updated_ist"])
                 self.assertEqual(as_of, payload["data_as_of"])
-                self.assertNotIn('class="dashboard-freshness"', page)
-                self.assertNotIn('data-freshness="', page)
+                self.assertEqual(1, page.count('class="dashboard-freshness"'))
+                self.assertEqual(1, page.count('data-active="true"'))
+                for freshness_source in (
+                    "india_weekly",
+                    "india_daily",
+                    "market",
+                    "sectors",
+                    "us_weekly",
+                    "us_daily",
+                    "ht_india",
+                    "ht_us",
+                    "outcomes",
+                ):
+                    self.assertIn(f'data-freshness="{freshness_source}"', page)
 
     def test_format_ist_handles_midnight_rollover(self):
         self.assertEqual(
@@ -321,12 +333,14 @@ console.log(JSON.stringify({{
         self.assertEqual("—", result["missing"])
         self.assertEqual("—", result["naive"])
 
-    def test_shared_shell_omits_freshness_runtime(self):
+    def test_shared_shell_loads_static_and_live_freshness_inputs(self):
         shell = (ROOT / "assets" / "dashboard-shell.js").read_text()
-        self.assertNotIn("loadFreshness", shell)
-        self.assertNotIn("setFreshnessGroup", shell)
-        self.assertNotIn("data-freshness", shell)
-        self.assertNotIn("dashboard-freshness", shell)
+        self.assertIn("loadFreshness", shell)
+        self.assertIn("setFreshnessGroup", shell)
+        self.assertIn('fetchJson("dashboard-freshness.json")', shell)
+        self.assertIn('fetchJson("/api/us-trend-bounce?meta=1")', shell)
+        self.assertIn('fetchJson("/api/tsha-hbcs?meta=1")', shell)
+        self.assertIn('fetchJson("/api/forward-test?meta=1")', shell)
 
     def test_ht_appearance_dots_preserve_period_order(self):
         page = (ROOT / "templates" / "tsha_hbcs.html").read_text()

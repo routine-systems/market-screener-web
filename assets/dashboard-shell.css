@@ -112,6 +112,80 @@
   padding: 5px 10px;
 }
 
+.dashboard-freshness {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: -5px 0 16px;
+  padding: 8px 0 9px;
+  border-bottom: 1px solid var(--grid, var(--line));
+  color: var(--ink-2, var(--muted));
+  font-size: 11.5px;
+}
+
+.freshness-heading {
+  flex: 0 0 auto;
+  margin: 2px 0 0;
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.freshness-items {
+  display: flex;
+  gap: 6px 14px;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.freshness-item {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 1px;
+  padding-inline: 0 8px;
+  border-right: 1px solid var(--border, var(--line));
+  white-space: nowrap;
+  opacity: 0.68;
+}
+
+.freshness-item:last-child {
+  padding-right: 0;
+  border-right: 0;
+}
+
+.freshness-item[data-state="ready"] {
+  opacity: 1;
+}
+
+.freshness-item[data-active="true"] .freshness-name {
+  color: var(--vol, var(--blue));
+}
+
+.freshness-name {
+  color: var(--ink-2, var(--muted));
+  font-size: 10.5px;
+  font-weight: 650;
+}
+
+.freshness-value {
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.freshness-market {
+  color: var(--ink-2, var(--muted));
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+.freshness-divider {
+  margin-inline: 3px;
+  color: var(--axis, var(--line));
+}
+
 .page-actions {
   display: flex;
   gap: 7px;
@@ -233,6 +307,14 @@ body.show-research .research-only {
   .dashboard-nav a {
     padding: 8px 10px !important;
     font-size: 12.5px !important;
+  }
+
+  .dashboard-freshness {
+    display: block;
+  }
+
+  .freshness-heading {
+    margin-bottom: 5px;
   }
 
 }

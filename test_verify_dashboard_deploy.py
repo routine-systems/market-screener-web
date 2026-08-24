@@ -36,14 +36,35 @@ def _nav(active: str) -> str:
     return '<nav class="nav dashboard-nav">' + "".join(links) + "</nav>"
 
 
+def _freshness(active: bool = True) -> str:
+    groups = (
+        ("india_weekly", ("india_weekly",)),
+        ("india_daily", ("india_daily",)),
+        ("market", ("market",)),
+        ("sectors", ("sectors",)),
+        ("us_weekly", ("us_weekly",)),
+        ("us_daily", ("us_daily",)),
+        ("ht", ("ht_india", "ht_us")),
+        ("outcomes", ("outcomes",)),
+    )
+    items = []
+    for index, (group, sources) in enumerate(groups):
+        active_attr = ' data-active="true"' if active and index == 0 else ""
+        slots = "".join(f'<time data-freshness="{source}">—</time>' for source in sources)
+        items.append(
+            f'<div data-freshness-group="{group}"{active_attr}>{slots}</div>'
+        )
+    return '<section class="dashboard-freshness">' + "".join(items) + "</section>"
+
+
 def _page(active: str, body: str = "") -> str:
     return (
         '<!doctype html><html><head><link rel="stylesheet" '
-        'href="dashboard-shell.css?v=1"></head><body>'
+        'href="dashboard-shell.css?v=2"></head><body>'
         '<a class="skip-link" href="#main-content">Skip to results</a>'
         f'{_nav(active)}<button id="themeBtn">Theme</button>'
-        f'<main id="main-content">{body}</main>'
-        '<script src="dashboard-shell.js?v=1"></script></body></html>'
+        f'<main id="main-content">{_freshness(active != "volume_trend.html")}{body}</main>'
+        '<script src="dashboard-shell.js?v=2"></script></body></html>'
     )
 
 
@@ -111,6 +132,13 @@ MarketEvents.record(r.symbol,r.market); const glyph=on?'●':'○';</script>''',
         path = root / name
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("fixture")
+    (root / "dashboard-shell.js").write_text(
+        'function loadFreshness(){} function setFreshnessGroup(){} '
+        'fetchJson("dashboard-freshness.json"); '
+        'fetchJson("/api/us-trend-bounce?meta=1"); '
+        'fetchJson("/api/tsha-hbcs?meta=1"); '
+        'fetchJson("/api/forward-test?meta=1");'
+    )
     (root / "functions/_middleware.js").write_text(
         'const TRUSTED_HOST = "screener.chiragpatnaik.com";\n'
     )
@@ -213,18 +241,17 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             with self.assertRaisesRegex(subject.DashboardContractError, "us-weekly"):
                 subject.verify_site(root)
 
-    def test_rejects_shared_data_through_row(self):
+    def test_rejects_incomplete_shared_cutoff_strip(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             _write_valid_site(root)
             source = (root / "dashboard.html").read_text().replace(
-                '<main id="main-content">',
-                '<main id="main-content"><section class="dashboard-freshness">'
-                '<span data-freshness="india">Data through</span></section>',
+                '<time data-freshness="outcomes">—</time>',
+                "",
             )
             (root / "dashboard.html").write_text(source)
             with self.assertRaisesRegex(
-                subject.DashboardContractError, "shared data-through row"
+                subject.DashboardContractError, "misses source 'outcomes'"
             ):
                 subject.verify_site(root)
 
