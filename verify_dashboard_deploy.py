@@ -367,6 +367,10 @@ def verify_site(root: Path) -> dict:
             "● Bulk history",
             "● Congress history",
             "?'●':'○'",
+            'id="liquidity"',
+            'value="5" selected>Turnover ≥ ₹5cr / $5m</option>',
+            "liquidity:5",
+            "const turnoverFloor=market=>state.liquidity*(market==='IN'?10000000:1000000);",
         ),
     )
     if 'id="historyPrompt"' in ht or "unlock period history" in ht:
@@ -407,6 +411,12 @@ def verify_site(root: Path) -> dict:
             '<th class="l sorted" data-k="appearance_count">Appearances</th>',
             "MarketEvents.record(r.symbol,r.market)",
             "?'●':'○'",
+            '<button class="toolbtn on" data-v="BUY">BUY</button>',
+            "direction:'BUY'",
+            'id="liquidity"',
+            'value="5" selected>Turnover ≥ ₹5cr / $5m</option>',
+            "liquidity:5",
+            "const turnoverFloor=market=>state.liquidity*(market==='IN'?10000000:1000000);",
         ),
     )
     if state_words.search(vt):

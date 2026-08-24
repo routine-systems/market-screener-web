@@ -187,6 +187,14 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn("function ignitionDot(r)", page)
             self.assertIn('class="ignition-dot"', page)
             self.assertIn("!state.ignition||r.ignition===true", page)
+            self.assertIn(
+                'value="5" selected>Turnover ≥ ₹5cr / $5m</option>', page
+            )
+            self.assertIn(
+                "const turnoverFloor=market=>state.liquidity*"
+                "(market==='IN'?10000000:1000000);",
+                page,
+            )
             self.assertIn(".sort(compareRows)", page)
             self.assertNotIn('data-k="hbcs_components"', page)
             self.assertNotIn('data-k="fast_body_pct"', page)
@@ -219,6 +227,18 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn('id="markets"', page)
             self.assertIn('id="timeframes"', page)
             self.assertIn('id="directions"', page)
+            self.assertIn(
+                '<button class="toolbtn on" data-v="BUY">BUY</button>', page
+            )
+            self.assertIn("direction:'BUY'", page)
+            self.assertIn(
+                'value="5" selected>Turnover ≥ ₹5cr / $5m</option>', page
+            )
+            self.assertIn(
+                "const turnoverFloor=market=>state.liquidity*"
+                "(market==='IN'?10000000:1000000);",
+                page,
+            )
             self.assertIn('id="historyRange"', page)
             self.assertIn('id="pageNumber"', page)
             self.assertIn('id="pageSize"', page)

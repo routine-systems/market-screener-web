@@ -34,7 +34,7 @@ __DASHBOARD_NAV__
     <button class="toolbtn ignition-filter" id="ignitionOnly" title="Only HT rows with an ignition trigger" aria-pressed="false" hidden>● Ignition</button>
     <button class="toolbtn event-filter" id="eventOnly" title="Only tickers with stored transaction history" hidden>● Transaction history</button>
     <input id="search" type="search" placeholder="Search symbol / sector…" autocomplete="off" aria-label="Search symbols and sectors">
-    <select id="liquidity" aria-label="Minimum median turnover"><option value="0">All liquidity</option><option value="1000000">Turnover ≥ 1m</option><option value="5000000">Turnover ≥ 5m</option><option value="10000000">Turnover ≥ 10m</option></select>
+    <select id="liquidity" aria-label="Minimum median 20-session turnover"><option value="0">All liquidity</option><option value="1">Turnover ≥ ₹1cr / $1m</option><option value="5" selected>Turnover ≥ ₹5cr / $5m</option><option value="10">Turnover ≥ ₹10cr / $10m</option></select>
     <button class="toolbtn" id="download" disabled>⭳ CSV</button>
   </div>
   <div class="rangebar disabled" id="historyRange" aria-disabled="true">
@@ -70,7 +70,7 @@ __DASHBOARD_NAV__
 <script src="market-events.js?v=5"></script>
 <script>
 let DATA=null,EVENTS_READY=new Set();
-const state={market:'all',timeframe:'all',ignition:false,events:false,query:'',liquidity:0,sort:'appearance_count',desc:true,rangeKey:null,from:0,to:0};
+const state={market:'all',timeframe:'all',ignition:false,events:false,query:'',liquidity:5,sort:'appearance_count',desc:true,rangeKey:null,from:0,to:0};
 const HISTORY_EXPORT_COLUMNS=['market','timeframe','signal_date','instrument_index','symbol','exchange','asset_type','sector','hbcs_bull_component_count','hbcs_components','fast_body_pct','slow_body_pct','close','median_dollar_turnover_20','ignition','ignition_reason','ignition_periods','appearance_count','appearance_periods','appearance_bits'];
 const $=s=>document.querySelector(s);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -129,10 +129,11 @@ function compareRows(a,b){
   if(typeof x==='string'||typeof y==='string'){x=String(x??'');y=String(y??'');return state.desc?y.localeCompare(x):x.localeCompare(y)}
   x=Number(x??-Infinity);y=Number(y??-Infinity);return state.desc?y-x:x-y;
 }
+const turnoverFloor=market=>state.liquidity*(market==='IN'?10000000:1000000);
 function filtered(sourceRows=selectedRows()){
   if(!DATA)return [];
   const q=state.query.toLowerCase();
-  return sourceRows.filter(r=>(state.market==='all'||r.market===state.market)&&(state.timeframe==='all'||r.timeframe===state.timeframe)&&(!state.ignition||r.ignition===true)&&(!state.events||!!MarketEvents.record(r.symbol,r.market))&&(!q||`${r.symbol} ${r.sector||''}`.toLowerCase().includes(q))&&Number(r.median_dollar_turnover_20||0)>=state.liquidity)
+  return sourceRows.filter(r=>(state.market==='all'||r.market===state.market)&&(state.timeframe==='all'||r.timeframe===state.timeframe)&&(!state.ignition||r.ignition===true)&&(!state.events||!!MarketEvents.record(r.symbol,r.market))&&(!q||`${r.symbol} ${r.sector||''}`.toLowerCase().includes(q))&&Number(r.median_dollar_turnover_20||0)>=turnoverFloor(r.market))
     .map(r=>({...r,hasTransactionHistory:!!MarketEvents.record(r.symbol,r.market)}))
     .sort(compareRows);
 }

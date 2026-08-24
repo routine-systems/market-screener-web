@@ -113,17 +113,21 @@ snapshot?.rotation?.schema_version!=='us-sector-rotation.v1';
 const wt=MARKET==='US'?'us-weekly.html':'dashboard.html'; const dt=MARKET==='US'?'us-daily.html':'daily.html';
 const b={setAttribute(){}}; const on=true; b.setAttribute('aria-pressed',String(on));</script>''',
         "tsha_hbcs.html": '''<button id="ignitionOnly"></button><button id="eventOnly">● Bulk history · ● Congress history</button>
+<select id="liquidity"><option value="5" selected>Turnover ≥ ₹5cr / $5m</option></select>
 <table><th class="l sorted" data-k="appearance_count">Appearances</th></table>
-<script src="market-events.js?v=5"></script><script>const state={sort:'appearance_count'}; const weekStart=date=>date;
+<script src="market-events.js?v=5"></script><script>const state={sort:'appearance_count',liquidity:5}; const weekStart=date=>date;
+const turnoverFloor=market=>state.liquidity*(market==='IN'?10000000:1000000);
 function compareRows(a,b){return 0} const rows=[]; rows.sort(compareRows); const glyph=on?'●':'○'; MarketEvents.load(market,()=>{});
 function ignitionDot(r){return '<span class="ignition-dot"></span>'} !state.ignition||r.ignition===true;
 MarketEvents.record(r.symbol,r.market); MarketEvents.dot(r.symbol,r.market);
 MarketEvents.dot(r.symbol,'IN','insider_trade');</script>''',
         "recommendations.html": "<script>fetch('/api/forward-test'); const schema='forward-test.api.v1'; applyPayload(fallbackPayload);</script>",
-        "volume_trend.html": '''<div>VT · Volume Breakout / Breakdown</div><div id="directions"></div><div id="historyRange"></div>
+        "volume_trend.html": '''<div>VT · Volume Breakout / Breakdown</div><div id="directions"><button class="toolbtn on" data-v="BUY">BUY</button></div><div id="historyRange"></div>
+<select id="liquidity"><option value="5" selected>Turnover ≥ ₹5cr / $5m</option></select>
 <select id="pageSize"></select><select id="pageNumber"></select>
 <table><th class="l sorted" data-k="appearance_count">Appearances</th></table>
-<script>fetch('/api/volume-trend'); const api='volume-trend.api.v1'; const history='vt-history.v1';
+<script>fetch('/api/volume-trend'); const api='volume-trend.api.v1'; const history='vt-history.v1'; const state={direction:'BUY',liquidity:5};
+const turnoverFloor=market=>state.liquidity*(market==='IN'?10000000:1000000);
 MarketEvents.record(r.symbol,r.market); const glyph=on?'●':'○';</script>''',
     }
     for page, active in subject.PAGES.items():
@@ -158,6 +162,33 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             result = subject.verify_site(root)
             self.assertEqual(9, result["pages"])
             self.assertEqual("site-manifest.json", result["manifest"])
+
+    def test_rejects_nondefault_ht_or_vt_turnover_tier(self):
+        for page in ("tsha_hbcs.html", "volume_trend.html"):
+            with self.subTest(page=page), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                _write_valid_site(root)
+                source = (root / page).read_text().replace(
+                    'value="5" selected>Turnover ≥ ₹5cr / $5m</option>',
+                    'value="5">Turnover ≥ ₹5cr / $5m</option>',
+                )
+                (root / page).write_text(source)
+                with self.assertRaisesRegex(
+                    subject.DashboardContractError, "misses contract markers"
+                ):
+                    subject.verify_site(root)
+
+    def test_rejects_vt_without_buy_as_the_default_direction(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_valid_site(root)
+            page = root / "volume_trend.html"
+            source = page.read_text().replace("direction:'BUY'", "direction:'all'")
+            page.write_text(source)
+            with self.assertRaisesRegex(
+                subject.DashboardContractError, "misses contract markers"
+            ):
+                subject.verify_site(root)
 
     def test_rejects_legacy_ht_position_after_context_tabs(self):
         with tempfile.TemporaryDirectory() as directory:
