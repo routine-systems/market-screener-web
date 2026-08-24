@@ -30,17 +30,17 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     steps:
       - name: Check out web renderer
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Check out signal producer
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: routine-systems/market-signals
           ref: main
           path: producer
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
@@ -100,7 +100,7 @@ jobs:
         run: echo "sha=$(git -C producer rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Upload immutable bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: signals-bundle-${{ steps.producer.outputs.sha }}
           path: artifacts/signals-bundle.v1.json
