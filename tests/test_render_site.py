@@ -242,6 +242,30 @@ class RenderSiteTests(unittest.TestCase):
         ):
             render_site.validate_bundle(bundle)
 
+    def test_rejects_market_cutoff_behind_daily(self):
+        bundle = self.load_fixture()
+        bundle["source_freshness"]["market"]["as_of"] = "2026-08-07"
+        with self.assertRaisesRegex(
+            render_site.BundleError, "market cutoff must equal the daily cutoff"
+        ):
+            render_site.validate_bundle(bundle)
+
+    def test_rejects_sector_cutoff_outside_daily_week(self):
+        bundle = self.load_fixture()
+        bundle["source_freshness"]["sectors"]["as_of"] = "2026-08-03"
+        with self.assertRaisesRegex(
+            render_site.BundleError, "sectors cutoff must equal the daily session's Monday"
+        ):
+            render_site.validate_bundle(bundle)
+
+    def test_rejects_weekly_cutoff_outside_daily_week(self):
+        bundle = self.load_fixture()
+        bundle["source_freshness"]["weekly"]["as_of"] = "2026-08-03"
+        with self.assertRaisesRegex(
+            render_site.BundleError, "weekly cutoff must equal the daily session's Monday"
+        ):
+            render_site.validate_bundle(bundle)
+
     def test_ht_format_ist_rejects_missing_timezone(self):
         page = (ROOT / "templates" / "tsha_hbcs.html").read_text()
         start = page.index("function formatIst(")

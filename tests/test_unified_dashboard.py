@@ -190,7 +190,7 @@ class RenderSiteTests(unittest.TestCase):
             freshness = json.loads((output / "dashboard-freshness.json").read_text())
             self.assertEqual("dashboard-freshness.v1", freshness["schema_version"])
             self.assertEqual(
-                "2026-08-11",
+                "2026-08-10",
                 freshness["sources"]["india_weekly"]["as_of"],
             )
             self.assertNotIn("status", freshness["sources"]["india_weekly"])

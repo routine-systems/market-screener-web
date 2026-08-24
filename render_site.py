@@ -9,7 +9,7 @@ import hashlib
 import json
 import re
 import shutil
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path, PurePosixPath
 from zoneinfo import ZoneInfo
 
@@ -85,6 +85,41 @@ def _parse_timestamp(value: object, field: str) -> str:
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         raise BundleError(f"{field} must include a timezone offset")
     return value
+
+
+def _parse_cutoff(value: object, field: str) -> date:
+    if not isinstance(value, str):
+        raise BundleError(f"{field} must be an ISO date")
+    try:
+        parsed = date.fromisoformat(value)
+    except ValueError as exc:
+        raise BundleError(f"{field} must be an ISO date") from exc
+    return parsed
+
+
+def _validate_chartink_freshness(bundle: dict) -> None:
+    source = bundle["source_freshness"]
+    cutoffs = {}
+    for name in ("weekly", "daily", "market", "sectors"):
+        item = source.get(name)
+        if not isinstance(item, dict):
+            raise BundleError(f"source_freshness.{name} must be an object")
+        cutoffs[name] = _parse_cutoff(
+            item.get("as_of"), f"source_freshness.{name}.as_of"
+        )
+
+    expected_week = cutoffs["daily"] - timedelta(days=cutoffs["daily"].weekday())
+    if cutoffs["market"] != cutoffs["daily"]:
+        raise BundleError(
+            "Chartink market cutoff must equal the daily cutoff: "
+            f"{cutoffs['market']} != {cutoffs['daily']}"
+        )
+    for name in ("weekly", "sectors"):
+        if cutoffs[name] != expected_week:
+            raise BundleError(
+                f"Chartink {name} cutoff must equal the daily session's Monday: "
+                f"{cutoffs[name]} != {expected_week}"
+            )
 
 
 def _format_ist(value: str) -> str:
@@ -169,6 +204,7 @@ def validate_bundle(bundle: object) -> dict:
         raise BundleError("timeframes must be a non-empty array")
     if not isinstance(bundle["source_freshness"], dict):
         raise BundleError("source_freshness must be an object")
+    _validate_chartink_freshness(bundle)
     if not isinstance(bundle["event_gate_status"], dict):
         raise BundleError("event_gate_status must be an object")
 
