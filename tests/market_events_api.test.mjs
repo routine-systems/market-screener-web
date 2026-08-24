@@ -144,3 +144,38 @@ test("HT metadata response exposes only market cutoffs", async () => {
     publication: { digest: "ht" },
   });
 });
+
+test("Forward Test metadata response exposes only its cutoff", async () => {
+  const endpoint = await moduleFrom("../functions/api/forward-test.js");
+  const snapshot = {
+    schema_version: "forward-test.snapshot.v1",
+    generated_at_utc: "2026-08-22T16:31:40Z",
+    data_cutoff: "2026-08-21",
+    snapshot_sha256: "a".repeat(64),
+    row_count: 1,
+    payload: {
+      summary: { presented: 1 },
+      rows: [{ symbol: "TEST" }],
+    },
+  };
+  const response = await endpoint.onRequestGet({
+    request: new Request("https://screener.example/api/forward-test?meta=1"),
+    env: {
+      SCANLINKS: {
+        getWithMetadata: async (key) => {
+          assert.equal(key, "forward-test:v1:latest");
+          return { value: snapshot, metadata: { digest: "forward" } };
+        },
+      },
+    },
+  });
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    schema_version: "forward-test.api.v1",
+    snapshot: {
+      generated_at_utc: "2026-08-22T16:31:40Z",
+      data_cutoff: "2026-08-21",
+    },
+    publication: { digest: "forward" },
+  });
+});

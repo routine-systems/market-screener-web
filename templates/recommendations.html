@@ -23,23 +23,25 @@ __DASHBOARD_FRESHNESS__
 </main></div>
 <script>
 function b64utf8(value){try{return decodeURIComponent(escape(atob(value)));}catch(error){return atob(value)}}
-const payload=JSON.parse(b64utf8("__RECOMMENDATIONS_B64__"));
+const fallbackPayload=JSON.parse(b64utf8("__RECOMMENDATIONS_B64__"));
+let payload=fallbackPayload,source=[];
 const esc=value=>String(value??'—').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
 const pct=value=>value==null||Number.isNaN(Number(value))?'—':`${(Number(value)*100).toFixed(1)}%`;
 const price=row=>{if(row.entry_open==null||Number.isNaN(Number(row.entry_open)))return esc(row.actual_entry_date);const prefix=row.market==='IN'?'₹':'$';return `${prefix}${Number(row.entry_open).toLocaleString(undefined,{maximumFractionDigits:2})}<div class="sub">${esc(row.actual_entry_date)}</div>`};
 const decision=row=>row.presented?'Presented':String(row.decision_stage||'').replaceAll('_',' ');
-document.querySelector('#subtitle').textContent=`Immutable decisions and point-in-time outcomes · rendered ${payload.generated_at||'—'}`;
-for(const [id,key] of [['presented','presented'],['nearMisses','near_misses'],['tracked','tracked'],['misses','opportunity_misses']])document.querySelector('#'+id).textContent=payload.summary?.[key]??0;
-const source=payload.rows||[],tbody=document.querySelector('#rows'),buttons=[...document.querySelectorAll('button[data-filter]')],search=document.querySelector('#search');
+const tbody=document.querySelector('#rows'),buttons=[...document.querySelectorAll('button[data-filter]')],search=document.querySelector('#search');
 const state={filter:'weekly',query:'',sort:'signal_date',desc:true,research:false};
 function matches(row){const filter=state.filter;const scope=filter==='all'||row.market===filter||row.timeframe===filter||(filter==='miss'&&row.opportunity_miss&&row.timeframe==='weekly');const query=state.query.toLowerCase();return scope&&(!query||`${row.symbol||''} ${row.decision_stage||''} ${row.market||''}`.toLowerCase().includes(query))}
 function compare(left,right){let a=left[state.sort],b=right[state.sort];if(typeof a==='string'||typeof b==='string'){a=String(a??'');b=String(b??'');return state.desc?b.localeCompare(a):a.localeCompare(b)}a=Number(a??-Infinity);b=Number(b??-Infinity);return state.desc?b-a:a-b}
 function render(){const rows=source.filter(matches).sort(compare);tbody.innerHTML=rows.length?rows.map(row=>{const market=row.market||'',symbol=esc(row.symbol),tv=market==='IN'?`https://www.tradingview.com/chart/?symbol=NSE%3A${encodeURIComponent(row.symbol)}`:`https://www.tradingview.com/chart/?symbol=${encodeURIComponent(row.exchange||'NASDAQ')}%3A${encodeURIComponent(row.symbol)}`;const classes=row.opportunity_miss?'miss':row.presented?'presented':'';return `<tr class="${classes}"><td>${esc(row.signal_date)}</td><td>${esc(market)}</td><td>${esc(row.timeframe)}</td><td><a href="${tv}" target="_blank" rel="noopener">${symbol}</a></td><td>${esc(decision(row))}</td><td>${price(row)}</td><td>${pct(row.return_since_entry)}</td><td>${pct(row.excess_return_since_entry)}</td><td>${pct(row.max_favorable_excursion)}</td><td>${pct(row.max_adverse_excursion)}</td><td class="research-only">${esc(row.model_rank_score)}</td><td class="research-only">${esc(row.twin_ha_status)}</td><td class="research-only">${esc(row.event_gate_status)}</td><td class="research-only">${row.opportunity_miss?'Yes':'No'}</td></tr>`}).join(''):'<tr><td colspan="14"><div class="empty">No forward-test rows match these filters.</div></td></tr>';document.querySelector('#foot').textContent=`Showing ${rows.length} of ${source.length} stored rows`;document.querySelectorAll('th[data-sort]').forEach(header=>{header.classList.toggle('sorted',header.dataset.sort===state.sort);header.classList.toggle('asc',header.dataset.sort===state.sort&&!state.desc)});if(window.DashboardShell)DashboardShell.syncSortHeaders()}
+function applyPayload(next){payload=next;source=Array.isArray(payload.rows)?payload.rows:[];document.querySelector('#subtitle').textContent=`Immutable decisions and point-in-time outcomes · rendered ${payload.generated_at||'—'}`;for(const [id,key] of [['presented','presented'],['nearMisses','near_misses'],['tracked','tracked'],['misses','opportunity_misses']])document.querySelector('#'+id).textContent=payload.summary?.[key]??0;render()}
+async function loadPayload(){try{const response=await fetch('/api/forward-test',{headers:{accept:'application/json'}});if(!response.ok)throw new Error(`HTTP ${response.status}`);const body=await response.json();const next=body?.snapshot?.payload;if(body?.schema_version!=='forward-test.api.v1'||!next||!Array.isArray(next.rows)||!next.summary)throw new Error('Invalid Forward Test snapshot');applyPayload(next)}catch(error){document.querySelector('#subtitle').textContent+=` · live snapshot unavailable`}}
 buttons.forEach(button=>button.addEventListener('click',()=>{buttons.forEach(item=>item.classList.remove('on'));button.classList.add('on');state.filter=button.dataset.filter;render()}));
 search.addEventListener('input',event=>{state.query=event.target.value.trim();render()});
 document.querySelector('#researchColumns').addEventListener('click',event=>{state.research=!state.research;document.body.classList.toggle('show-research',state.research);event.currentTarget.classList.toggle('on',state.research)});
 document.querySelectorAll('th[data-sort]').forEach(header=>header.addEventListener('click',()=>{if(state.sort===header.dataset.sort)state.desc=!state.desc;else{state.sort=header.dataset.sort;state.desc=true}render()}));
-render();
+applyPayload(fallbackPayload);
+loadPayload();
 </script>
 </body>
 </html>

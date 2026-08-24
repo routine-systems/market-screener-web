@@ -98,6 +98,7 @@ function compareRows(a,b){return 0} const rows=[]; rows.sort(compareRows); const
 function ignitionDot(r){return '<span class="ignition-dot"></span>'} !state.ignition||r.ignition===true;
 MarketEvents.record(r.symbol,r.market); MarketEvents.dot(r.symbol,r.market);
 MarketEvents.dot(r.symbol,'IN','insider_trade');</script>''',
+        "recommendations.html": "<script>fetch('/api/forward-test'); const schema='forward-test.api.v1'; applyPayload(fallbackPayload);</script>",
     }
     for page, active in subject.PAGES.items():
         (root / page).write_text(_page(active, bodies.get(page, "")))

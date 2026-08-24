@@ -49,6 +49,7 @@ class RenderSiteTests(unittest.TestCase):
                 "market-events.js",
                 "functions/_middleware.js",
                 "functions/api/market-events.js",
+                "functions/api/forward-test.js",
                 "functions/api/refresh.js",
                 "functions/api/scanlink.js",
                 "functions/api/tsha-hbcs.js",

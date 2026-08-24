@@ -42,6 +42,7 @@ REQUIRED_FILES = {
     "market-events.js",
     "functions/_middleware.js",
     "functions/api/market-events.js",
+    "functions/api/forward-test.js",
     "functions/api/refresh.js",
     "functions/api/scanlink.js",
     "functions/api/tsha-hbcs.js",
@@ -342,6 +343,16 @@ def verify_site(root: Path) -> dict:
     ):
         if diagnostic_column in ht:
             _fail("tsha_hbcs.html restores suppressed diagnostic columns")
+
+    _require_text(
+        "recommendations.html",
+        page_sources["recommendations.html"],
+        (
+            "fetch('/api/forward-test'",
+            "forward-test.api.v1",
+            "applyPayload(fallbackPayload)",
+        ),
+    )
 
     freshness = json.loads(_read(root, "dashboard-freshness.json"))
     if freshness.get("schema_version") != "dashboard-freshness.v1":
