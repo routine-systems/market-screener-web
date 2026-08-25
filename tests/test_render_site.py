@@ -119,11 +119,57 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn(".slice(0,5)", shortlist)
             self.assertIn("_rank:old._rank", shortlist)
             self.assertIn("rankedBatch(row.market,row.signal_date)", shortlist)
+            self.assertIn("Fresh / Returned this week", shortlist)
+            self.assertIn("Continuing this week", shortlist)
+            self.assertIn("function appearanceMeta(", shortlist)
+            self.assertIn("FIRST_SEEN", shortlist)
+            self.assertIn("batchesAway", shortlist)
+            self.assertIn("rankMove", shortlist)
             self.assertIn("jsonFetch('/api/forward-test'", shortlist)
             self.assertIn("jsonFetch('/api/tsha-hbcs'", shortlist)
             self.assertIn("jsonFetch('/api/volume-trend'", shortlist)
             self.assertIn('url=shortlist.html', (output / "index.html").read_text())
             self.assertTrue((output / "functions").exists())
+
+    def test_shortlist_classifies_first_returned_and_continuing_appearances(self):
+        page = (ROOT / "templates" / "shortlist.html").read_text()
+        appearance_meta = javascript_function(page, "appearanceMeta")
+        script = f"""
+const number=value=>value==null||value===''||Number.isNaN(Number(value))?null:Number(value);
+const dates=['2026-08-01','2026-08-08','2026-08-15','2026-08-22'];
+const batches={{
+  '2026-08-01':[{{symbol:'RETURNED',_rank:4}},{{symbol:'CONT',_rank:4}}],
+  '2026-08-08':[{{symbol:'CONT',_rank:3}}],
+  '2026-08-15':[{{symbol:'CONT',_rank:3}}],
+  '2026-08-22':[{{symbol:'FIRST',_rank:1}},{{symbol:'RETURNED',_rank:2}},{{symbol:'CONT',_rank:1}}],
+}};
+function presentedDates(){{return dates}}
+function rankedBatch(_market,date){{return batches[date]||[]}}
+{appearance_meta}
+const rows=batches['2026-08-22'];
+console.log(JSON.stringify(rows.map(row=>appearanceMeta('US',{{...row,signal_date:'2026-08-22'}}))));
+"""
+        completed = subprocess.run(
+            ["node", "--input-type=module", "--eval", script],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        first, returned, continuing = json.loads(completed.stdout)
+        self.assertEqual(first["kind"], "FIRST_SEEN")
+        self.assertEqual(
+            returned,
+            {
+                "kind": "RETURNED",
+                "lastSeen": "2026-08-01",
+                "batchesAway": 2,
+                "lastRank": 4,
+            },
+        )
+        self.assertEqual(
+            continuing,
+            {"kind": "CONTINUING", "streak": 4, "rankMove": 2},
+        )
 
     def test_sectors_defaults_to_quadrant(self):
         with tempfile.TemporaryDirectory() as directory:
