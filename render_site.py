@@ -51,6 +51,7 @@ NAV_ITEMS = (
     ("us-daily", "us-daily.html", "US Daily"),
     ("ht", "tsha_hbcs.html", "HT"),
     ("vt", "volume_trend.html", "VT"),
+    ("transactions", "transactions.html", "Trades"),
     ("market", "market.html", "Market"),
     ("sectors", "sectors.html", "Sectors"),
     ("recommendations", "recommendations.html", "Forward Test"),
@@ -395,6 +396,9 @@ def render_site(bundle_path: Path, output: Path = DEFAULT_OUTPUT) -> dict:
     vt_page = TEMPLATES / "volume_trend.html"
     if not vt_page.is_file():
         raise BundleError(f"VT template not found: {vt_page}")
+    transactions_page = TEMPLATES / "transactions.html"
+    if not transactions_page.is_file():
+        raise BundleError(f"transactions template not found: {transactions_page}")
     trend_bounce_template = TEMPLATES / TREND_BOUNCE_TEMPLATE
     if not trend_bounce_template.is_file():
         raise BundleError(f"US Trend Bounce template not found: {trend_bounce_template}")
@@ -436,6 +440,12 @@ def render_site(bundle_path: Path, output: Path = DEFAULT_OUTPUT) -> dict:
     (temp / "tsha_hbcs.html").write_text(ht_source, encoding="utf-8")
     vt_source = _apply_shell(vt_page.read_text(encoding="utf-8"), "vt")
     (temp / "volume_trend.html").write_text(vt_source, encoding="utf-8")
+    transactions_source = _apply_shell(
+        transactions_page.read_text(encoding="utf-8"), "transactions"
+    )
+    (temp / "transactions.html").write_text(
+        transactions_source, encoding="utf-8"
+    )
     trend_source = trend_bounce_template.read_text(encoding="utf-8")
     for timeframe, output_name in TREND_BOUNCE_PAGES.items():
         rendered = trend_source.replace("__TIMEFRAME__", timeframe)

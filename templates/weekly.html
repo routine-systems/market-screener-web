@@ -409,11 +409,7 @@ function render(){
   $('#offFwd').disabled = SEL.to>=n-1;
   $('#offlbl').textContent = SEL.to>=n-1 ? 'latest' : `−${n-1-SEL.to} wk`;
 
-  const sub=[];
-  sub.push(`<b>${n}</b> weeks · ranking over <b>${nW}</b>`);
-  if(H.scanlink) sub.push('in-scan links on');
-  if(H.source_url) sub.push(`<a href="${H.source_url}" target="_blank" rel="noopener">source ↗</a>`);
-  $('#scr-sub').innerHTML=sub.join(' · ');
+  $('#scr-sub').innerHTML=`<b>${n}</b> weeks · ranking over <b>${nW}</b>`;
 
   const persistent=rows.filter(r=>r.count===nW).length;
 

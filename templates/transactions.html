@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0d0d'/%3E%3Cpath d='M7 9h18M7 16h18M7 23h18' stroke='%234d93ea' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<title>Transactions · India + U.S.</title>
+<style>
+:root{color-scheme:light;--plane:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink-2:#52514e;--muted:#66655f;--grid:#e1e0d9;--axis:#c3c2b7;--border:rgba(11,11,11,.10);--up:#0a7d0a;--vol:#1c5cab;--red:#9b211b;--chip:#eef0ee}
+@media(prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){color-scheme:dark;--plane:#0d0d0d;--surface:#1a1a19;--ink:#fff;--ink-2:#c3c2b7;--muted:#9f9e96;--grid:#2c2c2a;--axis:#484844;--border:rgba(255,255,255,.12);--up:#54c654;--vol:#4d93ea;--red:#ff8f8f;--chip:#232322}}
+:root[data-theme="dark"]{color-scheme:dark;--plane:#0d0d0d;--surface:#1a1a19;--ink:#fff;--ink-2:#c3c2b7;--muted:#9f9e96;--grid:#2c2c2a;--axis:#484844;--border:rgba(255,255,255,.12);--up:#54c654;--vol:#4d93ea;--red:#ff8f8f;--chip:#232322}
+*{box-sizing:border-box}html,body{margin:0}body{background:var(--plane);color:var(--ink);font:14px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}.wrap{max-width:1180px;margin:0 auto;padding:18px 20px 64px}header.top{margin-bottom:18px}.title h1{font-size:20px;margin:0 0 3px;letter-spacing:-.01em}.title .sub{color:var(--ink-2);font-size:13px}.title .sub.error{color:var(--red)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}.tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 13px;min-height:74px;display:flex;flex-direction:column;justify-content:space-between}.tile .lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}.tile .val{font-size:23px;font-weight:600;letter-spacing:-.02em;margin-top:5px;font-variant-numeric:tabular-nums}.tile .val.date{font-size:17px}
+.tablecard{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px}.tbar,.filterset,.pager{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.tbar{margin-bottom:12px}.filterset{gap:5px}.spacer{flex:1 1 auto}.toolbtn{border:1px solid var(--border);background:var(--surface);color:var(--ink-2);border-radius:8px;padding:6px 10px;font:inherit;font-size:12.5px;cursor:pointer}.toolbtn:hover:not(:disabled){color:var(--ink);border-color:var(--vol)}.toolbtn.on{background:var(--vol);color:#fff;border-color:var(--vol)}.toolbtn:disabled{opacity:.45;cursor:default}input,select{background:var(--plane);border:1px solid var(--border);color:var(--ink);border-radius:8px;padding:7px 10px;font:inherit;font-size:13px}input{width:210px;max-width:52vw}select{font-variant-numeric:tabular-nums}.count,.coverage,.page-range,.pager label{color:var(--muted);font-size:12px}.count{margin-bottom:8px;font-variant-numeric:tabular-nums}.coverage{min-height:18px;margin:0 0 12px;padding:8px 10px;border-left:2px solid var(--axis);background:var(--plane)}
+.tablewrap{max-height:64vh;overflow:auto;border:1px solid var(--grid);border-radius:8px}table{width:100%;border-collapse:separate;border-spacing:0;min-width:1060px}th,td{padding:8px 9px;border-bottom:1px solid var(--grid);vertical-align:top}th{position:sticky;top:0;z-index:2;background:var(--surface);color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;text-align:right;white-space:nowrap}th.l,td.l{text-align:left}td{font-size:12.5px;text-align:right;font-variant-numeric:tabular-nums}tbody tr:last-child td{border-bottom:0}tbody tr:hover td{background:color-mix(in srgb,var(--vol) 4%,transparent)}.ticker{font-weight:700}.actor,.detail{max-width:220px;text-align:left}.detail{color:var(--ink-2);white-space:normal}.source{text-align:left}.source a{color:var(--vol);text-decoration:none}.source a:hover{text-decoration:underline}.reported{color:var(--muted);font-size:10.5px;margin-top:2px}.pill{display:inline-block;border-radius:999px;padding:2px 7px;background:var(--chip);font-size:10.5px;font-weight:700;letter-spacing:.03em}.pill.buy{color:var(--up)}.pill.sell{color:var(--red)}.empty{padding:26px;text-align:center;color:var(--muted)}
+.pager{padding-top:12px}.pager button{min-width:74px}.pager select{padding-block:6px}footer{margin-top:14px;color:var(--muted);font-size:11px}
+@media(max-width:760px){.wrap{padding:12px 12px 44px}.kpis{grid-template-columns:repeat(2,1fr)}.tablecard{padding:10px}.tbar input{order:5;width:100%;max-width:none}.tbar .spacer{display:none}.toolbtn,input,select{min-height:44px}.tablewrap{max-height:68vh}}
+</style>
+</head>
+<body>
+<div class="wrap">
+__DASHBOARD_NAV__
+<main id="main-content">
+  <header class="top"><div class="title"><h1>Transactions · India + U.S.</h1><div class="sub" id="status" role="status">Loading India bulk deals…</div></div></header>
+  __DASHBOARD_FRESHNESS__
+  <section class="kpis" id="summary" aria-label="Transaction coverage">
+    <div class="tile"><span class="lbl">Listed details</span><span class="val">—</span></div>
+    <div class="tile"><span class="lbl">Tickers</span><span class="val">—</span></div>
+    <div class="tile"><span class="lbl">Source rows</span><span class="val">—</span></div>
+    <div class="tile"><span class="lbl">Source cutoff</span><span class="val date">—</span></div>
+  </section>
+  <section class="tablecard">
+    <div class="tbar">
+      <div class="filterset" id="markets" aria-label="Market">
+        <button class="toolbtn on" type="button" data-market="IN" aria-pressed="true">India</button>
+        <button class="toolbtn" type="button" data-market="US" aria-pressed="false">U.S.</button>
+      </div>
+      <div class="filterset" id="categories" aria-label="Transaction category"></div>
+      <div class="spacer"></div>
+      <label class="sr-only" for="search">Search transactions</label><input id="search" type="search" placeholder="Search ticker or actor" autocomplete="off">
+      <label class="sr-only" for="side">Transaction side</label><select id="side"><option value="all">All sides</option><option value="BUY">Buy</option><option value="SELL">Sell</option><option value="other">Other / unstated</option></select>
+      <button class="toolbtn" id="download" type="button" disabled>⭳ CSV</button>
+    </div>
+    <p class="coverage" id="coverage">The list keeps each source transaction separate.</p>
+    <div class="count" id="rankhint" role="status" aria-live="polite">Loading rows…</div>
+    <div class="tablewrap"><table id="transactionsTable">
+      <thead><tr>
+        <th class="sorted" data-k="event_date"><button type="button" class="sortbtn">Date</button></th>
+        <th class="l" data-k="symbol"><button type="button" class="sortbtn">Ticker</button></th>
+        <th class="l" data-k="actor"><button type="button" class="sortbtn">Actor</button></th>
+        <th data-k="side"><button type="button" class="sortbtn">Side</button></th>
+        <th data-k="shares"><button type="button" class="sortbtn">Shares</button></th>
+        <th data-k="value"><button type="button" class="sortbtn">Value</button></th>
+        <th data-k="price"><button type="button" class="sortbtn">Price</button></th>
+        <th class="l" data-k="source"><button type="button" class="sortbtn">Source</button></th>
+        <th class="l">Details</th>
+      </tr></thead>
+      <tbody id="rows"><tr><td colspan="9"><div class="empty">Loading transaction history…</div></td></tr></tbody>
+    </table></div>
+    <nav class="pager" aria-label="Results pagination">
+      <button class="toolbtn" id="pageFirst" type="button">« First</button><button class="toolbtn" id="pagePrev" type="button">‹ Previous</button>
+      <label for="pageNumber">Page</label><select id="pageNumber" aria-label="Results page"><option value="0">1</option></select><span class="page-range" id="pageCount">of 1</span>
+      <button class="toolbtn" id="pageNext" type="button">Next ›</button><button class="toolbtn" id="pageLast" type="button">Last »</button>
+      <div class="spacer"></div><label for="pageSize">Rows per page</label><select id="pageSize" aria-label="Rows per page"><option value="50">50</option><option value="100" selected>100</option><option value="250">250</option></select><span class="page-range" id="pageRange">0 rows</span>
+    </nav>
+  </section>
+  <footer id="foot">India uses official NSE/BSE bulk deals and PIT insider disclosures. U.S. rows use source-attributed congressional transaction reports.</footer>
+</main>
+</div>
+<script>
+const EVENT_SCHEMA='market-events.snapshot.v1',API_SCHEMA='market-events.api.v1';
+const CATEGORY_OPTIONS={IN:[['bulk_deal','Bulk deals'],['insider_trade','Insider trades']],US:[['political_trade_report','Congress trades']]};
+const state={market:'IN',category:'bulk_deal',query:'',side:'all',sort:'event_date',desc:true,page:0,pageSize:100};
+const cache=new Map(),pending=new Map(),flatCache=new Map();
+const $=selector=>document.querySelector(selector),esc=value=>String(value??'').replace(/[&<>"']/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
+function num(value,digits=0){const number=Number(value);return value==null||!Number.isFinite(number)?'—':number.toLocaleString('en-IN',{maximumFractionDigits:digits})}
+function money(value,market){return value==null||!Number.isFinite(Number(value))?'—':`${market==='IN'?'₹':'$'}${num(value,2)}`}
+function safeUrl(value){try{const url=new URL(String(value));return ['https:','http:'].includes(url.protocol)?url.href:null}catch{return null}}
+function eventSet(snapshot,category){if(snapshot.event_type===category)return snapshot;return snapshot.related_event_sets?.[category]||null}
+function validateSnapshot(snapshot,market){if(!snapshot||snapshot.schema_version!==EVENT_SCHEMA||snapshot.market!==market||!Array.isArray(snapshot.event_columns)||!snapshot.records)throw new Error('Unsupported transaction snapshot');if(market==='IN'&&!eventSet(snapshot,'insider_trade'))throw new Error('India insider transactions are unavailable');return snapshot}
+function flatten(snapshot,category){const selected=eventSet(snapshot,category);if(!selected||!Array.isArray(selected.event_columns)||!selected.records)throw new Error('Transaction category unavailable');const rows=[];for(const [symbol,record] of Object.entries(selected.records)){for(const values of record.events||[]){const row={symbol,market:snapshot.market,event_type:category};selected.event_columns.forEach((column,index)=>row[column]=values[index]);rows.push(row)}}return {rows,meta:selected}}
+async function loadMarket(market){if(cache.has(market))return cache.get(market);if(pending.has(market))return pending.get(market);const request=(async()=>{const response=await fetch(`/api/market-events?market=${market}`,{headers:{accept:'application/json'}}),payload=await response.json().catch(()=>({}));if(!response.ok||payload.schema_version!==API_SCHEMA||!payload.snapshot)throw new Error(payload.error||`HTTP ${response.status}`);const snapshot=validateSnapshot(payload.snapshot,market);cache.set(market,snapshot);pending.delete(market);return snapshot})();pending.set(market,request);return request}
+function categoryLabel(category){return new Map([...CATEGORY_OPTIONS.IN,...CATEGORY_OPTIONS.US]).get(category)||category}
+function syncCategories(){const options=CATEGORY_OPTIONS[state.market];if(!options.some(([key])=>key===state.category))state.category=options[0][0];$('#categories').innerHTML=options.map(([key,label])=>`<button class="toolbtn ${key===state.category?'on':''}" type="button" data-category="${key}" aria-pressed="${key===state.category}">${label}</button>`).join('');$('#categories').querySelectorAll('button').forEach(button=>button.addEventListener('click',()=>{state.category=button.dataset.category;state.page=0;syncCategories();render()}))}
+function selected(){const snapshot=cache.get(state.market),key=`${state.market}:${state.category}`;if(!snapshot)return null;if(!flatCache.has(key))flatCache.set(key,flatten(snapshot,state.category));return flatCache.get(key)}
+function compareRows(left,right){let a=left[state.sort],b=right[state.sort];if(['shares','value','price'].includes(state.sort)){a=a==null?-Infinity:Number(a);b=b==null?-Infinity:Number(b);return state.desc?b-a:a-b}const compared=String(a??'').localeCompare(String(b??''));if(compared)return state.desc?-compared:compared;return String(left.symbol).localeCompare(String(right.symbol))}
+function filteredRows(){const selectedSet=selected();if(!selectedSet)return[];const query=state.query.trim().toLowerCase();return selectedSet.rows.filter(row=>{const side=String(row.side||'').toUpperCase();const sideMatch=state.side==='all'||(state.side==='other'?!['BUY','SELL'].includes(side):side===state.side);const search=`${row.symbol} ${row.actor||''} ${row.source||''} ${row.summary||''}`.toLowerCase();return sideMatch&&(!query||search.includes(query))}).sort(compareRows)}
+function paginate(rows){const pages=Math.max(1,Math.ceil(rows.length/state.pageSize));state.page=Math.min(Math.max(0,state.page),pages-1);const start=rows.length?state.page*state.pageSize:0,end=Math.min(rows.length,start+state.pageSize);return {shown:rows.slice(start,end),pages,start,end}}
+function sourceCell(row){const label=esc(row.source||'—'),url=safeUrl(row.url);return url?`<a href="${esc(url)}" target="_blank" rel="noopener">${label} ↗</a>`:label}
+function rowHtml(row){const side=String(row.side||'').toUpperCase(),reported=row.reported_at?`<div class="reported">reported ${esc(String(row.reported_at).slice(0,10))}</div>`:'',detail=row.summary?`<span title="${esc(row.summary)}">${esc(row.summary)}</span>`:'—';return `<tr><td>${esc(row.event_date||'—')}${reported}</td><td class="l"><span class="ticker">${esc(row.symbol)}</span></td><td class="actor">${esc(row.actor||'Actor not stated')}</td><td>${side?`<span class="pill ${side==='BUY'?'buy':side==='SELL'?'sell':''}">${esc(side)}</span>`:'—'}</td><td>${num(row.shares,4)}</td><td>${money(row.value,row.market)}</td><td>${money(row.price,row.market)}</td><td class="source">${sourceCell(row)}</td><td class="detail">${detail}</td></tr>`}
+function syncSummary(meta){const cards=[['Listed details',meta.detail_row_count],['Tickers',meta.symbol_count],['Source rows',meta.row_count],['Source cutoff',meta.source_cutoff]];$('#summary').innerHTML=cards.map(([label,value],index)=>`<div class="tile"><span class="lbl">${esc(label)}</span><span class="val ${index===3?'date':''}">${index===3?esc(value||'—'):num(value,0)}</span></div>`).join('')}
+function syncCoverage(meta){const omitted=Math.max(0,Number(meta.row_count||0)-Number(meta.detail_row_count||0));$('#coverage').textContent=omitted?`Ungrouped list. The snapshot keeps the latest ${num(meta.detail_limit,0)} details per ticker; ${num(omitted,0)} older source rows are excluded.`:'Ungrouped list. Each stored source transaction remains a separate row.'}
+function syncHeaders(){document.querySelectorAll('th[data-k]').forEach(header=>{header.classList.toggle('sorted',header.dataset.k===state.sort);header.classList.toggle('asc',header.dataset.k===state.sort&&!state.desc);header.setAttribute('aria-sort',header.dataset.k===state.sort?(state.desc?'descending':'ascending'):'none')});window.DashboardShell?.syncSortHeaders(document)}
+function render(){const selectedSet=selected();if(!selectedSet)return;syncSummary(selectedSet.meta);syncCoverage(selectedSet.meta);const rows=filteredRows(),page=paginate(rows),marketLabel=state.market==='IN'?'India':'U.S.';$('#status').classList.remove('error');$('#status').textContent=`${marketLabel} ${categoryLabel(state.category).toLowerCase()} · data through ${selectedSet.meta.source_cutoff||'—'} · ${num(selectedSet.meta.detail_row_count,0)} listed details`;$('#rankhint').textContent=`${num(rows.length,0)} matching transactions`;$('#rows').innerHTML=page.shown.length?page.shown.map(rowHtml).join(''):'<tr><td colspan="9"><div class="empty">No transactions match these filters.</div></td></tr>';const selector=$('#pageNumber');if(selector.options.length!==page.pages)selector.innerHTML=Array.from({length:page.pages},(_,index)=>`<option value="${index}">${index+1}</option>`).join('');selector.value=state.page;$('#pageCount').textContent=`of ${page.pages}`;$('#pageFirst').disabled=$('#pagePrev').disabled=state.page===0;$('#pageNext').disabled=$('#pageLast').disabled=state.page>=page.pages-1;$('#pageRange').textContent=rows.length?`Rows ${page.start+1}–${page.end} of ${rows.length}`:'0 rows';$('#download').disabled=false;syncHeaders()}
+async function selectMarket(market){state.market=market;state.category=CATEGORY_OPTIONS[market][0][0];state.page=0;document.querySelectorAll('#markets button').forEach(button=>{const on=button.dataset.market===market;button.classList.toggle('on',on);button.setAttribute('aria-pressed',String(on))});syncCategories();$('#status').classList.remove('error');$('#status').textContent=`Loading ${market==='IN'?'India':'U.S.'} transactions…`;$('#rows').innerHTML='<tr><td colspan="9"><div class="empty">Loading transaction history…</div></td></tr>';try{await loadMarket(market);render()}catch(error){$('#status').classList.add('error');$('#status').textContent=`Transaction history unavailable: ${error.message}`;$('#rows').innerHTML='<tr><td colspan="9"><div class="empty">No stored transaction data is available.</div></td></tr>'}}
+document.querySelectorAll('#markets button').forEach(button=>button.addEventListener('click',()=>selectMarket(button.dataset.market)));
+$('#search').addEventListener('input',event=>{state.query=event.target.value;state.page=0;render()});$('#side').addEventListener('change',event=>{state.side=event.target.value;state.page=0;render()});
+function changeSort(header){if(state.sort===header.dataset.k)state.desc=!state.desc;else{state.sort=header.dataset.k;state.desc=true}state.page=0;render()}
+document.querySelectorAll('th[data-k]').forEach(header=>{const button=header.querySelector('.sortbtn');button.addEventListener('click',()=>changeSort(header));button.addEventListener('keydown',event=>{if(!['Enter',' '].includes(event.key))return;event.preventDefault();changeSort(header)})});
+function showPage(page){state.page=page;render();$('.tablewrap').scrollTop=0}$('#pageFirst').addEventListener('click',()=>showPage(0));$('#pagePrev').addEventListener('click',()=>showPage(state.page-1));$('#pageNext').addEventListener('click',()=>showPage(state.page+1));$('#pageLast').addEventListener('click',()=>showPage(Number.MAX_SAFE_INTEGER));$('#pageNumber').addEventListener('change',event=>showPage(Number(event.target.value)));$('#pageSize').addEventListener('change',event=>{state.pageSize=Number(event.target.value);state.page=0;render()});
+$('#download').addEventListener('click',()=>{const keys=['market','event_type','symbol','event_date','reported_at','actor','side','shares','price','value','source','url','summary'],quote=value=>{let text=String(value??'');if(/^[=+\-@]/.test(text))text=`'${text}`;return `"${text.replaceAll('"','""')}"`},csv=[keys.join(','),...filteredRows().map(row=>keys.map(key=>quote(row[key])).join(','))].join('\n'),anchor=document.createElement('a');anchor.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));anchor.download=`${state.market.toLowerCase()}-${state.category}-transactions.csv`;anchor.click();URL.revokeObjectURL(anchor.href)});
+syncCategories();selectMarket('IN');
+</script>
+</body>
+</html>

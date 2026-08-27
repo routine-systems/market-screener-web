@@ -40,6 +40,7 @@ class RenderSiteTests(unittest.TestCase):
                 ("us-daily", "us-daily.html", "US Daily"),
                 ("ht", "tsha_hbcs.html", "HT"),
                 ("vt", "volume_trend.html", "VT"),
+                ("transactions", "transactions.html", "Trades"),
                 ("market", "market.html", "Market"),
                 ("sectors", "sectors.html", "Sectors"),
                 ("recommendations", "recommendations.html", "Forward Test"),
@@ -58,7 +59,7 @@ class RenderSiteTests(unittest.TestCase):
         self.assertIsNotNone(match)
         return json.loads(base64.b64decode(match.group(1)))
 
-    def test_valid_fixture_renders_ten_pages_and_manifest(self):
+    def test_valid_fixture_renders_eleven_pages_and_manifest(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "dist"
             manifest = render_site.render_site(FIXTURE, output)
@@ -71,6 +72,7 @@ class RenderSiteTests(unittest.TestCase):
                 "recommendations.html",
                 "tsha_hbcs.html",
                 "volume_trend.html",
+                "transactions.html",
                 "us-weekly.html",
                 "us-daily.html",
                 "index.html",
@@ -95,8 +97,12 @@ class RenderSiteTests(unittest.TestCase):
             }
             self.assertEqual(expected, actual)
             self.assertEqual("fixture-commit", manifest["producer_commit"])
-            self.assertIn("const WINDOW=8;", (output / "dashboard.html").read_text())
-            self.assertNotIn("__HISTORY_B64__", (output / "dashboard.html").read_text())
+            weekly = (output / "dashboard.html").read_text()
+            self.assertIn("const WINDOW=8;", weekly)
+            self.assertNotIn("__HISTORY_B64__", weekly)
+            self.assertIn("weeks · ranking over", weekly)
+            self.assertNotIn("in-scan links on", weekly)
+            self.assertNotIn("source ↗", weekly)
             for name in (
                 "dashboard.html",
                 "daily.html",
@@ -112,6 +118,10 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn(
                 "fetch('/api/volume-trend'", (output / "volume_trend.html").read_text()
             )
+            transactions = (output / "transactions.html").read_text()
+            self.assertIn("Transactions · India + U.S.", transactions)
+            self.assertIn("`/api/market-events?market=${market}`", transactions)
+            self.assertIn("function syncCoverage(", transactions)
             shortlist = (output / "shortlist.html").read_text()
             self.assertIn("India + US Weekly · Shortlist", shortlist)
             self.assertIn('data-view="now"', shortlist)
@@ -222,12 +232,15 @@ console.log(JSON.stringify(rows.map(row=>appearanceMeta('US',{{...row,signal_dat
                 "recommendations.html",
                 "tsha_hbcs.html",
                 "volume_trend.html",
+                "transactions.html",
             ):
                 page = (output / name).read_text()
                 self.assertIn('href="tsha_hbcs.html"', page)
                 self.assertIn(">HT</a>", page)
                 self.assertIn('href="volume_trend.html"', page)
                 self.assertIn(">VT</a>", page)
+                self.assertIn('href="transactions.html"', page)
+                self.assertIn(">Trades</a>", page)
 
     def test_ht_uses_shared_screener_shell_without_explainer(self):
         with tempfile.TemporaryDirectory() as directory:

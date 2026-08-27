@@ -28,7 +28,7 @@ class RenderSiteTests(unittest.TestCase):
         self.assertIsNotNone(match)
         return json.loads(base64.b64decode(match.group(1)))
 
-    def test_valid_fixture_renders_ten_pages_and_manifest(self):
+    def test_valid_fixture_renders_eleven_pages_and_manifest(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "dist"
             manifest = render_site.render_site(FIXTURE, output)
@@ -41,6 +41,7 @@ class RenderSiteTests(unittest.TestCase):
                 "recommendations.html",
                 "tsha_hbcs.html",
                 "volume_trend.html",
+                "transactions.html",
                 "us-weekly.html",
                 "us-daily.html",
                 "index.html",
@@ -72,6 +73,10 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn(
                 "fetch('/api/volume-trend'", (output / "volume_trend.html").read_text()
             )
+            transactions = (output / "transactions.html").read_text()
+            self.assertIn("Transactions · India + U.S.", transactions)
+            self.assertIn("`/api/market-events?market=${market}`", transactions)
+            self.assertIn("function syncCoverage(", transactions)
             self.assertIn(
                 "fetch('/api/us-trend-bounce'",
                 (output / "us-weekly.html").read_text(),
@@ -181,10 +186,12 @@ class RenderSiteTests(unittest.TestCase):
                 "recommendations.html",
                 "tsha_hbcs.html",
                 "volume_trend.html",
+                "transactions.html",
             ):
                 rendered = (output / page).read_text()
                 self.assertIn('href="tsha_hbcs.html"', rendered)
                 self.assertIn('href="volume_trend.html"', rendered)
+                self.assertIn('href="transactions.html"', rendered)
                 self.assertIn('href="us-weekly.html"', rendered)
                 self.assertIn('href="us-daily.html"', rendered)
                 self.assertEqual(1, rendered.count('id="themeBtn"'))
@@ -192,7 +199,9 @@ class RenderSiteTests(unittest.TestCase):
                 self.assertIn('href="#main-content">Skip to results</a>', rendered)
                 self.assertIn('id="main-content"', rendered)
                 self.assertEqual(1, rendered.count('class="dashboard-freshness"'))
-                expected_active = 0 if page == "volume_trend.html" else 1
+                expected_active = (
+                    0 if page in {"volume_trend.html", "transactions.html"} else 1
+                )
                 self.assertEqual(expected_active, rendered.count('data-active="true"'))
                 self.assertIn('data-freshness="outcomes"', rendered)
                 self.assertNotIn('class="purpose"', rendered)
@@ -303,6 +312,7 @@ class RenderSiteTests(unittest.TestCase):
             templates = Path(directory)
             (templates / "tsha_hbcs.html").write_text("fixture")
             (templates / "volume_trend.html").write_text("fixture")
+            (templates / "transactions.html").write_text("fixture")
             with mock.patch.object(render_site, "TEMPLATES", templates):
                 with self.assertRaisesRegex(
                     render_site.BundleError,

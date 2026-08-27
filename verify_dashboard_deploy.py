@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reject a dashboard bundle that would degrade the live ten-tab contract."""
+"""Reject a dashboard bundle that would degrade the live eleven-tab contract."""
 
 from __future__ import annotations
 
@@ -23,6 +23,7 @@ PAGES = {
     "sectors.html": "sectors.html",
     "tsha_hbcs.html": "tsha_hbcs.html",
     "volume_trend.html": "volume_trend.html",
+    "transactions.html": "transactions.html",
     "recommendations.html": "recommendations.html",
 }
 NAV_ITEMS = (
@@ -33,6 +34,7 @@ NAV_ITEMS = (
     ("us-daily.html", "US Daily"),
     ("tsha_hbcs.html", "HT"),
     ("volume_trend.html", "VT"),
+    ("transactions.html", "Trades"),
     ("market.html", "Market"),
     ("sectors.html", "Sectors"),
     ("recommendations.html", "Forward Test"),
@@ -117,7 +119,7 @@ def _verify_navigation(page: str, source: str, active_href: str) -> None:
     parser.feed(source)
     actual = tuple((attrs.get("href"), label) for attrs, label in parser.nav_items)
     if actual != NAV_ITEMS:
-        _fail(f"{page} navigation differs from the canonical ten-tab order")
+        _fail(f"{page} navigation differs from the canonical eleven-tab order")
     active = [
         attrs.get("href")
         for attrs, _ in parser.nav_items
@@ -130,7 +132,9 @@ def _verify_navigation(page: str, source: str, active_href: str) -> None:
             _fail(f"{page} must contain one id={element_id!r}")
     if source.count('class="dashboard-freshness"') != 1:
         _fail(f"{page} must contain one shared cutoff strip")
-    expected_active_inputs = 0 if page == "volume_trend.html" else 1
+    expected_active_inputs = (
+        0 if page in {"volume_trend.html", "transactions.html"} else 1
+    )
     if source.count('data-active="true"') != expected_active_inputs:
         _fail(
             f"{page} must identify {expected_active_inputs} active cutoff inputs"
@@ -445,6 +449,29 @@ def verify_site(root: Path) -> dict:
     )
     if state_words.search(vt):
         _fail("volume_trend.html uses present/absent appearance tooltip words")
+
+    _require_text(
+        "transactions.html",
+        page_sources["transactions.html"],
+        (
+            "Transactions · India + U.S.",
+            "`/api/market-events?market=${market}`",
+            "market-events.snapshot.v1",
+            "market-events.api.v1",
+            "bulk_deal",
+            "insider_trade",
+            "political_trade_report",
+            'id="categories"',
+            'id="search"',
+            'id="side"',
+            'id="pageNumber"',
+            'id="pageSize"',
+            'id="download"',
+            "function flatten(",
+            "function syncCoverage(",
+            "filteredRows()",
+        ),
+    )
 
     freshness = json.loads(_read(root, "dashboard-freshness.json"))
     if freshness.get("schema_version") != "dashboard-freshness.v1":

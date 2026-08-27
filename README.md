@@ -4,7 +4,7 @@ Cloudflare Pages presentation for `screener.chiragpatnaik.com`.
 
 This repository accepts one immutable `signals-bundle.v1.json` artifact. It does not scrape
 Chartink or open local market databases. The renderer validates the bundle's major schema version
-before building the ten-page dashboard shell.
+before building the eleven-page dashboard shell.
 
 The HT page is independent of the Chartink bundle. It reads one rolling snapshot
 from the existing `SCANLINKS` KV binding through `GET /api/tsha-hbcs`. The browser
@@ -20,7 +20,7 @@ BUY and SELL events plus a compact 13-period history.
 
 Production runs from the public `.github/workflows/refresh.yml` orchestrator. It checks out the
 public `routine-systems/market-signals` producer at `main`, creates a fresh bundle, verifies its expected
-session when requested, renders the ten pages, and deploys that same build to the existing
+session when requested, renders the eleven pages, and deploys that same build to the existing
 Cloudflare Pages project.
 
 Production UI changes must use `refresh.yml`. A direct deployment of a local `dist/` can replace

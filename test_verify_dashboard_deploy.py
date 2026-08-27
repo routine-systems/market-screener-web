@@ -63,7 +63,7 @@ def _page(active: str, body: str = "") -> str:
         'href="dashboard-shell.css?v=2"></head><body>'
         '<a class="skip-link" href="#main-content">Skip to results</a>'
         f'{_nav(active)}<button id="themeBtn">Theme</button>'
-        f'<main id="main-content">{_freshness(active != "volume_trend.html")}{body}</main>'
+        f'<main id="main-content">{_freshness(active not in {"volume_trend.html", "transactions.html"})}{body}</main>'
         '<script src="dashboard-shell.js?v=2"></script></body></html>'
     )
 
@@ -135,6 +135,12 @@ jsonFetch('/api/forward-test'); jsonFetch('/api/tsha-hbcs'); jsonFetch('/api/vol
 <script>fetch('/api/volume-trend'); const api='volume-trend.api.v1'; const history='vt-history.v1'; const state={direction:'BUY',liquidity:5};
 const turnoverFloor=market=>state.liquidity*(market==='IN'?10000000:1000000);
 MarketEvents.record(r.symbol,r.market); const glyph=on?'●':'○';</script>''',
+        "transactions.html": '''<h1>Transactions · India + U.S.</h1>
+<div id="categories"></div><input id="search"><select id="side"></select>
+<select id="pageNumber"></select><select id="pageSize"></select><button id="download"></button>
+<script>const a='market-events.snapshot.v1',b='market-events.api.v1';
+const categories=['bulk_deal','insider_trade','political_trade_report'];
+fetch(`/api/market-events?market=${market}`); function flatten(){} function syncCoverage(){} filteredRows();</script>''',
     }
     for page, active in subject.PAGES.items():
         (root / page).write_text(_page(active, bodies.get(page, "")))
@@ -161,12 +167,12 @@ MarketEvents.record(r.symbol,r.market); const glyph=on?'●':'○';</script>''',
 
 
 class VerifyDashboardDeployTests(unittest.TestCase):
-    def test_accepts_the_ten_tab_contract(self):
+    def test_accepts_the_eleven_tab_contract(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             _write_valid_site(root)
             result = subject.verify_site(root)
-            self.assertEqual(10, result["pages"])
+            self.assertEqual(11, result["pages"])
             self.assertEqual("site-manifest.json", result["manifest"])
 
     def test_rejects_nondefault_ht_or_vt_turnover_tier(self):
@@ -204,11 +210,13 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             current = (
                 '<a href="tsha_hbcs.html">HT</a>'
                 '<a href="volume_trend.html">VT</a>'
+                '<a href="transactions.html">Trades</a>'
                 '<a href="market.html">Market</a>'
                 '<a href="sectors.html">Sectors</a>'
             )
             legacy = (
                 '<a href="volume_trend.html">VT</a>'
+                '<a href="transactions.html">Trades</a>'
                 '<a href="market.html">Market</a>'
                 '<a href="sectors.html">Sectors</a>'
                 '<a href="tsha_hbcs.html">HT</a>'
@@ -216,16 +224,16 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             self.assertIn(current, source)
             (root / "dashboard.html").write_text(source.replace(current, legacy, 1))
             with self.assertRaisesRegex(
-                subject.DashboardContractError, "canonical ten-tab order"
+                subject.DashboardContractError, "canonical eleven-tab order"
             ):
                 subject.verify_site(root)
 
-    def test_rejects_an_old_eight_tab_bundle(self):
+    def test_rejects_an_old_ten_tab_bundle(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             _write_valid_site(root)
-            (root / "volume_trend.html").unlink()
-            with self.assertRaisesRegex(subject.DashboardContractError, "volume_trend"):
+            (root / "transactions.html").unlink()
+            with self.assertRaisesRegex(subject.DashboardContractError, "transactions"):
                 subject.verify_site(root)
 
     def test_rejects_grid_as_the_sectors_default(self):
