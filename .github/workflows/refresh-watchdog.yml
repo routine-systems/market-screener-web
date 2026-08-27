@@ -1,0 +1,59 @@
+name: refresh-watchdog
+
+# GitHub does not guarantee delivery of scheduled workflow events.  These two
+# lightweight checks retry the heavyweight Chartink acquisition only when no
+# successful or active refresh exists for the current UTC day.
+on:
+  schedule:
+    - cron: "22 12 * * 1-5"
+    - cron: "22 13 * * 1-5"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Report whether a retry is needed without dispatching it"
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch-missed-refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      DRY_RUN: ${{ inputs.dry_run || false }}
+    steps:
+      - name: Detect today's refresh
+        id: refresh
+        shell: bash
+        run: |
+          set -euo pipefail
+          today="$(date -u +%F)"
+          run_id="$({
+            gh api \
+              "repos/${GITHUB_REPOSITORY}/actions/workflows/refresh.yml/runs?per_page=30" \
+              --jq '.workflow_runs[]
+                | select(.created_at | startswith("'"$today"'"))
+                | select(.status != "completed" or .conclusion == "success")
+                | .id' \
+              | head -n 1
+          } || true)"
+          if [[ -n "$run_id" ]]; then
+            echo "state=current" >> "$GITHUB_OUTPUT"
+            echo "Refresh run ${run_id} already covers ${today}."
+          else
+            echo "state=missing" >> "$GITHUB_OUTPUT"
+            echo "No successful or active refresh found for ${today}."
+          fi
+
+      - name: Dispatch missed refresh
+        if: steps.refresh.outputs.state == 'missing' && env.DRY_RUN != 'true'
+        run: gh workflow run refresh.yml --repo "$GITHUB_REPOSITORY" --ref main
+
+      - name: Report dry-run result
+        if: steps.refresh.outputs.state == 'missing' && env.DRY_RUN == 'true'
+        run: echo "A refresh dispatch is required."

@@ -2,7 +2,9 @@ name: refresh
 
 on:
   schedule:
-    - cron: "7 11 * * 1-5"
+    # GitHub can delay or drop schedule events during load. Keep this primary
+    # away from the busiest part of the hour; refresh-watchdog is the retry.
+    - cron: "23 11 * * 1-5"
   workflow_dispatch:
     inputs:
       expected_session:
