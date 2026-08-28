@@ -73,8 +73,8 @@ const CATEGORY_OPTIONS={IN:[['bulk_deal','Bulk deals'],['insider_trade','Insider
 const state={market:'IN',category:'bulk_deal',query:'',side:'all',sort:'event_date',desc:true,page:0,pageSize:100};
 const cache=new Map(),pending=new Map(),flatCache=new Map();
 const $=selector=>document.querySelector(selector),esc=value=>String(value??'').replace(/[&<>"']/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));
-function num(value,digits=0){const number=Number(value);return value==null||!Number.isFinite(number)?'—':number.toLocaleString('en-IN',{maximumFractionDigits:digits})}
-function money(value,market){return value==null||!Number.isFinite(Number(value))?'—':`${market==='IN'?'₹':'$'}${num(value,2)}`}
+function num(value,digits=0,locale='en-IN'){const number=Number(value);return value==null||!Number.isFinite(number)?'—':number.toLocaleString(locale,{maximumFractionDigits:digits})}
+function money(value,market){const locale=market==='IN'?'en-IN':'en-US';return value==null||!Number.isFinite(Number(value))?'—':`${market==='IN'?'₹':'$'}${num(value,2,locale)}`}
 function safeUrl(value){try{const url=new URL(String(value));return ['https:','http:'].includes(url.protocol)?url.href:null}catch{return null}}
 function eventSet(snapshot,category){if(snapshot.event_type===category)return snapshot;return snapshot.related_event_sets?.[category]||null}
 function validateSnapshot(snapshot,market){if(!snapshot||snapshot.schema_version!==EVENT_SCHEMA||snapshot.market!==market||!Array.isArray(snapshot.event_columns)||!snapshot.records)throw new Error('Unsupported transaction snapshot');if(market==='IN'&&!eventSet(snapshot,'insider_trade'))throw new Error('India insider transactions are unavailable');return snapshot}
