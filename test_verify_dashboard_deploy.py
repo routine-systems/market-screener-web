@@ -132,7 +132,8 @@ jsonFetch('/api/forward-test'); jsonFetch('/api/tsha-hbcs'); jsonFetch('/api/vol
 <select id="liquidity"><option value="5" selected>Turnover ≥ ₹5cr / $5m</option></select>
 <select id="pageSize"></select><select id="pageNumber"></select>
 <table><th class="l sorted" data-k="appearance_count">Appearances</th></table>
-<script>fetch('/api/volume-trend'); const api='volume-trend.api.v1'; const history='vt-history.v1'; const state={direction:'BUY',liquidity:5};
+<footer>75-bar highest-volume range · volume confirmation off by default · confirmed close crossing the previous zone</footer>
+<script>fetch('/api/volume-trend'); const api='volume-trend.api.v1'; const history='vt-history.v1'; const state={direction:'BUY',liquidity:5}; const updated='75-bar lookback · volume confirmation off';
 const turnoverFloor=market=>state.liquidity*(market==='IN'?10000000:1000000);
 MarketEvents.record(r.symbol,r.market); const glyph=on?'●':'○';</script>''',
         "transactions.html": '''<h1>Transactions · India + U.S.</h1>

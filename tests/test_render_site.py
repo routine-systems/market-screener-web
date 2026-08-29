@@ -323,6 +323,9 @@ console.log(JSON.stringify(rows.map(row=>appearanceMeta('US',{{...row,signal_dat
             self.assertIn("const weekStart=date=>", page)
             self.assertIn("schema_version!=='volume-trend.snapshot.v1'", page)
             self.assertIn("MarketEvents.record(r.symbol,r.market)", page)
+            self.assertIn("volume confirmation off by default", page)
+            self.assertIn("confirmed close crossing the previous zone", page)
+            self.assertIn("75-bar lookback · volume confirmation off", page)
             self.assertNotIn("?'present':'absent'", page)
 
     def test_render_preserves_page_cutoffs_with_shared_strip_inputs(self):

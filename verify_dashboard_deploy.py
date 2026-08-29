@@ -445,6 +445,9 @@ def verify_site(root: Path) -> dict:
             'value="5" selected>Turnover ≥ ₹5cr / $5m</option>',
             "liquidity:5",
             "const turnoverFloor=market=>state.liquidity*(market==='IN'?10000000:1000000);",
+            "volume confirmation off by default",
+            "confirmed close crossing the previous zone",
+            "75-bar lookback · volume confirmation off",
         ),
     )
     if state_words.search(vt):
