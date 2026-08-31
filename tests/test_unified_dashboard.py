@@ -77,6 +77,7 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn("Transactions · India + U.S.", transactions)
             self.assertIn("`/api/market-events?market=${market}`", transactions)
             self.assertIn("function syncCoverage(", transactions)
+            self.assertIn("['option_flow','Options flow']", transactions)
             self.assertIn(
                 "fetch('/api/us-trend-bounce'",
                 (output / "us-weekly.html").read_text(),

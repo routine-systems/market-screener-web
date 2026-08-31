@@ -464,6 +464,8 @@ def verify_site(root: Path) -> dict:
             "bulk_deal",
             "insider_trade",
             "political_trade_report",
+            "option_flow",
+            "Options flow",
             'id="categories"',
             'id="search"',
             'id="side"',

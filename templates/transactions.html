@@ -64,12 +64,12 @@ __DASHBOARD_NAV__
       <div class="spacer"></div><label for="pageSize">Rows per page</label><select id="pageSize" aria-label="Rows per page"><option value="50">50</option><option value="100" selected>100</option><option value="250">250</option></select><span class="page-range" id="pageRange">0 rows</span>
     </nav>
   </section>
-  <footer id="foot">India uses official NSE/BSE bulk deals and PIT insider disclosures. U.S. rows use source-attributed congressional transaction reports.</footer>
+  <footer id="foot">India uses official NSE/BSE bulk deals and PIT insider disclosures. U.S. rows use source-attributed congressional transaction reports and option-flow mentions.</footer>
 </main>
 </div>
 <script>
 const EVENT_SCHEMA='market-events.snapshot.v1',API_SCHEMA='market-events.api.v1';
-const CATEGORY_OPTIONS={IN:[['bulk_deal','Bulk deals'],['insider_trade','Insider trades']],US:[['political_trade_report','Congress trades']]};
+const CATEGORY_OPTIONS={IN:[['bulk_deal','Bulk deals'],['insider_trade','Insider trades']],US:[['political_trade_report','Congress trades'],['option_flow','Options flow']]};
 const state={market:'IN',category:'bulk_deal',query:'',side:'all',sort:'event_date',desc:true,page:0,pageSize:100};
 const cache=new Map(),pending=new Map(),flatCache=new Map();
 const $=selector=>document.querySelector(selector),esc=value=>String(value??'').replace(/[&<>"']/g,character=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[character]));

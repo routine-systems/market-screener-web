@@ -123,6 +123,7 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn("`/api/market-events?market=${market}`", transactions)
             self.assertIn("function syncCoverage(", transactions)
             self.assertIn("market==='IN'?'en-IN':'en-US'", transactions)
+            self.assertIn("['option_flow','Options flow']", transactions)
             shortlist = (output / "shortlist.html").read_text()
             self.assertIn("India + US Weekly · Shortlist", shortlist)
             self.assertIn('data-view="now"', shortlist)

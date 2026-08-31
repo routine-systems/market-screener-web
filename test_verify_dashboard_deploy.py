@@ -140,7 +140,7 @@ MarketEvents.record(r.symbol,r.market); const glyph=on?'●':'○';</script>''',
 <div id="categories"></div><input id="search"><select id="side"></select>
 <select id="pageNumber"></select><select id="pageSize"></select><button id="download"></button>
 <script>const a='market-events.snapshot.v1',b='market-events.api.v1';
-const categories=['bulk_deal','insider_trade','political_trade_report'];
+const categories=['bulk_deal','insider_trade','political_trade_report','option_flow','Options flow'];
 fetch(`/api/market-events?market=${market}`); function flatten(){} function syncCoverage(){} filteredRows();</script>''',
     }
     for page, active in subject.PAGES.items():
@@ -376,6 +376,19 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             (root / "dashboard.html").write_text(source)
             with self.assertRaisesRegex(
                 subject.DashboardContractError, "insider_trade"
+            ):
+                subject.verify_site(root)
+
+    def test_rejects_transactions_without_options_flow(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_valid_site(root)
+            source = (root / "transactions.html").read_text().replace(
+                "option_flow", "removed_category"
+            )
+            (root / "transactions.html").write_text(source)
+            with self.assertRaisesRegex(
+                subject.DashboardContractError, "option_flow"
             ):
                 subject.verify_site(root)
 
