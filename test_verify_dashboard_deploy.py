@@ -122,7 +122,7 @@ function ignitionDot(r){return '<span class="ignition-dot"></span>'} !state.igni
 MarketEvents.record(r.symbol,r.market); MarketEvents.dot(r.symbol,r.market);
 MarketEvents.dot(r.symbol,'IN','insider_trade');</script>''',
         "recommendations.html": "<script>fetch('/api/forward-test'); const schema='forward-test.api.v1'; applyPayload(fallbackPayload);</script>",
-        "shortlist.html": '''<h1>India + US Weekly · Shortlist</h1>
+        "shortlist.html": '''<h1>India + US Daily + Weekly · Shortlist</h1>
 <button data-view="now">Now</button><button data-view="changes">Changes</button><button data-view="prior">Prior</button>
 <section>Fresh / Returned this week</section><section>Continuing this week</section>
 <script>function isFreshBatch(){} function appearanceMeta(){return {kind:'FIRST_SEEN',batchesAway:1,rankMove:0}} const cap=rows.slice(0,5);

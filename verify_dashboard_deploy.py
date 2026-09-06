@@ -407,7 +407,7 @@ def verify_site(root: Path) -> dict:
         "shortlist.html",
         page_sources["shortlist.html"],
         (
-            "India + US Weekly · Shortlist",
+            "India + US Daily + Weekly · Shortlist",
             'data-view="now"',
             'data-view="changes"',
             'data-view="prior"',

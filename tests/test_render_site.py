@@ -128,12 +128,13 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn("market==='IN'?'en-IN':'en-US'", transactions)
             self.assertIn("['option_flow','Options flow']", transactions)
             shortlist = (output / "shortlist.html").read_text()
-            self.assertIn("India + US Weekly · Shortlist", shortlist)
+            self.assertIn("India + US Daily + Weekly · Shortlist", shortlist)
             self.assertIn('data-view="now"', shortlist)
             self.assertIn("function isFreshBatch(", shortlist)
-            self.assertIn(".slice(0,5)", shortlist)
+            self.assertIn(".slice(0,20)", shortlist)
             self.assertIn("_rank:old._rank", shortlist)
-            self.assertIn("rankedBatch(row.market,row.signal_date)", shortlist)
+            self.assertIn("rankedBatch(row.market,row.timeframe,row.signal_date)", shortlist)
+            self.assertIn('data-timeframe="daily"', shortlist)
             self.assertIn("Fresh / Returned this week", shortlist)
             self.assertIn("Continuing this week", shortlist)
             self.assertIn("function appearanceMeta(", shortlist)
@@ -166,10 +167,10 @@ const batches={{
   '2026-08-22':[{{symbol:'FIRST',_rank:1}},{{symbol:'RETURNED',_rank:2}},{{symbol:'CONT',_rank:1}}],
 }};
 function presentedDates(){{return dates}}
-function rankedBatch(_market,date){{return batches[date]||[]}}
+function rankedBatch(_market,_timeframe,date){{return batches[date]||[]}}
 {appearance_meta}
 const rows=batches['2026-08-22'];
-console.log(JSON.stringify(rows.map(row=>appearanceMeta('US',{{...row,signal_date:'2026-08-22'}}))));
+console.log(JSON.stringify(rows.map(row=>appearanceMeta('US','weekly',{{...row,signal_date:'2026-08-22'}}))));
 """
         completed = subprocess.run(
             ["node", "--input-type=module", "--eval", script],
