@@ -63,7 +63,7 @@ def _page(active: str, body: str = "") -> str:
         'href="dashboard-shell.css?v=2"></head><body>'
         '<a class="skip-link" href="#main-content">Skip to results</a>'
         f'{_nav(active)}<button id="themeBtn">Theme</button>'
-        f'<main id="main-content">{_freshness(active not in {"volume_trend.html", "transactions.html"})}{body}</main>'
+        f'<main id="main-content">{_freshness(active not in {"clusters.html", "volume_trend.html", "transactions.html"})}{body}</main>'
         '<script src="dashboard-shell.js?v=2"></script></body></html>'
     )
 

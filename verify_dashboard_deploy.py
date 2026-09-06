@@ -135,7 +135,7 @@ def _verify_navigation(page: str, source: str, active_href: str) -> None:
     if source.count('class="dashboard-freshness"') != 1:
         _fail(f"{page} must contain one shared cutoff strip")
     expected_active_inputs = (
-        0 if page in {"volume_trend.html", "transactions.html"} else 1
+        0 if page in {"clusters.html", "volume_trend.html", "transactions.html"} else 1
     )
     if source.count('data-active="true"') != expected_active_inputs:
         _fail(
