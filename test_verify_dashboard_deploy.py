@@ -125,7 +125,7 @@ MarketEvents.dot(r.symbol,'IN','insider_trade');</script>''',
         "shortlist.html": '''<h1>India + US Daily + Weekly · Shortlist</h1>
 <button data-view="now">Now</button><button data-view="changes">Changes</button><button data-view="prior">Prior</button>
 <section>Fresh / Returned this week</section><section>Continuing this week</section>
-<script>function isFreshBatch(){} function appearanceMeta(){return {kind:'FIRST_SEEN',batchesAway:1,rankMove:0}} const cap=rows.slice(0,5);
+<script>function isFreshBatch(){} function appearanceMeta(){return {kind:'FIRST_SEEN',batchesAway:1,rankMove:0}} const cap=rows.slice(0,20);
 jsonFetch('/api/forward-test'); jsonFetch('/api/tsha-hbcs'); jsonFetch('/api/volume-trend');
 </script>''',
         "volume_trend.html": '''<div>VT · Volume Breakout / Breakdown</div><div id="directions"><button class="toolbtn on" data-v="BUY">BUY</button></div><div id="historyRange"></div>

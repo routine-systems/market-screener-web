@@ -418,7 +418,7 @@ def verify_site(root: Path) -> dict:
             "batchesAway",
             "rankMove",
             "function isFreshBatch(",
-            ".slice(0,5)",
+            ".slice(0,20)",
             "jsonFetch('/api/forward-test'",
             "jsonFetch('/api/tsha-hbcs'",
             "jsonFetch('/api/volume-trend'",
