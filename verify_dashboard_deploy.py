@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reject a dashboard bundle that would degrade the live eleven-tab contract."""
+"""Reject a dashboard bundle that would degrade the live twelve-tab contract."""
 
 from __future__ import annotations
 
@@ -15,6 +15,7 @@ import re
 
 PAGES = {
     "shortlist.html": "shortlist.html",
+    "clusters.html": "clusters.html",
     "dashboard.html": "dashboard.html",
     "daily.html": "daily.html",
     "us-weekly.html": "us-weekly.html",
@@ -28,6 +29,7 @@ PAGES = {
 }
 NAV_ITEMS = (
     ("shortlist.html", "Shortlist"),
+    ("clusters.html", "Clusters"),
     ("dashboard.html", "Weekly"),
     ("daily.html", "Daily"),
     ("us-weekly.html", "US Weekly"),
@@ -119,7 +121,7 @@ def _verify_navigation(page: str, source: str, active_href: str) -> None:
     parser.feed(source)
     actual = tuple((attrs.get("href"), label) for attrs, label in parser.nav_items)
     if actual != NAV_ITEMS:
-        _fail(f"{page} navigation differs from the canonical eleven-tab order")
+        _fail(f"{page} navigation differs from the canonical twelve-tab order")
     active = [
         attrs.get("href")
         for attrs, _ in parser.nav_items
@@ -478,6 +480,22 @@ def verify_site(root: Path) -> dict:
         ),
     )
 
+    _require_text(
+        "clusters.html",
+        page_sources["clusters.html"],
+        (
+            "Signal Clusters · HT + VT",
+            "fetch('/api/tsha-hbcs'",
+            "fetch('/api/volume-trend'",
+            "tsha-hbcs.api.v1",
+            "volume-trend.api.v1",
+            "const nearbyWindow=3",
+            "ht2of3",
+            "ht3of5",
+            "ht_vt",
+            "current or prior 2 same-timeframe periods",
+        ),
+    )
     freshness = json.loads(_read(root, "dashboard-freshness.json"))
     if freshness.get("schema_version") != "dashboard-freshness.v1":
         _fail("dashboard-freshness.json has an unsupported schema_version")

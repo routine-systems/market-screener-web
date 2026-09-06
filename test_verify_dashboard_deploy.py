@@ -142,6 +142,11 @@ MarketEvents.record(r.symbol,r.market); const glyph=on?'●':'○';</script>''',
 <script>const a='market-events.snapshot.v1',b='market-events.api.v1';
 const categories=['bulk_deal','insider_trade','political_trade_report','option_flow','Options flow'];
 fetch(`/api/market-events?market=${market}`); function flatten(){} function syncCoverage(){} filteredRows();</script>''',
+        "clusters.html": '''<h1>Signal Clusters · HT + VT</h1>
+<script>const nearbyWindow=3; fetch('/api/tsha-hbcs'); fetch('/api/volume-trend');
+const ht='tsha-hbcs.api.v1',vt='volume-trend.api.v1';
+const ht2of3=true,ht3of5=true,ht_vt=true;
+const method='current or prior 2 same-timeframe periods';</script>''',
     }
     for page, active in subject.PAGES.items():
         (root / page).write_text(_page(active, bodies.get(page, "")))
@@ -168,12 +173,12 @@ fetch(`/api/market-events?market=${market}`); function flatten(){} function sync
 
 
 class VerifyDashboardDeployTests(unittest.TestCase):
-    def test_accepts_the_eleven_tab_contract(self):
+    def test_accepts_the_twelve_tab_contract(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             _write_valid_site(root)
             result = subject.verify_site(root)
-            self.assertEqual(11, result["pages"])
+            self.assertEqual(12, result["pages"])
             self.assertEqual("site-manifest.json", result["manifest"])
 
     def test_rejects_nondefault_ht_or_vt_turnover_tier(self):
@@ -225,7 +230,7 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             self.assertIn(current, source)
             (root / "dashboard.html").write_text(source.replace(current, legacy, 1))
             with self.assertRaisesRegex(
-                subject.DashboardContractError, "canonical eleven-tab order"
+                subject.DashboardContractError, "canonical twelve-tab order"
             ):
                 subject.verify_site(root)
 

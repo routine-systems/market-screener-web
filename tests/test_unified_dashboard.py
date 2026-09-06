@@ -28,7 +28,7 @@ class RenderSiteTests(unittest.TestCase):
         self.assertIsNotNone(match)
         return json.loads(base64.b64decode(match.group(1)))
 
-    def test_valid_fixture_renders_eleven_pages_and_manifest(self):
+    def test_valid_fixture_renders_twelve_pages_and_manifest(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "dist"
             manifest = render_site.render_site(FIXTURE, output)
@@ -39,6 +39,7 @@ class RenderSiteTests(unittest.TestCase):
                 "market.html",
                 "sectors.html",
                 "recommendations.html",
+                "clusters.html",
                 "tsha_hbcs.html",
                 "volume_trend.html",
                 "transactions.html",
@@ -73,6 +74,9 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn(
                 "fetch('/api/volume-trend'", (output / "volume_trend.html").read_text()
             )
+            clusters = (output / "clusters.html").read_text()
+            self.assertIn("Signal Clusters · HT + VT", clusters)
+            self.assertIn("const nearbyWindow=3", clusters)
             transactions = (output / "transactions.html").read_text()
             self.assertIn("Transactions · India + U.S.", transactions)
             self.assertIn("`/api/market-events?market=${market}`", transactions)

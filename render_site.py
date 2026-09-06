@@ -45,6 +45,7 @@ PAGE_SPECS = {
 }
 NAV_ITEMS = (
     ("shortlist", "shortlist.html", "Shortlist"),
+    ("clusters", "clusters.html", "Clusters"),
     ("weekly", "dashboard.html", "Weekly"),
     ("daily", "daily.html", "Daily"),
     ("us-weekly", "us-weekly.html", "US Weekly"),
@@ -405,6 +406,9 @@ def render_site(bundle_path: Path, output: Path = DEFAULT_OUTPUT) -> dict:
     shortlist_page = TEMPLATES / "shortlist.html"
     if not shortlist_page.is_file():
         raise BundleError(f"Shortlist template not found: {shortlist_page}")
+    clusters_page = TEMPLATES / "clusters.html"
+    if not clusters_page.is_file():
+        raise BundleError(f"Signal Clusters template not found: {clusters_page}")
     temp = output.parent / f".{output.name}.tmp"
     if temp.exists():
         shutil.rmtree(temp)
@@ -434,6 +438,9 @@ def render_site(bundle_path: Path, output: Path = DEFAULT_OUTPUT) -> dict:
         "shortlist",
     )
     (temp / "shortlist.html").write_text(shortlist_html, encoding="utf-8")
+
+    clusters_source = _apply_shell(clusters_page.read_text(encoding="utf-8"), "clusters")
+    (temp / "clusters.html").write_text(clusters_source, encoding="utf-8")
 
     (temp / "index.html").write_text(_index_document(), encoding="utf-8")
     ht_source = _apply_shell(ht_page.read_text(encoding="utf-8"), "ht")

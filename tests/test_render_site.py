@@ -13,6 +13,7 @@ import render_site
 ROOT = Path(__file__).resolve().parents[1]
 FIXTURE = ROOT / "tests" / "fixtures" / "signals-bundle.v1.json"
 HT_TEMPLATE = ROOT / "templates" / "tsha_hbcs.html"
+CLUSTERS_TEMPLATE = ROOT / "templates" / "clusters.html"
 
 
 def javascript_function(source: str, name: str) -> str:
@@ -34,6 +35,7 @@ class RenderSiteTests(unittest.TestCase):
         self.assertEqual(
             (
                 ("shortlist", "shortlist.html", "Shortlist"),
+                ("clusters", "clusters.html", "Clusters"),
                 ("weekly", "dashboard.html", "Weekly"),
                 ("daily", "daily.html", "Daily"),
                 ("us-weekly", "us-weekly.html", "US Weekly"),
@@ -59,7 +61,7 @@ class RenderSiteTests(unittest.TestCase):
         self.assertIsNotNone(match)
         return json.loads(base64.b64decode(match.group(1)))
 
-    def test_valid_fixture_renders_eleven_pages_and_manifest(self):
+    def test_valid_fixture_renders_twelve_pages_and_manifest(self):
         with tempfile.TemporaryDirectory() as directory:
             output = Path(directory) / "dist"
             manifest = render_site.render_site(FIXTURE, output)
@@ -70,6 +72,7 @@ class RenderSiteTests(unittest.TestCase):
                 "market.html",
                 "sectors.html",
                 "recommendations.html",
+                "clusters.html",
                 "tsha_hbcs.html",
                 "volume_trend.html",
                 "transactions.html",
@@ -141,6 +144,13 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn("jsonFetch('/api/tsha-hbcs'", shortlist)
             self.assertIn("jsonFetch('/api/volume-trend'", shortlist)
             self.assertIn('url=shortlist.html', (output / "index.html").read_text())
+            clusters = (output / "clusters.html").read_text()
+            self.assertIn("Signal Clusters · HT + VT", clusters)
+            self.assertIn("/api/tsha-hbcs", clusters)
+            self.assertIn("/api/volume-trend", clusters)
+            self.assertIn("nearbyWindow=3", clusters)
+            self.assertIn("ht2of3", clusters)
+            self.assertIn("ht3of5", clusters)
             self.assertTrue((output / "functions").exists())
 
     def test_shortlist_classifies_first_returned_and_continuing_appearances(self):
@@ -232,6 +242,7 @@ console.log(JSON.stringify(rows.map(row=>appearanceMeta('US',{{...row,signal_dat
                 "market.html",
                 "sectors.html",
                 "recommendations.html",
+                "clusters.html",
                 "tsha_hbcs.html",
                 "volume_trend.html",
                 "transactions.html",
@@ -328,6 +339,37 @@ console.log(JSON.stringify(rows.map(row=>appearanceMeta('US',{{...row,signal_dat
             self.assertIn("confirmed close crossing the previous zone", page)
             self.assertIn("75-bar lookback · volume confirmation off", page)
             self.assertNotIn("?'present':'absent'", page)
+
+    def test_clusters_uses_current_ht_with_a_causal_three_period_vt_window(self):
+        page = CLUSTERS_TEMPLATE.read_text()
+        functions = "\n".join(
+            javascript_function(page, name)
+            for name in ("rowsForBucket", "vtBuys", "clusterBucket")
+        )
+        script = f"""
+const nearbyWindow=3;
+const displayPeriod=(date,timeframe)=>date;
+{functions}
+const columns=['symbol','signal_date','exchange','asset_type','sector','close','median_dollar_turnover_20'];
+const htBucket={{signal_date:'2026-09-04',appearance_periods:['2026-08-29','2026-09-01','2026-09-02','2026-09-03','2026-09-04'],appearance_bits:{{ABC:'11011',OLD:'00101'}},rows:[['ABC','2026-09-04','NSE','stock','Tech',10,10000000],['OLD','2026-09-04','NSE','stock','Old',20,10000000]]}};
+const vtBucket={{signal_date:'2026-09-04',history:{{schema_version:'vt-history.v1',instrument_columns:['symbol'],row_columns:['instrument_index','signal'],instruments:[['ABC'],['OLD']],periods:[{{date:'2026-09-01',rows:[[1,'BUY']]}},{{date:'2026-09-02',rows:[[0,'BUY']]}},{{date:'2026-09-03',rows:[]}},{{date:'2026-09-04',rows:[]}}]}}}};
+const ht={{columns,markets:{{IN:{{timeframes:{{daily:htBucket}}}}}}}};
+const vt={{markets:{{IN:{{timeframes:{{daily:vtBucket}}}}}}}};
+console.log(JSON.stringify(clusterBucket(ht,vt,'IN','daily')));
+"""
+        completed = subprocess.run(
+            ["node", "--input-type=module", "--eval", script],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        rows = json.loads(completed.stdout)
+        self.assertEqual(["ABC", "OLD"], [row["symbol"] for row in rows])
+        self.assertTrue(rows[0]["ht2of3"])
+        self.assertTrue(rows[0]["ht3of5"])
+        self.assertTrue(rows[0]["ht_vt"])
+        self.assertTrue(rows[1]["ht2of3"])
+        self.assertFalse(rows[1]["ht_vt"])
 
     def test_render_preserves_page_cutoffs_with_shared_strip_inputs(self):
         bundle = self.load_fixture()
