@@ -53,6 +53,7 @@ REQUIRED_FILES = {
     "functions/api/forward-test.js",
     "functions/api/refresh.js",
     "functions/api/scanlink.js",
+    "functions/api/shortlist-history.js",
     "functions/api/tsha-hbcs.js",
     "functions/api/us-trend-bounce.js",
     "functions/api/volume-trend.js",
@@ -420,6 +421,9 @@ def verify_site(root: Path) -> dict:
             "ht3of5",
             "ht_vt",
             "prior 2 same-timeframe periods",
+            'id="historyDate"',
+            'id="historyLatest"',
+            "shortlist-history.api.v1",
         ),
     )
 

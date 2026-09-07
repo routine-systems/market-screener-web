@@ -92,6 +92,7 @@ class RenderSiteTests(unittest.TestCase):
                 "functions/api/tsha-hbcs.js",
                 "functions/api/us-trend-bounce.js",
                 "functions/api/volume-trend.js",
+                "functions/api/shortlist-history.js",
             }
             actual = {
                 path.relative_to(output).as_posix()

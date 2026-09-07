@@ -123,7 +123,8 @@ MarketEvents.record(r.symbol,r.market); MarketEvents.dot(r.symbol,r.market);
 MarketEvents.dot(r.symbol,'IN','insider_trade');</script>''',
         "recommendations.html": "<script>fetch('/api/forward-test'); const schema='forward-test.api.v1'; applyPayload(fallbackPayload);</script>",
         "shortlist.html": '''<h1>India + US Daily + Weekly · Shortlist</h1>
-<script>const nearbyWindow=3; fetch('/api/tsha-hbcs'); fetch('/api/volume-trend');
+<select id="historyDate"></select><button id="historyLatest">Latest</button>
+<script>const history='shortlist-history.api.v1';const nearbyWindow=3; fetch('/api/tsha-hbcs'); fetch('/api/volume-trend');
 const ht2of3=true,ht3of5=true,ht_vt=true; const cap=rows.slice(0,20);
 const method='current or prior 2 same-timeframe periods';</script>''',
         "volume_trend.html": '''<div>VT · Volume Breakout / Breakdown</div><div id="directions"><button class="toolbtn on" data-v="BUY">BUY</button></div><div id="historyRange"></div>

@@ -52,3 +52,18 @@ producer commit for deployment provenance.
 The Pages project remains `screener`. GitHub stores only the scoped `CLOUDFLARE_API_TOKEN` Actions
 secret. This repository contains no market database and performs no R2 or D1 writes. The
 TSHA-HBCS API performs one KV read per page load and never polls.
+
+
+## Shortlist history
+
+Shortlist provides market-specific Daily/Weekly date selection, previous/next,
+and Latest controls. `/api/shortlist-history?market=IN|US` reads separate existing
+KV keys (`shortlist-history:v1:IN|US`); history is fetched once per market per page.
+The local market-sync producer maintains those snapshots independently of Pages
+refreshes. No historical dataset is committed to this public repository.
+
+Historical views retain their saved top 20. Captured and reconstructed dates are
+labelled separately; reconstructed flags do not invent individual appearance dots.
+Weekly labels identify Monday, with the actual source session shown in the note.
+Sector/industry and rotation context are current, as disclosed in the view.
+The deployment contract requires both the history API and date controls.
