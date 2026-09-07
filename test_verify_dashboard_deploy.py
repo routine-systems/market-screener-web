@@ -95,7 +95,7 @@ const TIMEFRAME='{timeframe}'; {week_start}
 fetch('/api/us-trend-bounce'); state.congress; row.hasCongressHistory;
 snapshot.rotation?.schema_version!=='us-sector-rotation.v1'; rotationDot(row.symbol);
 const glyph=on?'●':'○'; MarketEvents.load('US',()=>MarketEvents.dot('TEST'));
-const cell=`<div class="market">${{esc(row.exchange||'US')}} · ${{esc(row.rotationGroup||row.asset_type||'stock')}}</div>`;
+const cell=`<div class="market">${{esc(row.exchange||'US')}} · ${{esc(row.sector||row.rotationGroup||row.asset_type||'stock')}}</div>`;
 </script>'''
 
 

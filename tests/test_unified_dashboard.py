@@ -136,7 +136,7 @@ class RenderSiteTests(unittest.TestCase):
                 )
                 self.assertIn(
                     '<div class="market">${esc(row.exchange||\'US\')} · '
-                    "${esc(row.rotationGroup||row.asset_type||'stock')}</div>",
+                    "${esc(row.sector||row.rotationGroup||row.asset_type||'stock')}</div>",
                     rendered,
                 )
                 self.assertIn('id="rotOnly"', rendered)

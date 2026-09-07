@@ -315,7 +315,7 @@ def verify_site(root: Path) -> dict:
                 '<th class="l ticker-col" data-sort="symbol">Ticker</th>',
                 '<th class="l sorted" data-sort="count">Appearances</th>',
                 '<td class="l ticker-col">',
-                '<div class="market">${esc(row.exchange||\'US\')} · ${esc(row.rotationGroup||row.asset_type||\'stock\')}</div>',
+                '<div class="market">${esc(row.exchange||\'US\')} · ${esc(row.sector||row.rotationGroup||row.asset_type||\'stock\')}</div>',
                 'id="rotOnly"',
                 "snapshot.rotation?.schema_version!=='us-sector-rotation.v1'",
                 "rotationDot(row.symbol)",
