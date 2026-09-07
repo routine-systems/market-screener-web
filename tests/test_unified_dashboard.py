@@ -17,6 +17,20 @@ HT_TEMPLATE = ROOT / "templates" / "tsha_hbcs.html"
 
 
 class RenderSiteTests(unittest.TestCase):
+    def test_every_ticker_table_uses_shared_rotation_and_industry_is_distinct(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory) / "dist"
+            render_site.render_site(FIXTURE, output)
+            for name in ("dashboard.html", "daily.html", "us-weekly.html", "us-daily.html", "shortlist.html", "tsha_hbcs.html", "volume_trend.html", "transactions.html", "recommendations.html"):
+                source = (output / name).read_text()
+                self.assertIn('src="market-rotation.js?v=1"', source)
+                self.assertIn("MarketRotation.", source)
+            self.assertEqual(json.loads((output / "india-rotation.json").read_text())["rotation"], json.loads(FIXTURE.read_text())["pages"]["weekly"]["payload"]["rotation"])
+            for name in ("us-weekly.html", "us-daily.html"):
+                source = (output / name).read_text()
+                self.assertIn('data-sort="industry">Industry</th>', source)
+                self.assertNotIn("row.sector||row.rotationGroup||row.asset_type", source)
+
     def load_fixture(self):
         return json.loads(FIXTURE.read_text())
 
@@ -50,6 +64,8 @@ class RenderSiteTests(unittest.TestCase):
                 "dashboard-shell.css",
                 "dashboard-shell.js",
                 "market-events.js",
+                "market-rotation.js",
+                "india-rotation.json",
                 "functions/_middleware.js",
                 "functions/api/market-events.js",
                 "functions/api/forward-test.js",
@@ -136,7 +152,7 @@ class RenderSiteTests(unittest.TestCase):
                 )
                 self.assertIn(
                     '<div class="market">${esc(row.exchange||\'US\')} · '
-                    "${esc(row.sector||row.rotationGroup||row.asset_type||'stock')}</div>",
+                    "${esc(row.asset_type||'stock')}</div>",
                     rendered,
                 )
                 self.assertIn('id="rotOnly"', rendered)
@@ -212,7 +228,7 @@ class RenderSiteTests(unittest.TestCase):
                 self.assertNotIn('class="purpose"', rendered)
                 self.assertNotIn('id="purpose"', rendered)
                 self.assertIn('src="dashboard-shell.js?v=2"', rendered)
-                self.assertIn('href="dashboard-shell.css?v=2"', rendered)
+                self.assertIn('href="dashboard-shell.css?v=3"', rendered)
             freshness = json.loads((output / "dashboard-freshness.json").read_text())
             self.assertEqual("dashboard-freshness.v1", freshness["schema_version"])
             self.assertEqual(

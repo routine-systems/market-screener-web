@@ -82,6 +82,8 @@ class RenderSiteTests(unittest.TestCase):
                 "dashboard-shell.css",
                 "dashboard-shell.js",
                 "market-events.js",
+                "market-rotation.js",
+                "india-rotation.json",
                 "functions/_middleware.js",
                 "functions/api/market-events.js",
                 "functions/api/forward-test.js",
@@ -631,7 +633,7 @@ console.log(JSON.stringify({{history:csvColumns({{}},latest),latest:csvColumns(n
         self.assertIn("appearance_bits", result["history"])
         self.assertIn("instrument_index", result["history"])
         self.assertNotIn("name", result["history"])
-        self.assertNotIn("industry", result["history"])
+        self.assertIn("industry", result["history"])
         self.assertNotIn("volume", result["history"])
 
     def test_ht_browser_rejects_unknown_history_instrument(self):

@@ -60,11 +60,11 @@ def _freshness(active: bool = True) -> str:
 def _page(active: str, body: str = "") -> str:
     return (
         '<!doctype html><html><head><link rel="stylesheet" '
-        'href="dashboard-shell.css?v=2"></head><body>'
+        'href="dashboard-shell.css?v=3"></head><body>'
         '<a class="skip-link" href="#main-content">Skip to results</a>'
         f'{_nav(active)}<button id="themeBtn">Theme</button>'
         f'<main id="main-content">{_freshness(active not in {"clusters.html", "volume_trend.html", "transactions.html"})}{body}</main>'
-        '<script src="dashboard-shell.js?v=2"></script></body></html>'
+        '<script src="dashboard-shell.js?v=2"></script><script src="market-rotation.js?v=1"></script><script>MarketRotation.marker()</script></body></html>'
     )
 
 
@@ -88,14 +88,14 @@ MarketEvents.dot(r.symbol,'IN','insider_trade');
 def _us_body(timeframe: str) -> str:
     week_start = "const weekStart=date=>date;" if timeframe == "weekly" else ""
     return f'''<button id="congressOnly">● Congress history</button><button id="rotOnly">◉ Rotation</button>
-<table><thead><tr><th class="l ticker-col" data-sort="symbol">Ticker</th><th class="l sorted" data-sort="count">Appearances</th></tr></thead><tbody><tr><td class="l ticker-col">TEST</td></tr></tbody></table>
+<table><thead><tr><th class="l ticker-col" data-sort="symbol">Ticker</th><th class="l sorted" data-sort="count">Appearances</th><th class="l" data-sort="industry">Industry</th></tr></thead><tbody><tr><td class="l ticker-col">TEST</td></tr></tbody></table>
 <div id="tt" role="tooltip"></div><span class="dots" data-tip="x"></span>
 <script src="market-events.js?v=5"></script><script>
 const TIMEFRAME='{timeframe}'; {week_start}
 fetch('/api/us-trend-bounce'); state.congress; row.hasCongressHistory;
 snapshot.rotation?.schema_version!=='us-sector-rotation.v1'; rotationDot(row.symbol);
 const glyph=on?'●':'○'; MarketEvents.load('US',()=>MarketEvents.dot('TEST'));
-const cell=`<div class="market">${{esc(row.exchange||'US')}} · ${{esc(row.sector||row.rotationGroup||row.asset_type||'stock')}}</div>`;
+const cell=`<div class="market">${{esc(row.exchange||'US')}} · ${{esc(row.asset_type||'stock')}}</div>`;
 </script>'''
 
 

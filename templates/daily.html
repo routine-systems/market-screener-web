@@ -231,7 +231,7 @@ function rotOf(sym){ if(!ROT) return null; const grp=groupOf(sym, ROT_LEVEL); if
   const st=(ROT.status[ROT_LEVEL]||{})[grp]; return st==null?null:{grp, st}; }
 function rotDot(sym){ if(!ROT_ON||!ROT) return ''; const r=rotOf(sym); if(!r) return '';
   const cls=r.st>0?'up':(r.st<0?'down':'flat'), word=r.st>0?'rotating in (rising)':(r.st<0?'rotating out (cooling)':'flat');
-  return `<span class="rot ${cls}" title="${escH(r.grp)} — ${word}"></span>`; }
+  return MarketRotation.dot(r.grp, r.st); }
 
 function stockUrl(sym){
   if(H.scanlink) return `https://chartink.com/stocks-new?from_scan=1&hide_filters=true&scan_link=scanlink:${encodeURIComponent(H.scanlink)}&timeframe=${encodeURIComponent(H.timeframe||'daily')}&symbol=${encodeURIComponent(sym)}`;

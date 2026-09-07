@@ -22,6 +22,13 @@ export async function onRequestGet({ env, request }) {
     if (stored.value === null) {
       return json({ error: "US Trend Bounce snapshot unavailable" }, 503);
     }
+    if (new URL(request.url).searchParams.get("context") === "1") {
+      return json({
+        schema_version: "ticker-context.v1",
+        rotation: stored.value.rotation,
+        security_metadata: stored.value.security_metadata || null,
+      });
+    }
     const metaOnly = new URL(request.url).searchParams.get("meta") === "1";
     if (metaOnly) {
       const pages = stored.value.pages || {};

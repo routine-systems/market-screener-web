@@ -314,7 +314,8 @@ def _apply_shell(source: str, active: str) -> str:
     source = source.replace("__DASHBOARD_FRESHNESS__", _freshness_strip(active))
     assets = (
         '<script src="dashboard-shell.js?v=2"></script>'
-        '<link rel="stylesheet" href="dashboard-shell.css?v=2">'
+        '<script src="market-rotation.js?v=1"></script>'
+        '<link rel="stylesheet" href="dashboard-shell.css?v=3">'
     )
     return source.replace("</head>", f"{assets}</head>", 1)
 
@@ -457,6 +458,11 @@ def render_site(bundle_path: Path, output: Path = DEFAULT_OUTPUT) -> dict:
         for asset in ASSETS.iterdir():
             if asset.is_file():
                 shutil.copy2(asset, temp / asset.name)
+
+    (temp / "india-rotation.json").write_text(
+        json.dumps({"rotation": bundle["pages"]["weekly"]["payload"]["rotation"]}) + "\n",
+        encoding="utf-8",
+    )
 
     (temp / "dashboard-freshness.json").write_text(
         json.dumps(_source_freshness(bundle), indent=2, sort_keys=True) + "\n",

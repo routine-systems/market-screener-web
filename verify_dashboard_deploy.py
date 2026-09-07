@@ -46,6 +46,8 @@ REQUIRED_FILES = {
     "dashboard-shell.css",
     "dashboard-shell.js",
     "market-events.js",
+    "market-rotation.js",
+    "india-rotation.json",
     "functions/_middleware.js",
     "functions/api/market-events.js",
     "functions/api/forward-test.js",
@@ -257,7 +259,7 @@ def verify_site(root: Path) -> dict:
             (
                 'href="#main-content">Skip to results</a>',
                 'src="dashboard-shell.js?v=2"',
-                'href="dashboard-shell.css?v=2"',
+                'href="dashboard-shell.css?v=3"',
             ),
         )
         unresolved = re.findall(r"__[A-Z][A-Z0-9_]+__", source)
@@ -296,6 +298,9 @@ def verify_site(root: Path) -> dict:
         ('<th class="l" data-k="consist">Appearances</th>',),
     )
 
+    for page in ("dashboard.html", "daily.html", "us-weekly.html", "us-daily.html", "shortlist.html", "tsha_hbcs.html", "volume_trend.html", "transactions.html", "recommendations.html"):
+        _require_text(page, page_sources[page], ('src="market-rotation.js?v=1"', "MarketRotation."))
+
     for page, timeframe in (("us-weekly.html", "weekly"), ("us-daily.html", "daily")):
         source = page_sources[page]
         _require_text(
@@ -315,10 +320,11 @@ def verify_site(root: Path) -> dict:
                 '<th class="l ticker-col" data-sort="symbol">Ticker</th>',
                 '<th class="l sorted" data-sort="count">Appearances</th>',
                 '<td class="l ticker-col">',
-                '<div class="market">${esc(row.exchange||\'US\')} · ${esc(row.sector||row.rotationGroup||row.asset_type||\'stock\')}</div>',
+                '<div class="market">${esc(row.exchange||\'US\')} · ${esc(row.asset_type||\'stock\')}</div>',
                 'id="rotOnly"',
                 "snapshot.rotation?.schema_version!=='us-sector-rotation.v1'",
                 "rotationDot(row.symbol)",
+                'data-sort="industry">Industry</th>',
             ),
         )
         if '<div class="name">' in source or 'data-sort="exchange"' in source:
