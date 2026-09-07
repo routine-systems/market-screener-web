@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reject a dashboard bundle that would degrade the live twelve-tab contract."""
+"""Reject a dashboard bundle that would degrade the live eleven-tab contract."""
 
 from __future__ import annotations
 
@@ -15,7 +15,6 @@ import re
 
 PAGES = {
     "shortlist.html": "shortlist.html",
-    "clusters.html": "clusters.html",
     "dashboard.html": "dashboard.html",
     "daily.html": "daily.html",
     "us-weekly.html": "us-weekly.html",
@@ -29,7 +28,6 @@ PAGES = {
 }
 NAV_ITEMS = (
     ("shortlist.html", "Shortlist"),
-    ("clusters.html", "Clusters"),
     ("dashboard.html", "Weekly"),
     ("daily.html", "Daily"),
     ("us-weekly.html", "US Weekly"),
@@ -121,7 +119,7 @@ def _verify_navigation(page: str, source: str, active_href: str) -> None:
     parser.feed(source)
     actual = tuple((attrs.get("href"), label) for attrs, label in parser.nav_items)
     if actual != NAV_ITEMS:
-        _fail(f"{page} navigation differs from the canonical twelve-tab order")
+        _fail(f"{page} navigation differs from the canonical eleven-tab order")
     active = [
         attrs.get("href")
         for attrs, _ in parser.nav_items
@@ -135,7 +133,7 @@ def _verify_navigation(page: str, source: str, active_href: str) -> None:
     if source.count('class="dashboard-freshness"') != 1:
         _fail(f"{page} must contain one shared cutoff strip")
     expected_active_inputs = (
-        0 if page in {"clusters.html", "volume_trend.html", "transactions.html"} else 1
+        0 if page in {"volume_trend.html", "transactions.html"} else 1
     )
     if source.count('data-active="true"') != expected_active_inputs:
         _fail(
@@ -408,20 +406,14 @@ def verify_site(root: Path) -> dict:
         page_sources["shortlist.html"],
         (
             "India + US Daily + Weekly · Shortlist",
-            'data-view="now"',
-            'data-view="changes"',
-            'data-view="prior"',
-            "Fresh / Returned this week",
-            "Continuing this week",
-            "function appearanceMeta(",
-            "FIRST_SEEN",
-            "batchesAway",
-            "rankMove",
-            "function isFreshBatch(",
             ".slice(0,20)",
-            "jsonFetch('/api/forward-test'",
-            "jsonFetch('/api/tsha-hbcs'",
-            "jsonFetch('/api/volume-trend'",
+            "fetch('/api/tsha-hbcs'",
+            "fetch('/api/volume-trend'",
+            "const nearbyWindow=3",
+            "ht2of3",
+            "ht3of5",
+            "ht_vt",
+            "prior 2 same-timeframe periods",
         ),
     )
 
@@ -480,22 +472,6 @@ def verify_site(root: Path) -> dict:
         ),
     )
 
-    _require_text(
-        "clusters.html",
-        page_sources["clusters.html"],
-        (
-            "Signal Clusters · HT + VT",
-            "fetch('/api/tsha-hbcs'",
-            "fetch('/api/volume-trend'",
-            "tsha-hbcs.api.v1",
-            "volume-trend.api.v1",
-            "const nearbyWindow=3",
-            "ht2of3",
-            "ht3of5",
-            "ht_vt",
-            "current or prior 2 same-timeframe periods",
-        ),
-    )
     freshness = json.loads(_read(root, "dashboard-freshness.json"))
     if freshness.get("schema_version") != "dashboard-freshness.v1":
         _fail("dashboard-freshness.json has an unsupported schema_version")

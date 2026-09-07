@@ -123,11 +123,9 @@ MarketEvents.record(r.symbol,r.market); MarketEvents.dot(r.symbol,r.market);
 MarketEvents.dot(r.symbol,'IN','insider_trade');</script>''',
         "recommendations.html": "<script>fetch('/api/forward-test'); const schema='forward-test.api.v1'; applyPayload(fallbackPayload);</script>",
         "shortlist.html": '''<h1>India + US Daily + Weekly · Shortlist</h1>
-<button data-view="now">Now</button><button data-view="changes">Changes</button><button data-view="prior">Prior</button>
-<section>Fresh / Returned this week</section><section>Continuing this week</section>
-<script>function isFreshBatch(){} function appearanceMeta(){return {kind:'FIRST_SEEN',batchesAway:1,rankMove:0}} const cap=rows.slice(0,20);
-jsonFetch('/api/forward-test'); jsonFetch('/api/tsha-hbcs'); jsonFetch('/api/volume-trend');
-</script>''',
+<script>const nearbyWindow=3; fetch('/api/tsha-hbcs'); fetch('/api/volume-trend');
+const ht2of3=true,ht3of5=true,ht_vt=true; const cap=rows.slice(0,20);
+const method='current or prior 2 same-timeframe periods';</script>''',
         "volume_trend.html": '''<div>VT · Volume Breakout / Breakdown</div><div id="directions"><button class="toolbtn on" data-v="BUY">BUY</button></div><div id="historyRange"></div>
 <select id="liquidity"><option value="5" selected>Turnover ≥ ₹5cr / $5m</option></select>
 <select id="pageSize"></select><select id="pageNumber"></select>
@@ -173,12 +171,12 @@ const method='current or prior 2 same-timeframe periods';</script>''',
 
 
 class VerifyDashboardDeployTests(unittest.TestCase):
-    def test_accepts_the_twelve_tab_contract(self):
+    def test_accepts_the_eleven_tab_contract(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             _write_valid_site(root)
             result = subject.verify_site(root)
-            self.assertEqual(12, result["pages"])
+            self.assertEqual(11, result["pages"])
             self.assertEqual("site-manifest.json", result["manifest"])
 
     def test_rejects_nondefault_ht_or_vt_turnover_tier(self):
@@ -230,7 +228,7 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             self.assertIn(current, source)
             (root / "dashboard.html").write_text(source.replace(current, legacy, 1))
             with self.assertRaisesRegex(
-                subject.DashboardContractError, "canonical twelve-tab order"
+                subject.DashboardContractError, "canonical eleven-tab order"
             ):
                 subject.verify_site(root)
 

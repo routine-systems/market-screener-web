@@ -35,7 +35,6 @@ class RenderSiteTests(unittest.TestCase):
         self.assertEqual(
             (
                 ("shortlist", "shortlist.html", "Shortlist"),
-                ("clusters", "clusters.html", "Clusters"),
                 ("weekly", "dashboard.html", "Weekly"),
                 ("daily", "daily.html", "Daily"),
                 ("us-weekly", "us-weekly.html", "US Weekly"),
@@ -72,7 +71,6 @@ class RenderSiteTests(unittest.TestCase):
                 "market.html",
                 "sectors.html",
                 "recommendations.html",
-                "clusters.html",
                 "tsha_hbcs.html",
                 "volume_trend.html",
                 "transactions.html",
@@ -129,29 +127,13 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn("['option_flow','Options flow']", transactions)
             shortlist = (output / "shortlist.html").read_text()
             self.assertIn("India + US Daily + Weekly · Shortlist", shortlist)
-            self.assertIn('data-view="now"', shortlist)
-            self.assertIn("function isFreshBatch(", shortlist)
             self.assertIn(".slice(0,20)", shortlist)
-            self.assertIn("_rank:old._rank", shortlist)
-            self.assertIn("rankedBatch(row.market,row.timeframe,row.signal_date)", shortlist)
-            self.assertIn('data-timeframe="daily"', shortlist)
-            self.assertIn("Fresh / Returned this week", shortlist)
-            self.assertIn("Continuing this week", shortlist)
-            self.assertIn("function appearanceMeta(", shortlist)
-            self.assertIn("FIRST_SEEN", shortlist)
-            self.assertIn("batchesAway", shortlist)
-            self.assertIn("rankMove", shortlist)
-            self.assertIn("jsonFetch('/api/forward-test'", shortlist)
-            self.assertIn("jsonFetch('/api/tsha-hbcs'", shortlist)
-            self.assertIn("jsonFetch('/api/volume-trend'", shortlist)
+            self.assertIn("const nearbyWindow=3", shortlist)
+            self.assertIn("HT + VT", shortlist)
+            self.assertNotIn("/api/forward-test", shortlist)
+            self.assertIn("fetch('/api/tsha-hbcs'", shortlist)
+            self.assertIn("fetch('/api/volume-trend'", shortlist)
             self.assertIn('url=shortlist.html', (output / "index.html").read_text())
-            clusters = (output / "clusters.html").read_text()
-            self.assertIn("Signal Clusters · HT + VT", clusters)
-            self.assertIn("/api/tsha-hbcs", clusters)
-            self.assertIn("/api/volume-trend", clusters)
-            self.assertIn("nearbyWindow=3", clusters)
-            self.assertIn("ht2of3", clusters)
-            self.assertIn("ht3of5", clusters)
             self.assertTrue((output / "functions").exists())
 
     def test_shortlist_classifies_first_returned_and_continuing_appearances(self):
@@ -243,7 +225,6 @@ console.log(JSON.stringify(rows.map(row=>appearanceMeta('US','weekly',{{...row,s
                 "market.html",
                 "sectors.html",
                 "recommendations.html",
-                "clusters.html",
                 "tsha_hbcs.html",
                 "volume_trend.html",
                 "transactions.html",

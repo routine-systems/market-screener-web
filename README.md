@@ -4,7 +4,7 @@ Cloudflare Pages presentation for `screener.chiragpatnaik.com`.
 
 This repository accepts one immutable `signals-bundle.v1.json` artifact. It does not scrape
 Chartink or open local market databases. The renderer validates the bundle's major schema version
-before building the twelve-page dashboard shell.
+before building the eleven-page dashboard shell.
 
 The HT page is independent of the Chartink bundle. It reads one rolling snapshot
 from the existing `SCANLINKS` KV binding through `GET /api/tsha-hbcs`. The browser
@@ -18,17 +18,16 @@ The VT page follows the same read-only snapshot pattern through
 `GET /api/volume-trend`. Its independent snapshot contains India/US Daily/Weekly
 BUY and SELL events plus a compact 13-period history.
 
-The Clusters page is a research-only view built from those same HT and VT
-snapshots. It retains the policy-driven Shortlist. Its HT cohorts require a
-current HT signal with at least 2 appearances in 3 periods or 3 in 5 periods.
-Its HT + VT cohort additionally requires a confirmed VT BUY on that period or
-either of its two preceding same-timeframe periods. The scheduled refresh runs
-the cluster regression contract before every production deployment.
+The Shortlist is built directly from the same HT and VT snapshots. Its HT
+cohorts require a current HT signal with at least 2 appearances in 3 periods or
+3 in 5 periods. Its HT + VT cohort additionally requires a confirmed VT BUY on
+that period or either of its two preceding same-timeframe periods. Each
+India/US Daily/Weekly bucket displays at most 20 symbols.
 
-Production runs from the public `.github/workflows/refresh.yml` orchestrator. It checks out the
-public `routine-systems/market-signals` producer at `main`, creates a fresh bundle, verifies its expected
-session when requested, renders the twelve pages, and deploys that same build to the existing
-Cloudflare Pages project.
+Production uploads use Wrangler directly to the existing Cloudflare Pages
+project after `verify_dashboard_deploy.py` accepts the final build. The bundle
+remains the source for Chartink pages. Shortlist remains live from HT and VT KV
+snapshots after the India evening and U.S. morning syncs.
 
 Production UI changes must use `refresh.yml`. A direct deployment of a local `dist/` can replace
 fresh signals with an older ignored bundle. The local build command therefore requires an explicit

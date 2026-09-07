@@ -39,7 +39,6 @@ class RenderSiteTests(unittest.TestCase):
                 "market.html",
                 "sectors.html",
                 "recommendations.html",
-                "clusters.html",
                 "tsha_hbcs.html",
                 "volume_trend.html",
                 "transactions.html",
@@ -74,9 +73,10 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn(
                 "fetch('/api/volume-trend'", (output / "volume_trend.html").read_text()
             )
-            clusters = (output / "clusters.html").read_text()
-            self.assertIn("Signal Clusters · HT + VT", clusters)
-            self.assertIn("const nearbyWindow=3", clusters)
+            shortlist = (output / "shortlist.html").read_text()
+            self.assertIn("HT + VT", shortlist)
+            self.assertIn("const nearbyWindow=3", shortlist)
+            self.assertNotIn("/api/forward-test", shortlist)
             transactions = (output / "transactions.html").read_text()
             self.assertIn("Transactions · India + U.S.", transactions)
             self.assertIn("`/api/market-events?market=${market}`", transactions)
@@ -236,21 +236,12 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn('id="researchColumns"', recommendations)
             self.assertIn('data-sort="entry_open"', recommendations)
             self.assertIn("India + US Daily + Weekly · Shortlist", shortlist)
-            self.assertIn('data-view="now"', shortlist)
-            self.assertIn("function isFreshBatch(", shortlist)
             self.assertIn(".slice(0,20)", shortlist)
-            self.assertIn("_rank:old._rank", shortlist)
-            self.assertIn("rankedBatch(row.market,row.timeframe,row.signal_date)", shortlist)
-            self.assertIn('data-timeframe="daily"', shortlist)
-            self.assertIn("Fresh / Returned this week", shortlist)
-            self.assertIn("Continuing this week", shortlist)
-            self.assertIn("function appearanceMeta(", shortlist)
-            self.assertIn("FIRST_SEEN", shortlist)
-            self.assertIn("batchesAway", shortlist)
-            self.assertIn("rankMove", shortlist)
-            self.assertIn("jsonFetch('/api/forward-test'", shortlist)
-            self.assertIn("jsonFetch('/api/tsha-hbcs'", shortlist)
-            self.assertIn("jsonFetch('/api/volume-trend'", shortlist)
+            self.assertIn("const nearbyWindow=3", shortlist)
+            self.assertIn("HT + VT", shortlist)
+            self.assertNotIn("/api/forward-test", shortlist)
+            self.assertIn("fetch('/api/tsha-hbcs'", shortlist)
+            self.assertIn("fetch('/api/volume-trend'", shortlist)
             self.assertIn('url=shortlist.html', (output / "index.html").read_text())
             self.assertIn("1. Choose market", ht_page)
             shell = (output / "dashboard-shell.js").read_text()

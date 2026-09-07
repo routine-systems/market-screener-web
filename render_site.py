@@ -45,7 +45,6 @@ PAGE_SPECS = {
 }
 NAV_ITEMS = (
     ("shortlist", "shortlist.html", "Shortlist"),
-    ("clusters", "clusters.html", "Clusters"),
     ("weekly", "dashboard.html", "Weekly"),
     ("daily", "daily.html", "Daily"),
     ("us-weekly", "us-weekly.html", "US Weekly"),
@@ -270,7 +269,7 @@ def _freshness_strip(active: str) -> str:
         "us-weekly": "us_weekly",
         "us-daily": "us_daily",
         "ht": "ht",
-        "shortlist": "outcomes",
+        "shortlist": "ht",
         "recommendations": "outcomes",
     }.get(active)
 
@@ -403,12 +402,9 @@ def render_site(bundle_path: Path, output: Path = DEFAULT_OUTPUT) -> dict:
     trend_bounce_template = TEMPLATES / TREND_BOUNCE_TEMPLATE
     if not trend_bounce_template.is_file():
         raise BundleError(f"US Trend Bounce template not found: {trend_bounce_template}")
-    shortlist_page = TEMPLATES / "shortlist.html"
-    if not shortlist_page.is_file():
-        raise BundleError(f"Shortlist template not found: {shortlist_page}")
     clusters_page = TEMPLATES / "clusters.html"
     if not clusters_page.is_file():
-        raise BundleError(f"Signal Clusters template not found: {clusters_page}")
+        raise BundleError(f"HT/VT Shortlist template not found: {clusters_page}")
     temp = output.parent / f".{output.name}.tmp"
     if temp.exists():
         shutil.rmtree(temp)
@@ -430,17 +426,8 @@ def render_site(bundle_path: Path, output: Path = DEFAULT_OUTPUT) -> dict:
         )
         (temp / output_name).write_text(html, encoding="utf-8")
 
-    shortlist_html = _render_template(
-        shortlist_page,
-        "__SHORTLIST_B64__",
-        dict(bundle["pages"]["recommendations"]["payload"]),
-        window,
-        "shortlist",
-    )
-    (temp / "shortlist.html").write_text(shortlist_html, encoding="utf-8")
-
-    clusters_source = _apply_shell(clusters_page.read_text(encoding="utf-8"), "clusters")
-    (temp / "clusters.html").write_text(clusters_source, encoding="utf-8")
+    shortlist_source = _apply_shell(clusters_page.read_text(encoding="utf-8"), "shortlist")
+    (temp / "shortlist.html").write_text(shortlist_source, encoding="utf-8")
 
     (temp / "index.html").write_text(_index_document(), encoding="utf-8")
     ht_source = _apply_shell(ht_page.read_text(encoding="utf-8"), "ht")
