@@ -46,6 +46,7 @@ REQUIRED_FILES = {
     "dashboard-shell.css",
     "dashboard-shell.js",
     "market-events.js",
+    "market-consolidation.js",
     "market-rotation.js",
     "india-rotation.json",
     "functions/_middleware.js",
@@ -301,6 +302,9 @@ def verify_site(root: Path) -> dict:
 
     for page in ("dashboard.html", "daily.html", "us-weekly.html", "us-daily.html", "shortlist.html", "tsha_hbcs.html", "volume_trend.html", "transactions.html", "recommendations.html"):
         _require_text(page, page_sources[page], ('src="market-rotation.js?v=1"', "MarketRotation."))
+
+    for page in ("tsha_hbcs.html", "volume_trend.html", "shortlist.html"):
+        _require_text(page, page_sources[page], ('src="market-consolidation.js?v=1"', "MarketConsolidation.attributes(r)"))
 
     for page, timeframe in (("us-weekly.html", "weekly"), ("us-daily.html", "daily")):
         source = page_sources[page]

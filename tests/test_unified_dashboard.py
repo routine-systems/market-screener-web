@@ -65,6 +65,7 @@ class RenderSiteTests(unittest.TestCase):
                 "dashboard-shell.js",
                 "market-events.js",
                 "market-rotation.js",
+                "market-consolidation.js",
                 "india-rotation.json",
                 "functions/_middleware.js",
                 "functions/api/market-events.js",

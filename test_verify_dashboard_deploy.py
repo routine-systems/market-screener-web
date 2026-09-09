@@ -147,6 +147,8 @@ const ht='tsha-hbcs.api.v1',vt='volume-trend.api.v1';
 const ht2of3=true,ht3of5=true,ht_vt=true;
 const method='current or prior 2 same-timeframe periods';</script>''',
     }
+    for page in ("tsha_hbcs.html", "volume_trend.html", "shortlist.html"):
+        bodies[page] += '<script src="market-consolidation.js?v=1"></script><script>MarketConsolidation.attributes(r);</script>'
     for page, active in subject.PAGES.items():
         (root / page).write_text(_page(active, bodies.get(page, "")))
     for name in subject.REQUIRED_FILES - set(subject.PAGES):
@@ -193,6 +195,16 @@ class VerifyDashboardDeployTests(unittest.TestCase):
                 with self.assertRaisesRegex(
                     subject.DashboardContractError, "misses contract markers"
                 ):
+                    subject.verify_site(root)
+
+    def test_rejects_missing_ticker_consolidation_context(self):
+        for filename in ("tsha_hbcs.html", "volume_trend.html", "shortlist.html"):
+            with self.subTest(page=filename), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                _write_valid_site(root)
+                page = root / filename
+                page.write_text(page.read_text().replace("MarketConsolidation.attributes(r)", "removed"))
+                with self.assertRaisesRegex(subject.DashboardContractError, "misses contract markers"):
                     subject.verify_site(root)
 
     def test_rejects_vt_without_buy_as_the_default_direction(self):

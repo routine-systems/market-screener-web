@@ -37,6 +37,18 @@ export async function onRequestGet({ env, request }) {
         publication: stored.metadata || {},
       });
     }
+    if (new URL(request.url).searchParams.get("context") === "consolidation") {
+      const markets = {};
+      for (const market of ["IN", "US"]) {
+        markets[market] = {timeframes: {}};
+        for (const timeframe of ["daily", "weekly"]) {
+          markets[market].timeframes[timeframe] = {
+            locked_zones: stored.value.markets?.[market]?.timeframes?.[timeframe]?.locked_zones || null,
+          };
+        }
+      }
+      return json({schema_version: API_SCHEMA_VERSION, snapshot: {markets}});
+    }
     return json({
       schema_version: API_SCHEMA_VERSION,
       snapshot: stored.value,
