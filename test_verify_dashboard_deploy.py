@@ -127,12 +127,12 @@ MarketEvents.dot(r.symbol,'IN','insider_trade');</script>''',
 <script>const history='shortlist-history.api.v1';const nearbyWindow=3; fetch('/api/tsha-hbcs'); fetch('/api/volume-trend');
 const ht2of3=true,ht3of5=true,ht_vt=true; const cap=rows.slice(0,20);
 const method='current or prior 2 same-timeframe periods';</script>''',
-        "volume_trend.html": '''<div>VT · Volume Breakout / Breakdown</div><div id="directions"><button class="toolbtn on" data-v="INSIDE">Inside zone</button></div><div id="views"></div><th data-k="inside_count">Closes inside</th><div id="historyRange"></div>
+        "volume_trend.html": '''<div>VT · Volume Breakout / Breakdown</div><div id="directions"><button class="toolbtn on" data-v="BUY">BUY</button></div><div id="views"></div><th data-k="inside_count">Closes inside</th><div id="historyRange"></div>
 <select id="liquidity"><option value="5" selected>Turnover ≥ ₹5cr / $5m</option></select>
 <select id="pageSize"></select><select id="pageNumber"></select>
-<table><th class="l" data-k="appearance_count">Appearances</th></table>
+<table><th class="l sorted" data-k="appearance_count">Appearances</th></table>
 <footer>75-bar highest-volume range · volume confirmation off by default · confirmed close crossing the previous zone</footer>
-<script>fetch('/api/volume-trend'); const api='volume-trend.api.v1'; const history='vt-history.v1'; const zones='vt-locked-zones.v1'; function buildZoneRows(){}; const state={direction:'INSIDE',liquidity:5}; const updated='75-bar lookback · volume confirmation off';
+<script>fetch('/api/volume-trend'); const api='volume-trend.api.v1'; const history='vt-history.v1'; const zones='vt-locked-zones.v1'; function buildZoneRows(){}; const state={view:'events',direction:'BUY',liquidity:5}; const updated='75-bar lookback · volume confirmation off';
 const turnoverFloor=market=>state.liquidity*(market==='IN'?10000000:1000000);
 MarketEvents.record(r.symbol,r.market); const glyph=on?'●':'○';</script>''',
         "transactions.html": '''<h1>Transactions · India + U.S.</h1>
@@ -195,12 +195,12 @@ class VerifyDashboardDeployTests(unittest.TestCase):
                 ):
                     subject.verify_site(root)
 
-    def test_rejects_vt_without_inside_as_the_default_direction(self):
+    def test_rejects_vt_without_buy_as_the_default_direction(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             _write_valid_site(root)
             page = root / "volume_trend.html"
-            source = page.read_text().replace("direction:'INSIDE'", "direction:'all'")
+            source = page.read_text().replace("direction:'BUY'", "direction:'all'")
             page.write_text(source)
             with self.assertRaisesRegex(
                 subject.DashboardContractError, "misses contract markers"
