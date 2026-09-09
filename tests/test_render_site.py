@@ -299,9 +299,9 @@ console.log(JSON.stringify(rows.map(row=>appearanceMeta('US','weekly',{{...row,s
             self.assertIn('id="timeframes"', page)
             self.assertIn('id="directions"', page)
             self.assertIn(
-                '<button class="toolbtn on" data-v="BUY">BUY</button>', page
+                '<button class="toolbtn on" data-v="INSIDE">Inside zone</button>', page
             )
-            self.assertIn("direction:'BUY'", page)
+            self.assertIn("direction:'INSIDE'", page)
             self.assertIn(
                 'value="5" selected>Turnover ≥ ₹5cr / $5m</option>', page
             )
@@ -314,7 +314,7 @@ console.log(JSON.stringify(rows.map(row=>appearanceMeta('US','weekly',{{...row,s
             self.assertIn('id="pageNumber"', page)
             self.assertIn('id="pageSize"', page)
             self.assertIn(
-                '<th class="l sorted" data-k="appearance_count">Appearances</th>',
+                '<th class="l" data-k="appearance_count">Appearances</th>',
                 page,
             )
             self.assertIn("const weekStart=date=>", page)
