@@ -5,3 +5,7 @@ __pycache__/
 .wrangler/
 *.pyc
 .env
+
+.DS_Store
+
+plan/
