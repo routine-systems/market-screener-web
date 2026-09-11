@@ -65,7 +65,7 @@ def _page(active: str, body: str = "") -> str:
         f'{_nav(active)}<button id="themeBtn">Theme</button>'
         '<button id="viewSwitcher">Views</button><button id="pageInfo">Info</button><div id="dashboard-results" tabindex="-1"></div>'
         f'<main id="main-content">{_freshness(active not in {"clusters.html", "volume_trend.html", "transactions.html"})}{body}</main>'
-        '<script src="dashboard-shell.js?v=3"></script><script src="market-rotation.js?v=1"></script><script>MarketRotation.marker()</script></body></html>'
+        '<script src="dashboard-shell.js?v=3"></script><script src="market-rotation.js?v=2"></script><script>MarketRotation.marker()</script></body></html>'
     )
 
 

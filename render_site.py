@@ -378,7 +378,7 @@ def _apply_shell(source: str, active: str) -> str:
     source = source.replace("__DASHBOARD_FRESHNESS__", _freshness_strip(active))
     assets = (
         '<script src="dashboard-shell.js?v=3"></script>'
-        '<script src="market-rotation.js?v=1"></script>'
+        '<script src="market-rotation.js?v=2"></script>'
         '<link rel="stylesheet" href="dashboard-shell.css?v=4">'
     )
     source = source.replace("</head>", f"{assets}</head>", 1)

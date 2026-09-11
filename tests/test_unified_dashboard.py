@@ -23,7 +23,7 @@ class RenderSiteTests(unittest.TestCase):
             render_site.render_site(FIXTURE, output)
             for name in ("dashboard.html", "daily.html", "us-weekly.html", "us-daily.html", "shortlist.html", "tsha_hbcs.html", "volume_trend.html", "transactions.html", "recommendations.html"):
                 source = (output / name).read_text()
-                self.assertIn('src="market-rotation.js?v=1"', source)
+                self.assertIn('src="market-rotation.js?v=2"', source)
                 self.assertIn("MarketRotation.", source)
             self.assertEqual(json.loads((output / "india-rotation.json").read_text())["rotation"], json.loads(FIXTURE.read_text())["pages"]["weekly"]["payload"]["rotation"])
             for name in ("us-weekly.html", "us-daily.html"):

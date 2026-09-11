@@ -301,7 +301,7 @@ def verify_site(root: Path) -> dict:
     )
 
     for page in ("dashboard.html", "daily.html", "us-weekly.html", "us-daily.html", "shortlist.html", "tsha_hbcs.html", "volume_trend.html", "transactions.html", "recommendations.html"):
-        _require_text(page, page_sources[page], ('src="market-rotation.js?v=1"', "MarketRotation."))
+        _require_text(page, page_sources[page], ('src="market-rotation.js?v=2"', "MarketRotation."))
 
     for page in ("tsha_hbcs.html", "volume_trend.html", "shortlist.html"):
         _require_text(page, page_sources[page], ('src="market-consolidation.js?v=1"', "MarketConsolidation.attributes(r)"))
