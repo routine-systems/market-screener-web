@@ -70,6 +70,20 @@ console.log(JSON.stringify({old,flags,filtered,latest,us}));
         self.assertNotIn('>Latest${liveDate()', s)
         self.assertNotIn("${p.source==='captured'?'Captured':'Reconstructed'}</option>", s)
 
+    def test_backfill_note_discloses_historical_rotation(self):
+        page = (ROOT / "templates/clusters.html").read_text()
+        script = page.split("<script>")[1].split("function bind(")[0]
+        prefix = "const document={querySelector:()=>null};const MarketRotation={industry:()=>'',available:()=>true,lookup:()=>({status:1}),classification:r=>r.sector||'',marker:()=>'',cell:()=>''};\n"
+        fixture = """
+const elements=new Map();document.querySelector=s=>{if(!elements.has(s))elements.set(s,{textContent:'',innerHTML:'',disabled:false,querySelector:()=>null});return elements.get(s)};
+DATA={rows:[],cutoffs:{IN:{daily:'2026-09-11'}}};HISTORY.IN={timeframes:{daily:{periods:[{date:'2026-09-03',data_session:'2026-09-03',source:'reconstructed',selection_mode:'sector_top20.v1',backfill:{rotation_session:'2026-09-03'},rows:[]}]},weekly:{periods:[]}}};state.period='2026-09-03';renderHistory();console.log(JSON.stringify(elements.get('#historyNote').textContent));
+"""
+        note = json.loads(subprocess.check_output(["node", "-e", prefix + script + fixture], text=True))
+        self.assertIn("Backfilled sector shortlist", note)
+        self.assertIn("rotation observed 2026-09-03", note)
+        self.assertNotIn("fixed at capture", note)
+        self.assertNotIn("qualification flags only", note)
+
 
 if __name__ == "__main__":
     unittest.main()
