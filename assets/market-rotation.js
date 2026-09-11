@@ -82,6 +82,6 @@
     new MutationObserver(()=>{if(!scheduled){scheduled=true;requestAnimationFrame(()=>{scheduled=false;scan()})}}).observe(document.querySelector('main')||document.body,{childList:true,subtree:true});
     scan();
   }
-  window.MarketRotation={dot,marker,lookup,industry,classification,cell,register,load};
+  window.MarketRotation={dot,marker,lookup,industry,classification,cell,register,load,available:market=>!!datasets.get(market)?.rotation?.status?.sector};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install);else install();
 })();

@@ -22,7 +22,9 @@ The Shortlist is built directly from the same HT and VT snapshots. Its HT
 cohorts require a current HT signal with at least 2 appearances in 3 periods or
 3 in 5 periods. Its HT + VT cohort additionally requires a confirmed VT BUY on
 that period or either of its two preceding same-timeframe periods. Each
-India/US Daily/Weekly bucket displays at most 20 symbols.
+India/US Daily/Weekly bucket has Rising sectors and Other sectors lists, each
+capped at 20 distinct symbols. Default ranking selects each list before filters
+and display sorting. One five-period Appearances column shows the HT history.
 
 Production uploads use Wrangler directly to the existing Cloudflare Pages
 project after `verify_dashboard_deploy.py` accepts the final build. The bundle
@@ -62,7 +64,8 @@ KV keys (`shortlist-history:v1:IN|US`); history is fetched once per market per p
 The local market-sync producer maintains those snapshots independently of Pages
 refreshes. No historical dataset is committed to this public repository.
 
-Historical views retain their saved top 20. Captured and reconstructed dates are
+New historical captures retain both saved sector lists (up to 20 each). Earlier
+dates retain their original unsplit top 20 and disclose the missing sector split. Captured and reconstructed dates are
 labelled separately; reconstructed flags do not invent individual appearance dots.
 Weekly labels identify Monday, with the actual source session shown in the note.
 Sector/industry and rotation context are current, as disclosed in the view.

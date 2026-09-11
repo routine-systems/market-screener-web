@@ -60,11 +60,12 @@ def _freshness(active: bool = True) -> str:
 def _page(active: str, body: str = "") -> str:
     return (
         '<!doctype html><html><head><link rel="stylesheet" '
-        'href="dashboard-shell.css?v=3"></head><body>'
-        '<a class="skip-link" href="#main-content">Skip to results</a>'
+        'href="dashboard-shell.css?v=4"></head><body>'
+        '<a class="skip-link" href="#dashboard-results">Skip to results</a>'
         f'{_nav(active)}<button id="themeBtn">Theme</button>'
+        '<button id="viewSwitcher">Views</button><button id="pageInfo">Info</button><div id="dashboard-results" tabindex="-1"></div>'
         f'<main id="main-content">{_freshness(active not in {"clusters.html", "volume_trend.html", "transactions.html"})}{body}</main>'
-        '<script src="dashboard-shell.js?v=2"></script><script src="market-rotation.js?v=1"></script><script>MarketRotation.marker()</script></body></html>'
+        '<script src="dashboard-shell.js?v=3"></script><script src="market-rotation.js?v=1"></script><script>MarketRotation.marker()</script></body></html>'
     )
 
 
@@ -124,7 +125,8 @@ MarketEvents.dot(r.symbol,'IN','insider_trade');</script>''',
         "recommendations.html": "<script>fetch('/api/forward-test'); const schema='forward-test.api.v1'; applyPayload(fallbackPayload);</script>",
         "shortlist.html": '''<h1>India + US Daily + Weekly · Shortlist</h1>
 <select id="historyDate"></select><button id="historyLatest">Latest</button>
-<script>const history='shortlist-history.api.v1';const nearbyWindow=3; fetch('/api/tsha-hbcs'); fetch('/api/volume-trend');
+<div id="sectorTabs">Rising sectors Other sectors</div><th data-k="appearances">Appearances</th><span data-appearance-tip=""></span>
+<script>const selection='sector_top20.v1';const history='shortlist-history.api.v1';const nearbyWindow=3; fetch('/api/tsha-hbcs'); fetch('/api/volume-trend');
 const ht2of3=true,ht3of5=true,ht_vt=true; const cap=rows.slice(0,20);
 const method='current or prior 2 same-timeframe periods';</script>''',
         "volume_trend.html": '''<div>VT · Volume Breakout / Breakdown</div><div id="directions"><button class="toolbtn on" data-v="BUY">BUY</button></div><div id="views"></div><th data-k="inside_count">Closes inside</th><div id="historyRange"></div>
@@ -294,6 +296,16 @@ class VerifyDashboardDeployTests(unittest.TestCase):
                 subject.DashboardContractError, "us-weekly.html misses contract markers"
             ):
                 subject.verify_site(root)
+
+    def test_rejects_shortlist_without_sector_tabs_or_five_period_column(self):
+        for marker in ('id="sectorTabs"', 'data-k="appearances">Appearances', 'data-appearance-tip'):
+            with self.subTest(marker=marker), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                _write_valid_site(root)
+                page = root / "shortlist.html"
+                page.write_text(page.read_text().replace(marker, "missing"))
+                with self.assertRaisesRegex(subject.DashboardContractError, "shortlist.html misses contract markers"):
+                    subject.verify_site(root)
 
     def test_rejects_an_old_six_page_bundle(self):
         with tempfile.TemporaryDirectory() as directory:

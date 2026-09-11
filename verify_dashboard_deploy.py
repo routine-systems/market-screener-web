@@ -131,7 +131,7 @@ def _verify_navigation(page: str, source: str, active_href: str) -> None:
     ]
     if active != [active_href]:
         _fail(f"{page} active navigation is {active!r}, expected {[active_href]!r}")
-    for element_id in ("themeBtn", "main-content"):
+    for element_id in ("themeBtn", "main-content", "dashboard-results", "viewSwitcher", "pageInfo"):
         if parser.ids[element_id] != 1:
             _fail(f"{page} must contain one id={element_id!r}")
     if source.count('class="dashboard-freshness"') != 1:
@@ -259,9 +259,9 @@ def verify_site(root: Path) -> dict:
             page,
             source,
             (
-                'href="#main-content">Skip to results</a>',
-                'src="dashboard-shell.js?v=2"',
-                'href="dashboard-shell.css?v=3"',
+                'href="#dashboard-results">Skip to results</a>',
+                'src="dashboard-shell.js?v=3"',
+                'href="dashboard-shell.css?v=4"',
             ),
         )
         unresolved = re.findall(r"__[A-Z][A-Z0-9_]+__", source)
@@ -428,6 +428,12 @@ def verify_site(root: Path) -> dict:
             'id="historyDate"',
             'id="historyLatest"',
             "shortlist-history.api.v1",
+            'id="sectorTabs"',
+            "Rising sectors",
+            "Other sectors",
+            'data-k="appearances">Appearances',
+            "data-appearance-tip",
+            "sector_top20.v1",
         ),
     )
 

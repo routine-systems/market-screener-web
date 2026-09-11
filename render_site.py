@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import base64
 import hashlib
+from html.parser import HTMLParser
 import json
 import re
 import shutil
@@ -249,12 +250,17 @@ def _navigation(active: str) -> str:
     links = []
     for page, href, label in NAV_ITEMS:
         state = ' class="on" aria-current="page"' if page == active else ""
+        group = {"shortlist": "Candidates", "transactions": "Context", "recommendations": "Research"}.get(page)
+        if group:
+            links.append(f'<span class="mobile-nav-group">{group}</span>')
         links.append(f'<a href="{href}"{state}>{label}</a>')
     return (
-        '<a class="skip-link" href="#main-content">Skip to results</a>'
+        '<a class="skip-link" href="#dashboard-results">Skip to results</a>'
         '<nav class="nav dashboard-nav" aria-label="Views">'
-        + "".join(links)
+        + f'<button class="mobile-only view-switcher" id="viewSwitcher" type="button" aria-haspopup="dialog">{next(label for page, _, label in NAV_ITEMS if page == active)} ▾</button>'
+        + '<div class="dashboard-destinations">' + "".join(links) + '</div>'
         + '<span class="sp"></span>'
+        + '<button class="mobile-only" id="pageInfo" type="button" aria-haspopup="dialog">Info</button>'
         + '<button class="themebtn" id="themeBtn" type="button" '
         + 'aria-label="Change color theme">◐ Theme</button></nav>'
     )
@@ -305,6 +311,64 @@ def _freshness_strip(active: str) -> str:
     )
 
 
+class _ResponsiveMarkup(HTMLParser):
+    """Annotate existing controls without duplicating them or changing their handlers."""
+
+    def __init__(self, source: str, active: str):
+        super().__init__(convert_charrefs=False)
+        self.source, self.active = source, active
+        self.offsets = [0]
+        for line in source.splitlines(keepends=True):
+            self.offsets.append(self.offsets[-1] + len(line))
+        self.edits = []
+        self.has_results = False
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        classes = set((attrs.get("class") or "").split())
+        ident = attrs.get("id")
+        additions = ""
+        panel = None
+        if classes & {"kpis", "cards", "dashboard-freshness", "page-actions", "methodology", "historynote", "ht-steps", "legend", "coverage"} or ident == "updated":
+            panel = "info"
+        if "rangebar" in classes:
+            panel = "filters"
+        if self.active in {"weekly", "daily"} and "tbar" in classes:
+            panel = "filters"
+        if self.active.startswith("us-") and "toolbar" in classes:
+            panel = "filters"
+        if self.active == "recommendations" and "controls" in classes:
+            panel = "filters"
+        if self.active in {"market", "sectors"} and "presets" in classes:
+            panel = "filters"
+        if self.active in {"ht", "vt", "shortlist", "transactions"} and ident in {"cohorts", "liquidity", "ignitionOnly", "eventOnly", "download", "side"}:
+            panel = "filters"
+        if panel:
+            additions += f' data-mobile-panel="{panel}"'
+        if tag == "body":
+            additions += f' data-dashboard-view="{self.active}"'
+        if ident in {"rankhint", "rankHint"}:
+            additions += ' data-mobile-count="true"'
+        prefix = ""
+        if not self.has_results and (classes & {"tablewrap", "table"} or ident in {"mclwrap", "grid", "quad"}):
+            prefix = '<div id="dashboard-results" class="results-anchor" tabindex="-1" role="region" aria-label="Results"></div>'
+            self.has_results = True
+        if additions or prefix:
+            line, column = self.getpos()
+            position = self.offsets[line - 1] + column
+            original = self.get_starttag_text()
+            self.edits.append((position, len(original), prefix + original[:-1] + additions + ">"))
+
+    def rendered(self):
+        self.feed(self.source)
+        result = self.source
+        for position, length, replacement in reversed(self.edits):
+            result = result[:position] + replacement + result[position + length:]
+        if not self.has_results:
+            raise BundleError(f"template for {self.active} misses results region")
+        return result
+
+
 def _apply_shell(source: str, active: str) -> str:
     if "__DASHBOARD_NAV__" not in source:
         raise BundleError(f"template for {active} misses __DASHBOARD_NAV__")
@@ -313,11 +377,12 @@ def _apply_shell(source: str, active: str) -> str:
     source = source.replace("__DASHBOARD_NAV__", _navigation(active))
     source = source.replace("__DASHBOARD_FRESHNESS__", _freshness_strip(active))
     assets = (
-        '<script src="dashboard-shell.js?v=2"></script>'
+        '<script src="dashboard-shell.js?v=3"></script>'
         '<script src="market-rotation.js?v=1"></script>'
-        '<link rel="stylesheet" href="dashboard-shell.css?v=3">'
+        '<link rel="stylesheet" href="dashboard-shell.css?v=4">'
     )
-    return source.replace("</head>", f"{assets}</head>", 1)
+    source = source.replace("</head>", f"{assets}</head>", 1)
+    return _ResponsiveMarkup(source, active).rendered()
 
 
 def _render_template(

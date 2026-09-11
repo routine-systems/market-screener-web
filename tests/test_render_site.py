@@ -280,7 +280,7 @@ console.log(JSON.stringify(rows.map(row=>appearanceMeta('US','weekly',{{...row,s
             self.assertIn("Every period · ", page)
             self.assertIn("India Daily", page)
             self.assertIn("US Weekly", page)
-            self.assertIn('id="updated">Last updated —', page)
+            self.assertRegex(page, r'id="updated"[^>]*>Last updated —')
             self.assertIn("function formatIst(value)", page)
             self.assertIn("India data through", page)
             self.assertIn("US data through", page)
