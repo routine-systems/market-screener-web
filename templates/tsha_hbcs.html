@@ -22,6 +22,7 @@ input,select{background:var(--plane);border:1px solid var(--border);color:var(--
 __DASHBOARD_NAV__
 <main id="main-content" tabindex="-1">
   <header class="top"><div class="title"><h1>HT Confirmations</h1><div class="sub" id="status">Loading latest snapshot…</div><div class="sub" id="updated">Last updated —</div></div></header>
+  <div class="sub" id="commodityStatus" role="status" hidden></div>
   __DASHBOARD_FRESHNESS__
   <section class="kpis" id="summary"></section>
   <section class="tablecard">
@@ -29,7 +30,7 @@ __DASHBOARD_NAV__
     <span class="ht-step">1. Choose market</span><span class="ht-step">2. Choose timeframe</span><span class="ht-step">3. Review history</span>
   </div>
   <div class="tbar">
-    <div class="filterset" id="markets" role="group" aria-label="Market"><button class="toolbtn on" data-v="all">All markets</button><button class="toolbtn" data-v="IN">India</button><button class="toolbtn" data-v="US">US</button></div>
+    <div class="filterset" id="markets" role="group" aria-label="Market"><button class="toolbtn on" data-v="all">All markets</button><button class="toolbtn" data-v="IN">India</button><button class="toolbtn" data-v="US">US</button><button class="toolbtn" data-v="MCX">MCX</button><button class="toolbtn" data-v="US_COM">US Commodities</button></div>
     <div class="filterset" id="timeframes" role="group" aria-label="Timeframe"><button class="toolbtn on" data-v="all">All timeframes</button><button class="toolbtn" data-v="daily">Daily</button><button class="toolbtn" data-v="weekly">Weekly</button></div>
     <button class="toolbtn ignition-filter" id="ignitionOnly" title="Only HT rows with an ignition trigger" aria-pressed="false" hidden>● Ignition</button>
     <button class="toolbtn event-filter" id="eventOnly" title="Only tickers with stored transaction history" hidden>● Transaction history</button>
@@ -69,6 +70,7 @@ __DASHBOARD_NAV__
 <div id="tt" role="tooltip" aria-hidden="true"></div>
 <script src="market-events.js?v=5"></script>
 <script src="market-consolidation.js?v=1"></script>
+<script src="market-commodities.js?v=1"></script>
 <script>
 let DATA=null,EVENTS_READY=new Set();
 const state={market:'all',timeframe:'all',ignition:false,events:false,query:'',liquidity:5,sort:'appearance_count',desc:true,rangeKey:null,from:0,to:0};
@@ -93,7 +95,7 @@ function unpackHistory(history,market,timeframe){
 function unpack(snapshot){
   if(!snapshot||snapshot.schema_version!=='tsha-hbcs.snapshot.v1'||!Array.isArray(snapshot.columns))throw new Error('Unsupported snapshot');
   const rows=[],histories={};
-  for(const market of ['IN','US'])for(const timeframe of ['daily','weekly']){
+  for(const market of ['IN','US',...['MCX','US_COM'].filter(key=>snapshot.markets?.[key])])for(const timeframe of ['daily','weekly']){
     const bucket=snapshot.markets?.[market]?.timeframes?.[timeframe];
     if(!bucket||!Array.isArray(bucket.rows))throw new Error(`Missing ${market} ${timeframe} bucket`);
     const periods=Array.isArray(bucket.appearance_periods)?bucket.appearance_periods.map(period=>displayPeriod(period,timeframe)):[];
@@ -134,7 +136,7 @@ const turnoverFloor=market=>state.liquidity*(market==='IN'?10000000:1000000);
 function filtered(sourceRows=selectedRows()){
   if(!DATA)return [];
   const q=state.query.toLowerCase();
-  return sourceRows.filter(r=>(state.market==='all'||r.market===state.market)&&(state.timeframe==='all'||r.timeframe===state.timeframe)&&(!state.ignition||r.ignition===true)&&(!state.events||!!MarketEvents.record(r.symbol,r.market))&&(!q||`${r.symbol} ${r.sector||''} ${MarketRotation.industry(r.symbol,r.industry)}`.toLowerCase().includes(q))&&Number(r.median_dollar_turnover_20||0)>=turnoverFloor(r.market))
+  return sourceRows.filter(r=>(state.market==='all'||r.market===state.market)&&(state.timeframe==='all'||r.timeframe===state.timeframe)&&(!state.ignition||r.ignition===true)&&(!state.events||!!MarketEvents.record(r.symbol,r.market))&&(!q||`${r.symbol} ${r.sector||''} ${MarketRotation.industry(r.symbol,r.industry)}`.toLowerCase().includes(q))&&(['MCX','US_COM'].includes(r.market)||Number(r.median_dollar_turnover_20||0)>=turnoverFloor(r.market)))
     .map(r=>({...r,industry:r.market==='US'?MarketRotation.industry(r.symbol,r.industry):r.industry,hasTransactionHistory:!!MarketEvents.record(r.symbol,r.market)}))
     .sort(compareRows);
 }
@@ -145,7 +147,7 @@ function summaries(){
     const cards=[['Union potentials',stats.rows.length],['Latest period · '+latest.date,stats.latestCount],['New in latest',stats.newCount],['Every period · '+stats.periods.length+' '+unit,stats.everyCount]];
     $('#summary').innerHTML=cards.map(([label,value])=>`<div class="tile"><span class="lbl">${esc(label)}</span><span class="val">${num(value,0)}</span></div>`).join('');return;
   }
-  const cards=[['IN','daily','India Daily'],['IN','weekly','India Weekly'],['US','daily','US Daily'],['US','weekly','US Weekly']];
+  const cards=['MCX','US_COM'].includes(state.market)?[['daily','Daily'],['weekly','Weekly']].filter(([t])=>DATA.snapshot.markets[state.market]?.timeframes?.[t]).map(([t,label])=>[state.market,t,`${state.market==='MCX'?'MCX':'US Commodities'} ${label}`]):[['IN','daily','India Daily'],['IN','weekly','India Weekly'],['US','daily','US Daily'],['US','weekly','US Weekly']].concat(['MCX','US_COM'].flatMap(m=>DATA.snapshot.markets?.[m]?[['daily','Daily'],['weekly','Weekly']].map(([t,label])=>[m,t,`${m==='MCX'?'MCX':'US Commodities'} ${label}`]):[]));
   $('#summary').innerHTML=cards.map(([m,t,label])=>{const bucket=DATA.snapshot.markets[m].timeframes[t];return `<div class="tile"><span class="lbl">${label} · ${esc(displayPeriod(bucket.signal_date,t))}</span><span class="val">${num(bucket.shortlist_size,0)}</span></div>`}).join('');
 }
 function appearanceCell(r){
@@ -181,7 +183,7 @@ function syncEventFilter(){
   button.hidden=false;button.textContent=market==='IN'?`● Bulk history (${count.toLocaleString()})`:`● Congress history (${count.toLocaleString()})`;
 }
 function syncIgnitionFilter(){const button=$('#ignitionOnly'),supported=Boolean(DATA?.snapshot?.columns?.includes('ignition'));if(!supported){button.hidden=true;state.ignition=false;button.classList.remove('on');button.setAttribute('aria-pressed','false');return}const count=selectedRows().filter(r=>r.ignition===true).length;button.hidden=false;button.textContent=`● Ignition (${count.toLocaleString()})`;button.classList.toggle('on',state.ignition);button.setAttribute('aria-pressed',String(state.ignition))}
-function classificationHeader(){const th=document.querySelector('th[data-k="sector"]');if(th)(th.querySelector('button')||th).textContent=state.market==='US'?'Industry':state.market==='IN'?'Sector':'Sector / industry'}
+function classificationHeader(){const th=document.querySelector('th[data-k="sector"]');if(th)(th.querySelector('button')||th).textContent=['MCX','US_COM'].includes(state.market)?'Commodity group':state.market==='US'?'Industry':state.market==='IN'?'Sector':'Sector / industry'}
 function render(resetRange=false,keepPage=false){
   classificationHeader();
   syncRangeControls(resetRange);
@@ -192,11 +194,12 @@ function render(resetRange=false,keepPage=false){
   $('#rankhint').textContent=`${rows.length.toLocaleString()} matching potentials`;
   $('#rows').innerHTML=shown.length?shown.map(r=>`<tr>
     <td class="l"><a class="symbol" ${MarketConsolidation.attributes(r)} target="_blank" rel="noopener" href="${chartUrl(r)}">${esc(r.symbol)}</a>${MarketRotation.marker(r.symbol,r.market)}${ignitionDot(r)}${MarketEvents.dot(r.symbol,r.market)}${r.market==='IN'?MarketEvents.dot(r.symbol,'IN','insider_trade'):''}<div class="market">${esc(r.exchange||r.market)} · ${esc(r.asset_type)}</div></td>
-    <td>${esc(r.signal_date)}</td><td><span class="pill">${r.market==='IN'?'India':'US'} ${esc(r.timeframe)}</span></td><td class="l">${appearanceCell(r)}</td>
-    <td class="bull num">${num(r.hbcs_bull_component_count,0)}</td><td class="num">${num(r.close)}</td><td class="num">${num(r.median_dollar_turnover_20,0)}</td><td>${MarketRotation.cell(r)}</td>
+    <td>${esc(r.signal_date)}</td><td><span class="pill">${({IN:'India',US:'US',MCX:'MCX',US_COM:'US Commodities'})[r.market]||esc(r.market)} ${esc(r.timeframe)}</span></td><td class="l">${appearanceCell(r)}</td>
+    <td class="bull num">${num(r.hbcs_bull_component_count,0)}</td><td class="num">${num(r.close,MarketCommodities.precision(r))}${r.price_unit?`<div class="market">${esc(r.price_unit)}</div>`:''}</td><td class="num">${num(r.median_dollar_turnover_20,0)}</td><td>${MarketRotation.cell(r)}</td>
   </tr>`).join(''):`<tr><td colspan="8"><div class="empty">No rows match these filters.</div></td></tr>`;
   const cap='';
   $('#foot').textContent=`Showing ${cap}${shown.length} of ${rows.length} matching rows`;
+  MarketCommodities.scope(state);
 }
 function bindSeg(id,key){document.querySelectorAll(`#${id} button`).forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll(`#${id} button`).forEach(x=>x.classList.remove('on'));b.classList.add('on');state[key]=b.dataset.v;render(true)}))}
 bindSeg('markets','market');bindSeg('timeframes','timeframe');
@@ -211,16 +214,17 @@ $('#eventOnly').addEventListener('click',event=>{state.events=!state.events;even
 document.querySelectorAll('th[data-k]').forEach(th=>th.addEventListener('click',()=>{if(state.sort===th.dataset.k)state.desc=!state.desc;else{state.sort=th.dataset.k;state.desc=true}document.querySelectorAll('th[data-k]').forEach(item=>item.classList.toggle('sorted',item===th));th.classList.toggle('asc',!state.desc);render()}));
 document.body.addEventListener('mousemove',event=>{const target=event.target.closest('[data-tip="row"]');if(!target){hideTip();return}showTip(target.dataset.w.split(' · ').join('\n'),event.clientX,event.clientY)});
 document.body.addEventListener('mouseleave',hideTip);
-$('#download').addEventListener('click',()=>{if(!DATA)return;const history=selectedHistory(),rows=filtered(),keys=[...new Set([...csvColumns(history,DATA.snapshot.columns),'industry','hasTransactionHistory'])];const q=v=>{if(Array.isArray(v))v=v.join('|');let text=String(v??'');if(typeof v==='string'&&/^[=+\-@]/.test(text))text=`'${text}`;return `"${text.replaceAll('"','""')}"`};const csv=[keys.join(','),...rows.map(r=>keys.map(k=>q(r[k])).join(','))].join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='tsha_hbcs_shortlist.csv';a.click();URL.revokeObjectURL(a.href)});
+$('#download').addEventListener('click',()=>{if(!DATA)return;const history=selectedHistory(),rows=filtered(),keys=[...new Set([...csvColumns(history,DATA.snapshot.columns),'industry','price_unit','hasTransactionHistory'])];const q=v=>{if(Array.isArray(v))v=v.join('|');let text=String(v??'');if(typeof v==='string'&&/^[=+\-@]/.test(text))text=`'${text}`;return `"${text.replaceAll('"','""')}"`};const csv=[keys.join(','),...rows.map(r=>keys.map(k=>q(r[k])).join(','))].join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='tsha_hbcs_shortlist.csv';a.click();URL.revokeObjectURL(a.href)});
 async function load(){
+  const commodities=MarketCommodities.load();
   try{
     const response=await fetch('/api/tsha-hbcs',{headers:{accept:'application/json'}});
     const payload=await response.json().catch(()=>({}));
     if(!response.ok||payload.schema_version!=='tsha-hbcs.api.v1'||!payload.snapshot)throw new Error(payload.error||`HTTP ${response.status}`);
-    DATA=unpack(payload.snapshot);render();$('#download').disabled=false;
+    await commodities;DATA=unpack(MarketCommodities.merge(payload.snapshot,'ht'));render();$('#download').disabled=false;
     const inDate=DATA.snapshot.markets.IN.data_session,usDate=DATA.snapshot.markets.US.data_session;
     $('#status').textContent=`India ${inDate} · US ${usDate} · ${DATA.rows.length.toLocaleString()} potentials`;
-    $('#updated').textContent=`Last updated ${formatIst(DATA.snapshot.generated_at_utc)} · India data through ${inDate} · US data through ${usDate}`;
+    $('#updated').textContent=`Last updated ${formatIst(DATA.snapshot.generated_at_utc)} · India data through ${inDate} · US data through ${usDate}`;MarketCommodities.scope(state);
   }catch(error){$('#status').classList.add('error');$('#status').textContent=`Snapshot unavailable: ${error.message}`;$('#rows').innerHTML='<tr><td colspan="8"><div class="empty">No stored data is available.</div></td></tr>'}
 }
 MarketConsolidation.load();

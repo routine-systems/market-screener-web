@@ -66,6 +66,7 @@ class RenderSiteTests(unittest.TestCase):
                 "market-events.js",
                 "market-rotation.js",
                 "market-consolidation.js",
+                "market-commodities.js",
                 "india-rotation.json",
                 "functions/_middleware.js",
                 "functions/api/market-events.js",
@@ -76,6 +77,7 @@ class RenderSiteTests(unittest.TestCase):
                 "functions/api/us-trend-bounce.js",
                 "functions/api/volume-trend.js",
                 "functions/api/shortlist-history.js",
+                "functions/api/commodities.js",
             }
             actual = {
                 path.relative_to(output).as_posix()
@@ -253,7 +255,7 @@ class RenderSiteTests(unittest.TestCase):
             self.assertIn("Forward Test · Outcomes", recommendations)
             self.assertIn('id="researchColumns"', recommendations)
             self.assertIn('data-sort="entry_open"', recommendations)
-            self.assertIn("India + US Daily + Weekly · Shortlist", shortlist)
+            self.assertIn("India + US + Commodities Daily + Weekly · Shortlist", shortlist)
             self.assertIn(".slice(0,20)", shortlist)
             self.assertIn("const nearbyWindow=3", shortlist)
             self.assertIn("HT + VT", shortlist)

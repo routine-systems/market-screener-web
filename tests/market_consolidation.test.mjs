@@ -31,6 +31,17 @@ test('market, exchange and timeframe identities do not leak counts',()=>{
  for(const overrides of [{market:'US'},{timeframe:'weekly'},{exchange:'BSE'},{symbol:'MISSING'}]) assert.equal(api.lookup(row('2026-09-01',overrides)),null);
  assert.match(api.describe(row('2026-09-01',{market:'US'})),/Unavailable/);
 });
+test('separate commodity and equity refreshes preserve each others zone context',()=>{
+ const api=subject();
+ const commodities={markets:{MCX:{timeframes:{daily:{locked_zones:zone([['2026-09-01',[[0,'INSIDE',4,90,100,'2026-08-27']]]],[['GOLD1!','MCX']])}}}}};
+ api.register(commodities);api.register(snapshot(history));
+ assert.equal(api.lookup(row('2026-09-01')).inside_count,23);
+ const gold=row('2026-09-01',{market:'MCX',exchange:'MCX',symbol:'GOLD1!'});
+ assert.equal(api.lookup(gold).inside_count,4);
+ api.register(commodities);
+ assert.equal(api.lookup(row('2026-09-01')).inside_count,23);
+ assert.equal(api.lookup({...gold,market:'US_COM'}),null);
+});
 test('missing observation never carries forward an active consolidation',()=>{
  const api=subject();api.register(snapshot(zone([['2026-09-01',[[0,'INSIDE',23,90,100,'2026-08-01']]],['2026-09-02',[]]])));
  assert.equal(api.lookup(row('2026-09-02')),null);

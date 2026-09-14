@@ -11,8 +11,9 @@
     return d.toISOString().slice(0, 10);
   };
   function register(snapshot) {
-    buckets.clear();
-    for (const market of ['IN', 'US']) for (const timeframe of ['daily', 'weekly']) {
+    if (!snapshot?.markets) buckets.clear();
+    for (const market of Object.keys(snapshot?.markets || {})) for (const timeframe of ['daily', 'weekly']) {
+      buckets.delete(`${market}:${timeframe}`);
       const history = snapshot?.markets?.[market]?.timeframes?.[timeframe]?.locked_zones;
       if (history?.schema_version !== 'vt-locked-zones.v1' || !Array.isArray(history.periods) || !history.periods.length) continue;
       if (!Array.isArray(history.instrument_columns) || !Array.isArray(history.row_columns) || !Array.isArray(history.instruments)) continue;

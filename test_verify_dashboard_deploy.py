@@ -123,7 +123,7 @@ function ignitionDot(r){return '<span class="ignition-dot"></span>'} !state.igni
 MarketEvents.record(r.symbol,r.market); MarketEvents.dot(r.symbol,r.market);
 MarketEvents.dot(r.symbol,'IN','insider_trade');</script>''',
         "recommendations.html": "<script>fetch('/api/forward-test'); const schema='forward-test.api.v1'; applyPayload(fallbackPayload);</script>",
-        "shortlist.html": '''<h1>India + US Daily + Weekly · Shortlist</h1>
+        "shortlist.html": '''<h1>India + US + Commodities Daily + Weekly · Shortlist</h1>
 <select id="historyDate"></select><button id="historyLatest">Latest</button>
 <div id="sectorTabs">Rising sectors Other sectors</div><th data-k="appearances">Appearances</th><span data-appearance-tip=""></span>
 <script>const selection='sector_top20.v1';const history='shortlist-history.api.v1';const nearbyWindow=3; fetch('/api/tsha-hbcs'); fetch('/api/volume-trend');
