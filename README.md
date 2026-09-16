@@ -2,6 +2,13 @@
 
 Cloudflare Pages presentation for `screener.chiragpatnaik.com`.
 
+## Platform context
+
+This repository is the production presentation and deployment boundary in the market platform.
+The cross-repository operating map, legacy compatibility notes, and safe-resume sequence live in
+the canonical [`chartink-dashboard` README](https://github.com/NakliTechie/chartink-dashboard/blob/main/README.md#platform-operations-and-resume-map).
+Use this repository's `refresh.yml` workflow for routine Pages releases.
+
 This repository accepts one immutable `signals-bundle.v1.json` artifact. It does not scrape
 Chartink or open local market databases. The renderer validates the bundle's major schema version
 before building the eleven-page dashboard shell.
