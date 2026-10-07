@@ -60,12 +60,12 @@ def _freshness(active: bool = True) -> str:
 def _page(active: str, body: str = "") -> str:
     return (
         '<!doctype html><html><head><link rel="stylesheet" '
-        'href="dashboard-shell.css?v=4"></head><body>'
+        'href="dashboard-shell.css?v=5"></head><body>'
         '<a class="skip-link" href="#dashboard-results">Skip to results</a>'
         f'{_nav(active)}<button id="themeBtn">Theme</button>'
         '<button id="viewSwitcher">Views</button><button id="pageInfo">Info</button><div id="dashboard-results" tabindex="-1"></div>'
-        f'<main id="main-content">{_freshness(active not in {"clusters.html", "volume_trend.html", "transactions.html"})}{body}</main>'
-        '<script src="dashboard-shell.js?v=3"></script><script src="market-rotation.js?v=2"></script><script>MarketRotation.marker()</script></body></html>'
+        f'<main id="main-content">{_freshness(active not in {"clusters.html", "volume_trend.html", "ichimoku.html", "transactions.html"})}{body}</main>'
+        '<script src="dashboard-shell.js?v=6"></script><script src="market-rotation.js?v=2"></script><script>MarketRotation.marker()</script></body></html>'
     )
 
 
@@ -123,10 +123,10 @@ function ignitionDot(r){return '<span class="ignition-dot"></span>'} !state.igni
 MarketEvents.record(r.symbol,r.market); MarketEvents.dot(r.symbol,r.market);
 MarketEvents.dot(r.symbol,'IN','insider_trade');</script>''',
         "recommendations.html": "<script>fetch('/api/forward-test'); const schema='forward-test.api.v1'; applyPayload(fallbackPayload);</script>",
-        "shortlist.html": '''<h1>India + US + Commodities Daily + Weekly · Shortlist</h1>
+        "shortlist.html": '''<div id="sources"></div><h1>India + US + Commodities Daily + Weekly · Shortlist</h1>
 <select id="historyDate"></select><button id="historyLatest">Latest</button>
 <div id="sectorTabs">Rising sectors Other sectors</div><th data-k="appearances">Appearances</th><span data-appearance-tip=""></span>
-<script>const selection='sector_top20.v1';const history='shortlist-history.api.v1';const nearbyWindow=3; fetch('/api/tsha-hbcs'); fetch('/api/volume-trend');
+<script>const selection='sector_top20.v1';const history='shortlist-history.api.v1';const follow_through_bits='01';fetch('/api/ichimoku');const nearbyWindow=3; fetch('/api/tsha-hbcs'); fetch('/api/volume-trend');
 const ht2of3=true,ht3of5=true,ht_vt=true; const cap=rows.slice(0,20);
 const method='current or prior 2 same-timeframe periods';</script>''',
         "volume_trend.html": '''<div>VT · Volume Breakout / Breakdown</div><div id="directions"><button class="toolbtn on" data-v="BUY">BUY</button></div><div id="views"></div><th data-k="inside_count">Closes inside</th><div id="historyRange"></div>
@@ -137,6 +137,7 @@ const method='current or prior 2 same-timeframe periods';</script>''',
 <script>fetch('/api/volume-trend'); const api='volume-trend.api.v1'; const history='vt-history.v1'; const zones='vt-locked-zones.v1'; function buildZoneRows(){}; const state={view:'events',direction:'BUY',liquidity:5}; const updated='75-bar lookback · volume confirmation off';
 const turnoverFloor=market=>state.liquidity*(market==='IN'?10000000:1000000);
 MarketEvents.record(r.symbol,r.market); const glyph=on?'●':'○';</script>''',
+        "ichimoku.html": '''<h1>Ichimoku · Cloud Exit</h1><button id="crossOnly">follow-through</button><div id="markets"></div><div id="timeframes"></div><div id="directions"></div><div id="historyRange"></div><button id="download"></button><select id="pageNumber"></select><select id="pageSize"></select><th data-k="appearance_count">Appearances</th><span data-appearance-tip=""></span><script>fetch('/api/ichimoku');const schema='ichimoku.api.v1',snapshot='ichimoku.snapshot.v1';const state={direction:'BUY'};const weekStart=d=>d;const appearance_count=0,glyphs='●○';</script>''',
         "transactions.html": '''<h1>Transactions · India + U.S.</h1>
 <div id="categories"></div><input id="search"><select id="side"></select>
 <select id="pageNumber"></select><select id="pageSize"></select><button id="download"></button>
@@ -176,12 +177,12 @@ const method='current or prior 2 same-timeframe periods';</script>''',
 
 
 class VerifyDashboardDeployTests(unittest.TestCase):
-    def test_accepts_the_eleven_tab_contract(self):
+    def test_accepts_the_twelve_tab_contract(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             _write_valid_site(root)
             result = subject.verify_site(root)
-            self.assertEqual(11, result["pages"])
+            self.assertEqual(12, result["pages"])
             self.assertEqual("site-manifest.json", result["manifest"])
 
     def test_rejects_nondefault_ht_or_vt_turnover_tier(self):
@@ -229,12 +230,14 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             current = (
                 '<a href="tsha_hbcs.html">HT</a>'
                 '<a href="volume_trend.html">VT</a>'
+                '<a href="ichimoku.html">Ichimoku</a>'
                 '<a href="transactions.html">Trades</a>'
                 '<a href="market.html">Market</a>'
                 '<a href="sectors.html">Sectors</a>'
             )
             legacy = (
                 '<a href="volume_trend.html">VT</a>'
+                '<a href="ichimoku.html">Ichimoku</a>'
                 '<a href="transactions.html">Trades</a>'
                 '<a href="market.html">Market</a>'
                 '<a href="sectors.html">Sectors</a>'
@@ -243,7 +246,7 @@ class VerifyDashboardDeployTests(unittest.TestCase):
             self.assertIn(current, source)
             (root / "dashboard.html").write_text(source.replace(current, legacy, 1))
             with self.assertRaisesRegex(
-                subject.DashboardContractError, "canonical eleven-tab order"
+                subject.DashboardContractError, "canonical twelve-tab order"
             ):
                 subject.verify_site(root)
 
