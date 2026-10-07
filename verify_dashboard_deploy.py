@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Reject a dashboard bundle that would degrade the live eleven-tab contract."""
+"""Reject a dashboard bundle that would degrade the live twelve-tab contract."""
 
 from __future__ import annotations
 
@@ -23,6 +23,7 @@ PAGES = {
     "sectors.html": "sectors.html",
     "tsha_hbcs.html": "tsha_hbcs.html",
     "volume_trend.html": "volume_trend.html",
+    "ichimoku.html": "ichimoku.html",
     "transactions.html": "transactions.html",
     "recommendations.html": "recommendations.html",
 }
@@ -34,6 +35,7 @@ NAV_ITEMS = (
     ("us-daily.html", "US Daily"),
     ("tsha_hbcs.html", "HT"),
     ("volume_trend.html", "VT"),
+    ("ichimoku.html", "Ichimoku"),
     ("transactions.html", "Trades"),
     ("market.html", "Market"),
     ("sectors.html", "Sectors"),
@@ -60,6 +62,7 @@ REQUIRED_FILES = {
     "functions/api/tsha-hbcs.js",
     "functions/api/us-trend-bounce.js",
     "functions/api/volume-trend.js",
+    "functions/api/ichimoku.js",
 }
 INDIA_PAGES = ("dashboard.html", "daily.html")
 US_PAGES = ("us-weekly.html", "us-daily.html")
@@ -125,7 +128,7 @@ def _verify_navigation(page: str, source: str, active_href: str) -> None:
     parser.feed(source)
     actual = tuple((attrs.get("href"), label) for attrs, label in parser.nav_items)
     if actual != NAV_ITEMS:
-        _fail(f"{page} navigation differs from the canonical eleven-tab order")
+        _fail(f"{page} navigation differs from the canonical twelve-tab order")
     active = [
         attrs.get("href")
         for attrs, _ in parser.nav_items
@@ -139,7 +142,7 @@ def _verify_navigation(page: str, source: str, active_href: str) -> None:
     if source.count('class="dashboard-freshness"') != 1:
         _fail(f"{page} must contain one shared cutoff strip")
     expected_active_inputs = (
-        0 if page in {"volume_trend.html", "transactions.html"} else 1
+        0 if page in {"volume_trend.html", "transactions.html", "ichimoku.html"} else 1
     )
     if source.count('data-active="true"') != expected_active_inputs:
         _fail(
@@ -262,8 +265,8 @@ def verify_site(root: Path) -> dict:
             source,
             (
                 'href="#dashboard-results">Skip to results</a>',
-                'src="dashboard-shell.js?v=3"',
-                'href="dashboard-shell.css?v=4"',
+                'src="dashboard-shell.js?v=6"',
+                'href="dashboard-shell.css?v=5"',
             ),
         )
         unresolved = re.findall(r"__[A-Z][A-Z0-9_]+__", source)
@@ -363,6 +366,12 @@ def verify_site(root: Path) -> dict:
         ),
     )
 
+    _require_text("ichimoku.html", page_sources["ichimoku.html"], (
+        "fetch('/api/ichimoku'", "ichimoku.api.v1", "ichimoku.snapshot.v1",
+        "direction:'BUY'", 'id="directions"', 'follow-through',
+        'id="historyRange"', 'id="crossOnly"', 'data-appearance-tip=',
+        "weekStart", "appearance_count", "●", "○",
+    ))
     ht = page_sources["tsha_hbcs.html"]
     _require_text(
         "tsha_hbcs.html",
@@ -430,6 +439,9 @@ def verify_site(root: Path) -> dict:
             'id="historyDate"',
             'id="historyLatest"',
             "shortlist-history.api.v1",
+            "fetch('/api/ichimoku'",
+            'id="sources"',
+            "follow_through_bits",
             'id="sectorTabs"',
             "Rising sectors",
             "Other sectors",

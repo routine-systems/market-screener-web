@@ -52,6 +52,7 @@ NAV_ITEMS = (
     ("us-daily", "us-daily.html", "US Daily"),
     ("ht", "tsha_hbcs.html", "HT"),
     ("vt", "volume_trend.html", "VT"),
+    ("ichimoku", "ichimoku.html", "Ichimoku"),
     ("transactions", "transactions.html", "Trades"),
     ("market", "market.html", "Market"),
     ("sectors", "sectors.html", "Sectors"),
@@ -341,7 +342,7 @@ class _ResponsiveMarkup(HTMLParser):
             panel = "filters"
         if self.active in {"market", "sectors"} and "presets" in classes:
             panel = "filters"
-        if self.active in {"ht", "vt", "shortlist", "transactions"} and ident in {"cohorts", "liquidity", "ignitionOnly", "eventOnly", "download", "side"}:
+        if self.active in {"ht", "vt", "shortlist", "transactions"} and ident in {"cohorts", "sources", "directions", "liquidity", "ignitionOnly", "eventOnly", "download", "side"}:
             panel = "filters"
         if panel:
             additions += f' data-mobile-panel="{panel}"'
@@ -377,9 +378,9 @@ def _apply_shell(source: str, active: str) -> str:
     source = source.replace("__DASHBOARD_NAV__", _navigation(active))
     source = source.replace("__DASHBOARD_FRESHNESS__", _freshness_strip(active))
     assets = (
-        '<script src="dashboard-shell.js?v=3"></script>'
+        '<script src="dashboard-shell.js?v=6"></script>'
         '<script src="market-rotation.js?v=2"></script>'
-        '<link rel="stylesheet" href="dashboard-shell.css?v=4">'
+        '<link rel="stylesheet" href="dashboard-shell.css?v=5">'
     )
     source = source.replace("</head>", f"{assets}</head>", 1)
     return _ResponsiveMarkup(source, active).rendered()
@@ -500,6 +501,8 @@ def render_site(bundle_path: Path, output: Path = DEFAULT_OUTPUT) -> dict:
     (temp / "tsha_hbcs.html").write_text(ht_source, encoding="utf-8")
     vt_source = _apply_shell(vt_page.read_text(encoding="utf-8"), "vt")
     (temp / "volume_trend.html").write_text(vt_source, encoding="utf-8")
+    ichimoku_source = _apply_shell((TEMPLATES / "ichimoku.html").read_text(encoding="utf-8"), "ichimoku")
+    (temp / "ichimoku.html").write_text(ichimoku_source, encoding="utf-8")
     transactions_source = _apply_shell(
         transactions_page.read_text(encoding="utf-8"), "transactions"
     )

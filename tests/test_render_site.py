@@ -41,6 +41,7 @@ class RenderSiteTests(unittest.TestCase):
                 ("us-daily", "us-daily.html", "US Daily"),
                 ("ht", "tsha_hbcs.html", "HT"),
                 ("vt", "volume_trend.html", "VT"),
+                ("ichimoku", "ichimoku.html", "Ichimoku"),
                 ("transactions", "transactions.html", "Trades"),
                 ("market", "market.html", "Market"),
                 ("sectors", "sectors.html", "Sectors"),
@@ -73,6 +74,7 @@ class RenderSiteTests(unittest.TestCase):
                 "recommendations.html",
                 "tsha_hbcs.html",
                 "volume_trend.html",
+                "ichimoku.html",
                 "transactions.html",
                 "us-weekly.html",
                 "us-daily.html",
@@ -94,6 +96,7 @@ class RenderSiteTests(unittest.TestCase):
                 "functions/api/tsha-hbcs.js",
                 "functions/api/us-trend-bounce.js",
                 "functions/api/volume-trend.js",
+                "functions/api/ichimoku.js",
                 "functions/api/shortlist-history.js",
                 "functions/api/commodities.js",
             }
@@ -233,6 +236,7 @@ console.log(JSON.stringify(rows.map(row=>appearanceMeta('US','weekly',{{...row,s
                 "recommendations.html",
                 "tsha_hbcs.html",
                 "volume_trend.html",
+                "ichimoku.html",
                 "transactions.html",
             ):
                 page = (output / name).read_text()

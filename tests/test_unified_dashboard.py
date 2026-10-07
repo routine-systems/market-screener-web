@@ -55,6 +55,7 @@ class RenderSiteTests(unittest.TestCase):
                 "recommendations.html",
                 "tsha_hbcs.html",
                 "volume_trend.html",
+                "ichimoku.html",
                 "transactions.html",
                 "us-weekly.html",
                 "us-daily.html",
@@ -76,6 +77,7 @@ class RenderSiteTests(unittest.TestCase):
                 "functions/api/tsha-hbcs.js",
                 "functions/api/us-trend-bounce.js",
                 "functions/api/volume-trend.js",
+                "functions/api/ichimoku.js",
                 "functions/api/shortlist-history.js",
                 "functions/api/commodities.js",
             }
@@ -211,6 +213,7 @@ class RenderSiteTests(unittest.TestCase):
                 "recommendations.html",
                 "tsha_hbcs.html",
                 "volume_trend.html",
+                "ichimoku.html",
                 "transactions.html",
             ):
                 rendered = (output / page).read_text()
@@ -225,14 +228,14 @@ class RenderSiteTests(unittest.TestCase):
                 self.assertIn('id="main-content"', rendered)
                 self.assertEqual(1, rendered.count('class="dashboard-freshness"'))
                 expected_active = (
-                    0 if page in {"volume_trend.html", "transactions.html"} else 1
+                    0 if page in {"volume_trend.html", "transactions.html", "ichimoku.html"} else 1
                 )
                 self.assertEqual(expected_active, rendered.count('data-active="true"'))
                 self.assertIn('data-freshness="outcomes"', rendered)
                 self.assertNotIn('class="purpose"', rendered)
                 self.assertNotIn('id="purpose"', rendered)
-                self.assertIn('src="dashboard-shell.js?v=3"', rendered)
-                self.assertIn('href="dashboard-shell.css?v=4"', rendered)
+                self.assertIn('src="dashboard-shell.js?v=6"', rendered)
+                self.assertIn('href="dashboard-shell.css?v=5"', rendered)
             freshness = json.loads((output / "dashboard-freshness.json").read_text())
             self.assertEqual("dashboard-freshness.v1", freshness["schema_version"])
             self.assertEqual(

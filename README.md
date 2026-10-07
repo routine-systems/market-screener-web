@@ -11,7 +11,7 @@ Use this repository's `refresh.yml` workflow for routine Pages releases.
 
 This repository accepts one immutable `signals-bundle.v1.json` artifact. It does not scrape
 Chartink or open local market databases. The renderer validates the bundle's major schema version
-before building the eleven-page dashboard shell.
+before building the twelve-page dashboard shell.
 
 The HT page is independent of the Chartink bundle. It reads one rolling snapshot
 from the existing `SCANLINKS` KV binding through `GET /api/tsha-hbcs`. The browser
@@ -77,3 +77,17 @@ labelled separately; reconstructed flags do not invent individual appearance dot
 Weekly labels identify Monday, with the actual source session shown in the note.
 Sector/industry and rotation context are current, as disclosed in the view.
 The deployment contract requires both the history API and date controls.
+
+## Ichimoku
+
+The Ichimoku tab reads `/api/ichimoku` from the independent
+`ichimoku:v1:latest` KV snapshot. India and US have Daily and completed Weekly
+buckets with 13 replayed periods and an eight-period default. BUY opens by
+default. Exits use blue dots; next-candle follow-through uses yellow dots. SELL mirrors BUY. Standard
+settings are 9/26/52/26. The producer and exact definitions live in
+`chartink-dashboard/ichimoku_screener.py` and its canonical dashboard guide.
+
+Shortlist offers HT / VT and independent Ichimoku sources for India/US Daily/Weekly.
+Ichimoku opens with BUY, supports SELL/Both, and ranks current exits/follow-through by turnover.
+Blue dots mark exits; yellow dots mark follow-through. Its weekly cutoff includes completed weeks only.
+The local pipeline captures separate frozen sector lists for each source and direction.

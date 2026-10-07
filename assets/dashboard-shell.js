@@ -276,6 +276,9 @@
         if (button?.classList.contains('on') && !button.hidden) button.click();
       }
       document.querySelector('#cohorts button[data-v="all"]')?.click();
+      if (['ichimoku','shortlist'].includes(document.body.dataset.dashboardView)) {
+        document.querySelector('#directions button[data-v="all"]')?.click();
+      }
       const forwardAll = sheets.filters.body.querySelector('button[data-filter="all"]');
       forwardAll?.click();
       for (const [id,value] of [['liquidity','0'],['side','all']]) {
@@ -302,6 +305,11 @@
       }
       if(document.querySelector('#cohorts button.on')?.dataset.v==='ht_vt') active++;
       if(document.getElementById('clearSector')) active++;
+      if (['ichimoku','shortlist'].includes(document.body.dataset.dashboardView)) {
+        for (const id of ['directions']) {
+          if (document.getElementById(id) && !document.getElementById(id).hidden && document.querySelector(`#${id} button.on`)?.dataset.v !== 'all') active++;
+        }
+      }
       const selectedForward=sheets.filters.body.querySelector('button[data-filter].on');
       if(selectedForward && selectedForward.dataset.filter!=='all') active++;
       clear.disabled=active===0&&!document.getElementById('search')?.value;
