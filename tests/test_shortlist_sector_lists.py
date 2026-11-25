@@ -58,6 +58,16 @@ console.log(JSON.stringify({small,missing,saved,valid}));
         self.assertEqual(r["saved"], ["OLD"])
         self.assertTrue(r["valid"])
 
+    def test_default_sector_tab_falls_back_to_nonempty_other_list(self):
+        r = self.run_js(
+            """
+DATA={rows:[{symbol:'COOL',market:'IN',timeframe:'daily',sector:'Cooling',ht2of3:true}]};
+state.market='IN';state.timeframe='daily';state.period='latest';state.sectorTab=preferredSectorTab();
+console.log(JSON.stringify({tab:state.sectorTab,rows:selected().map(r=>r.symbol)}));
+"""
+        )
+        self.assertEqual(r, {"tab": "other", "rows": ["COOL"]})
+
     def test_five_dated_dots_and_reconstructed_flags(self):
         r = self.run_js(
             """
